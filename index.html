@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a87f3e">
+<title>DreamRest</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;background:#f5f5f4;color:#1c1917;padding-bottom:60px}
+.app{max-width:900px;margin:0 auto;background:#fff;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#a87f3e 0%,#c89958 100%);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.logo{font-size:22px;font-weight:300;letter-spacing:.5px}
+.logo b{font-weight:600}
+.subtitle{font-size:11px;opacity:.85;margin-top:2px}
+.nav{display:flex;background:#fff;border-bottom:1px solid #e7e5e4;position:sticky;top:71px;z-index:99}
+.nav-btn{flex:1;padding:14px 8px;background:none;border:none;font-size:13px;color:#78716c;cursor:pointer;border-bottom:3px solid transparent;font-weight:500}
+.nav-btn.active{color:#a87f3e;border-bottom-color:#a87f3e;background:#fefdf9}
+.section{display:none;padding:14px}
+.section.active{display:block}
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.btn{background:#a87f3e;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;transition:background .2s}
+.btn:hover{background:#8b6831}
+.btn-sec{background:#fff;color:#a87f3e;border:1px solid #a87f3e}
+.btn-sec:hover{background:#fef9f0}
+.btn-danger{background:#dc2626}
+.btn-danger:hover{background:#b91c1c}
+.btn-sm{padding:6px 10px;font-size:11px}
+input,select,textarea{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #d6d3d1;border-radius:8px;background:#fff;width:100%;color:#1c1917}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#a87f3e}
+label{display:block;font-size:11px;color:#57534e;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.field{margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.card{background:#fff;border:1px solid #e7e5e4;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card h4{font-size:14px;font-weight:600;margin-bottom:6px}
+.tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500;margin-right:4px}
+.tag-may{background:#fef3c7;color:#92400e}
+.tag-min{background:#dbeafe;color:#1e40af}
+.tag-stock-ok{background:#dcfce7;color:#166534}
+.tag-stock-low{background:#fed7aa;color:#9a3412}
+.tag-stock-out{background:#fee2e2;color:#991b1b}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid #e7e5e4;border-radius:10px;padding:14px}
+.stat-lbl{font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600}
+.stat-val{font-size:20px;font-weight:600;color:#1c1917}
+.stat-val.may{color:#a87f3e}
+.stat-val.min{color:#1e40af}
+.stat-val.warn{color:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 6px;font-size:11px;color:#78716c;font-weight:600;border-bottom:1px solid #e7e5e4;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+td{padding:8px 6px;border-bottom:1px solid #f5f5f4}
+tbody tr:hover{background:#fafaf9}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;padding:20px;align-items:flex-start;justify-content:center;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:550px;margin-top:20px}
+.modal h3{font-size:16px;margin-bottom:12px;color:#a87f3e}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.bar{height:8px;background:#e7e5e4;border-radius:99px;overflow:hidden;margin-top:4px}
+.bar-fill{height:100%;background:#a87f3e;border-radius:99px}
+.bar-row{margin-bottom:8px}
+.bar-lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.empty{text-align:center;padding:30px 14px;color:#78716c;font-size:13px}
+.search{position:relative;margin-bottom:10px}
+.search input{padding-left:34px}
+.search::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5}
+.fil{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.fil select{flex:1;min-width:120px}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f4;font-size:12px}
+.item-row:last-child{border:none}
+.danger{color:#dc2626}
+.warn{color:#d97706}
+.ok{color:#059669}
+.muted{color:#78716c}
+.pill{display:inline-block;background:#f5f5f4;padding:2px 8px;border-radius:99px;font-size:10px;color:#57534e}
+.add-item-row{display:grid;grid-template-columns:2fr 60px 100px 30px;gap:6px;align-items:center;margin-bottom:6px}
+@media(max-width:500px){
+  .row,.row3{grid-template-columns:1fr}
+  .add-item-row{grid-template-columns:1fr 60px 100px 30px}
+  th,td{padding:6px 4px;font-size:11px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+.fab{position:fixed;bottom:20px;right:20px;width:54px;height:54px;border-radius:50%;background:#a87f3e;color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 12px rgba(168,127,62,.4);z-index:50}
+.help{font-size:11px;color:#78716c;background:#fef9f0;padding:8px 10px;border-radius:6px;border-left:3px solid #a87f3e;margin-bottom:10px}
+.confirm-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;border-top:1px solid #e7e5e4;display:none;justify-content:space-between;align-items:center;z-index:200;box-shadow:0 -2px 8px rgba(0,0,0,.05)}
+.confirm-bar.show{display:flex}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="loading" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+    <div style="width:40px;height:40px;border:4px solid #e7e5e4;border-top-color:#a87f3e;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div style="font-size:13px;color:#78716c">Conectando con Firebase...</div>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  <div class="hdr">
+    <div class="logo">Dream<b>Rest</b></div>
+    <div class="subtitle">Sistema de gestión · Rivas 590, San Joaquín</div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="setTab('inventario')">📦 Inv.</button>
+    <button class="nav-btn" onclick="setTab('ventas')">🛒 Ventas</button>
+    <button class="nav-btn" onclick="setTab('despachos')">🚚 Despachos</button>
+    <button class="nav-btn" onclick="setTab('resumen')">📊 Resumen</button>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div id="tab-inventario" class="section active">
+    <div class="search"><input type="text" id="inv-search" placeholder="Buscar producto..." oninput="renderInv()"></div>
+    <div class="fil">
+      <select id="inv-marca" onchange="renderInv()"><option value="">Todas las marcas</option></select>
+      <select id="inv-cat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="openProd()">+ Agregar producto</button>
+      <button class="btn btn-sec btn-sm" onclick="exportInv()">📥 Exportar</button>
+    </div>
+    <div id="inv-stats" class="stat-grid"></div>
+    <div id="inv-list"></div>
+  </div>
+
+  <!-- VENTAS -->
+  <div id="tab-ventas" class="section">
+    <div class="toolbar">
+      <button class="btn" onclick="openVenta()">+ Nueva venta</button>
+      <button class="btn btn-sec btn-sm" onclick="exportVentas()">📥 Exportar</button>
+    </div>
+    <div class="fil">
+      <input type="text" id="v-search" placeholder="Buscar cliente..." oninput="renderVentas()" style="flex:2;min-width:140px">
+      <select id="v-tipo" onchange="renderVentas()">
+        <option value="">Todos</option>
+        <option value="min">Minorista</option>
+        <option value="may">Mayorista</option>
+      </select>
+    </div>
+    <div class="fil" style="align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:120px">
+        <label style="margin:0;white-space:nowrap;font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em">Desde</label>
+        <input type="date" id="v-desde" onchange="renderVentas()" style="flex:1">
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:120px">
+        <label style="margin:0;white-space:nowrap;font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em">Hasta</label>
+        <input type="date" id="v-hasta" onchange="renderVentas()" style="flex:1">
+      </div>
+      <select id="v-vendedor" onchange="renderVentas()" style="flex:1;min-width:100px">
+        <option value="">Vendedor</option>
+        <option>Isaías</option>
+        <option>Daniela</option>
+      </select>
+      <select id="v-pago" onchange="renderVentas()" style="flex:1;min-width:110px">
+        <option value="">Forma de pago</option>
+        <option>Efectivo</option>
+        <option>Tarjeta</option>
+        <option>Transferencia</option>
+        <option>Débito</option>
+        <option>Crédito</option>
+        <option>Mixto</option>
+      </select>
+      <select id="v-estado" onchange="renderVentas()" style="flex:1;min-width:110px">
+        <option value="">Estado</option>
+        <option value="pendiente">🟡 Pendiente</option>
+        <option value="pagado">🟠 Pagado</option>
+        <option value="despachado">🟢 Despachado</option>
+        <option value="cancelado">🔴 Cancelado</option>
+      </select>
+      <button class="btn btn-sec btn-sm" onclick="limpiarFiltrosVentas()" style="white-space:nowrap">✕ Limpiar</button>
+    </div>
+    <div id="v-stats" class="stat-grid"></div>
+    <div id="v-list"></div>
+  </div>
+
+  <!-- DESPACHOS -->
+  <div id="tab-despachos" class="section">
+    <div class="fil" style="align-items:center;gap:6px">
+      <select id="d-estado" onchange="renderDespachos()" style="flex:1;min-width:130px">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">🟡 Pendiente</option>
+        <option value="pagado">🟠 Pagado</option>
+        <option value="despachado">🟢 Despachado</option>
+      </select>
+      <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:120px">
+        <label style="margin:0;white-space:nowrap;font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em">Fecha</label>
+        <input type="date" id="d-fecha" onchange="renderDespachos()" style="flex:1">
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="document.getElementById('d-estado').value='';document.getElementById('d-fecha').value='';renderDespachos()">✕ Limpiar</button>
+    </div>
+    <div id="d-list" style="margin-top:10px"></div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="tab-resumen" class="section">
+    <div class="fil">
+      <select id="r-mes" onchange="renderResumen()"></select>
+      <select id="r-anio" onchange="renderResumen()"></select>
+    </div>
+    <div id="r-stats" class="stat-grid"></div>
+    <div id="r-charts"></div>
+    <div id="r-tabla"></div>
+  </div>
+</div>
+
+<!-- Modal Producto -->
+<div class="modal-bg" id="modal-prod">
+  <div class="modal">
+    <h3 id="prod-title">Agregar producto</h3>
+    <div class="field"><label>Nombre</label><input type="text" id="p-nombre"></div>
+    <div class="row">
+      <div class="field"><label>Marca</label><input type="text" id="p-marca" list="marca-list"></div>
+      <div class="field"><label>Categoría</label><select id="p-cat">
+        <option>Colchón</option><option>Cama Europea</option><option>Cama Baúl</option>
+        <option>Base</option><option>Almohada</option><option>Plumón</option>
+        <option>Velador</option><option>Respaldo</option><option>Otro</option>
+      </select></div>
+    </div>
+    <datalist id="marca-list"></datalist>
+    <div class="row">
+      <div class="field"><label>Precio mayorista</label><input type="number" id="p-may"></div>
+      <div class="field"><label>Precio minorista</label><input type="number" id="p-min"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Stock</label><input type="number" id="p-stock" value="0"></div>
+      <div class="field"><label>Stock mínimo (alerta)</label><input type="number" id="p-min-stock" value="2"></div>
+    </div>
+    <div class="field"><label>Notas (opcional)</label><input type="text" id="p-notas" placeholder="Ej: 1 en exhibición, fabricación propia"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-prod')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="del-prod-btn" onclick="delProd()" style="display:none">Eliminar</button>
+      <button class="btn btn-sm" onclick="saveProd()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Venta -->
+<div class="modal-bg" id="modal-venta">
+  <div class="modal" style="max-width:600px">
+    <h3 id="venta-title">Nueva venta</h3>
+    <div class="row">
+      <div class="field"><label>Fecha de venta</label><input type="date" id="vt-fecha"></div>
+      <div class="field"><label>Tipo</label><select id="vt-tipo" onchange="updTipoVenta()">
+        <option value="min">Minorista</option><option value="may">Mayorista</option>
+      </select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Estado</label><select id="vt-estado">
+        <option value="pendiente">🟡 Pendiente</option>
+        <option value="pagado">🟠 Pagado</option>
+        <option value="despachado">🟢 Despachado</option>
+        <option value="cancelado">🔴 Cancelado</option>
+      </select></div>
+      <div class="field" id="vt-fecha-desp-wrap"><label>Fecha despacho <button type="button" onclick="sincFechaDesp()" style="font-size:10px;padding:2px 6px;background:#fef9f0;color:#a87f3e;border:1px solid #a87f3e;border-radius:4px;cursor:pointer;margin-left:4px">= hoy</button></label><input type="date" id="vt-fecha-desp"></div>
+    </div>
+    <div class="field"><label>Cliente</label><input type="text" id="vt-cliente"></div>
+    <div class="row" id="vt-rut-row" style="display:none">
+      <div class="field"><label>RUT</label><input type="text" id="vt-rut" placeholder="12.345.678-9"></div>
+      <div class="field"><label>Empresa/Local</label><input type="text" id="vt-empresa"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Teléfono</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="background:#f5f5f4;padding:9px 11px;border:1px solid #d6d3d1;border-radius:8px;font-size:14px;color:#57534e;white-space:nowrap">+56 9</span>
+          <input type="tel" id="vt-tel" placeholder="1234 5678" maxlength="10" style="flex:1">
+        </div>
+      </div>
+      <div class="field"><label>Vendedor</label><select id="vt-vendedor">
+        <option>Isaías</option><option>Daniela</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Dirección (opcional)</label><input type="text" id="vt-dir"></div>
+    <div class="row">
+      <div class="field"><label>Forma de pago</label><select id="vt-pago">
+        <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option>
+        <option>Débito</option><option>Crédito</option><option>Mixto</option>
+      </select></div>
+      <div class="field"><label>Despacho ($)</label><input type="number" id="vt-desp" value="0" placeholder="0 si retira" oninput="toggleDespCampos()"></div>
+    </div>
+
+    <!-- Campos de despacho - solo aparecen si hay despacho -->
+    <div id="vt-desp-campos" style="display:none;background:#fef9f0;padding:10px;border-radius:8px;margin-bottom:10px">
+      <div style="font-size:11px;color:#a87f3e;font-weight:600;margin-bottom:8px;text-transform:uppercase">📍 Datos de despacho</div>
+      <div class="field"><label>Calle</label><input type="text" id="vt-calle" placeholder="Ej: Av. Providencia"></div>
+      <div class="row">
+        <div class="field"><label>N° Casa / Depto</label><input type="text" id="vt-numero" placeholder="Ej: 1234, Depto 501"></div>
+        <div class="field"><label>Comuna</label><input type="text" id="vt-comuna" placeholder="Ej: Providencia"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Hora estimada de entrega</label>
+          <select id="vt-hora">
+            <option value="Sin preferencia">Sin preferencia</option>
+            <option value="Mañana (9:00 - 12:00)">Mañana (9:00 - 12:00)</option>
+            <option value="Mediodía (12:00 - 15:00)">Mediodía (12:00 - 15:00)</option>
+            <option value="Tarde (15:00 - 18:00)">Tarde (15:00 - 18:00)</option>
+            <option value="Noche (18:00 - 21:00)">Noche (18:00 - 21:00)</option>
+            <option value="Coordinar con cliente">Coordinar con cliente</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin:14px 0 6px"><strong style="font-size:13px">Productos</strong></div>
+    <div id="vt-items"></div>
+    <button class="btn btn-sec btn-sm" onclick="addItem()" style="margin-top:6px">+ Agregar producto</button>
+
+    <div style="margin-top:12px">
+      <div class="row">
+        <div class="field"><label>Monto cancelado</label><input type="number" id="vt-cancelado" placeholder="Lo que pagó el cliente"></div>
+        <div class="field"><label>Saldo pendiente</label><input type="number" id="vt-saldo" readonly style="background:#f5f5f4"></div>
+      </div>
+    </div>
+
+    <div class="field"><label>Notas</label><textarea id="vt-notas" rows="2" placeholder="Despacho por pagar, retira en tienda, etc."></textarea></div>
+
+    <div style="background:#fef9f0;padding:10px;border-radius:8px;margin-top:8px">
+      <div style="display:flex;justify-content:space-between"><span class="muted">Subtotal productos:</span><strong id="vt-subtotal">$0</strong></div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;color:#a87f3e;margin-top:4px"><strong>TOTAL VENTA:</strong><strong id="vt-total">$0</strong></div>
+      <div style="font-size:10px;color:#78716c;margin-top:4px">El despacho se registra aparte (no suma al total de venta)</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-venta')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="del-venta-btn" onclick="delVenta()" style="display:none">Eliminar</button>
+      <button class="btn btn-sm" onclick="saveVenta()">Guardar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle Venta -->
+<div class="modal-bg" id="modal-detalle">
+  <div class="modal" style="max-width:500px">
+    <h3>Detalle de venta</h3>
+    <div id="det-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-detalle')">Cerrar</button>
+      <button class="btn btn-sec btn-sm" id="pdf-venta-btn">📄 Descargar PDF</button>
+      <button class="btn btn-sec btn-sm" id="print-venta-btn">🖨️ Imprimir</button>
+      <button class="btn btn-sm" id="edit-venta-btn">Editar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,collection,doc,getDocs,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const app=initializeApp({apiKey:"AIzaSyC9ApU52_dJTeDgp0M9jURItgv0kDlvVHc",authDomain:"dreamrest-erp.firebaseapp.com",projectId:"dreamrest-erp",storageBucket:"dreamrest-erp.firebasestorage.app",messagingSenderId:"317820280893",appId:"1:317820280893:web:66834520da9dc21cd80a54"});
+const db=getFirestore(app);
+
+async function saveProdDB(p){await setDoc(doc(db,'inventario',String(p.id)),p);}
+async function delProdDB(id){await deleteDoc(doc(db,'inventario',String(id)));}
+async function saveVentaDB(v){await setDoc(doc(db,'ventas',String(v.id)),v);}
+async function delVentaDB(id){await deleteDoc(doc(db,'ventas',String(id)));}
+
+// Exponemos al scope global para que los onclick del HTML puedan llamarlas
+window.saveProdDB=saveProdDB;window.delProdDB=delProdDB;
+window.saveVentaDB=saveVentaDB;window.delVentaDB=delVentaDB;
+window.db=db;window.fsCollection=collection;window.fsDoc=doc;
+
+// =========== DATOS DEFAULT ===========
+// Inventario actualizado al cierre de abril 2026, ventas vacías para empezar mayo limpio
+
+const INVENTARIO_DEFAULT = [
+  // ==== DreamRest Soft ====
+  {id:1001,nombre:"Soft 90x190",marca:"DreamRest",cat:"Colchón",may:50000,min:59990,stock:0,minStock:2},
+  {id:1002,nombre:"Soft 90x200",marca:"DreamRest",cat:"Colchón",may:55000,min:67990,stock:0,minStock:2},
+  {id:1003,nombre:"Soft 105x190",marca:"DreamRest",cat:"Colchón",may:63000,min:74990,stock:0,minStock:2},
+  {id:1004,nombre:"Soft 105x200",marca:"DreamRest",cat:"Colchón",may:68000,min:79990,stock:0,minStock:2},
+  {id:1005,nombre:"Soft 150x190",marca:"DreamRest",cat:"Colchón",may:83000,min:99990,stock:0,minStock:2},
+  {id:1006,nombre:"Soft 150x200",marca:"DreamRest",cat:"Colchón",may:88000,min:105990,stock:0,minStock:2},
+
+  // ==== Infinity Soft ====
+  {id:1011,nombre:"Infinity Soft 90x190",marca:"DreamRest",cat:"Colchón",may:55000,min:64990,stock:3,minStock:2},
+  {id:1012,nombre:"Infinity Soft 90x200",marca:"DreamRest",cat:"Colchón",may:60000,min:67990,stock:0,minStock:2},
+  {id:1013,nombre:"Infinity Soft 105x190",marca:"DreamRest",cat:"Colchón",may:65000,min:79990,stock:0,minStock:2},
+  {id:1014,nombre:"Infinity Soft 105x200",marca:"DreamRest",cat:"Colchón",may:70000,min:79990,stock:0,minStock:2},
+  {id:1015,nombre:"Infinity Soft 150x190",marca:"DreamRest",cat:"Colchón",may:90000,min:109990,stock:6,minStock:2,notas:"5 disponibles + 1 en exhibición"},
+  {id:1016,nombre:"Infinity Soft 150x200",marca:"DreamRest",cat:"Colchón",may:95000,min:114990,stock:0,minStock:2},
+
+  // ==== Infinity Plus ====
+  {id:1020,nombre:"Infinity Plus 90x190",marca:"DreamRest",cat:"Colchón",may:70000,min:84990,stock:8,minStock:2},
+  {id:1021,nombre:"Infinity Plus 90x200",marca:"DreamRest",cat:"Colchón",may:75000,min:89990,stock:0,minStock:2},
+  {id:1022,nombre:"Infinity Plus 105x190",marca:"DreamRest",cat:"Colchón",may:90000,min:109990,stock:7,minStock:2},
+  {id:1023,nombre:"Infinity Plus 105x200",marca:"DreamRest",cat:"Colchón",may:95000,min:114990,stock:6,minStock:2},
+  {id:1024,nombre:"Infinity Plus 150x190",marca:"DreamRest",cat:"Colchón",may:120000,min:144990,stock:12,minStock:2,notas:"12 disponibles + 1 en exhibición"},
+  {id:1025,nombre:"Infinity Plus 150x200",marca:"DreamRest",cat:"Colchón",may:125000,min:144990,stock:2,minStock:2},
+  {id:1026,nombre:"Infinity Plus King 180x200",marca:"DreamRest",cat:"Colchón",may:140000,min:169990,stock:0,minStock:2},
+
+  // ==== Colchón Látex Especial ====
+  {id:1100,nombre:"Colchón Látex Especial 150x190",marca:"DreamRest",cat:"Colchón",may:500000,min:500000,stock:1,minStock:1,notas:"Fabricación propia. Precio único $500.000"},
+
+  // ==== Cama Europea Infinity Plus ====
+  {id:1030,nombre:"Cama Europea Infinity Plus + Respaldo 105x190",marca:"DreamRest",cat:"Cama Europea",may:160000,min:194990,stock:0,minStock:1},
+  {id:1031,nombre:"Cama Europea Infinity Plus + Respaldo 150x190",marca:"DreamRest",cat:"Cama Europea",may:215000,min:259990,stock:0,minStock:1},
+  {id:1032,nombre:"Cama Europea Infinity Plus + Respaldo 150x200",marca:"DreamRest",cat:"Cama Europea",may:215000,min:259990,stock:0,minStock:1},
+  {id:1033,nombre:"Cama Europea Infinity Plus + Respaldo King",marca:"DreamRest",cat:"Cama Europea",may:270000,min:324990,stock:0,minStock:1},
+
+  // ==== Cannon ====
+  {id:2001,nombre:"Cama Cannon Still 2.0 PL 150x200",marca:"Cannon",cat:"Cama Europea",may:160000,min:200000,stock:0,minStock:1},
+  {id:2002,nombre:"Base Div Cannon",marca:"Cannon",cat:"Base",may:0,min:0,stock:1,minStock:2},
+  {id:2003,nombre:"Almohada Cannon Feather Blend 50x70",marca:"Cannon",cat:"Almohada",may:13000,min:24000,stock:6,minStock:3},
+  {id:2004,nombre:"Pack Almohadas Cannon Feather Blend",marca:"Cannon",cat:"Almohada",may:18000,min:24000,stock:0,minStock:1},
+  {id:2005,nombre:"Plumón Patagónico Cannon 2P",marca:"Cannon",cat:"Plumón",may:25000,min:30000,stock:6,minStock:2},
+  {id:2006,nombre:"Plumón Patagónico Cannon 1.5P",marca:"Cannon",cat:"Plumón",may:20000,min:25000,stock:2,minStock:2},
+  {id:2007,nombre:"Plumón Patagónico Cannon King",marca:"Cannon",cat:"Plumón",may:30000,min:35000,stock:5,minStock:2},
+  {id:2008,nombre:"Plumón Térmico Cannon 2P",marca:"Cannon",cat:"Plumón",may:25000,min:30000,stock:5,minStock:2},
+  {id:2009,nombre:"Velador Duero Cannon",marca:"Cannon",cat:"Velador",may:41000,min:60000,stock:17,minStock:2},
+  {id:2010,nombre:"Respaldo Duero Cannon 2P",marca:"Cannon",cat:"Respaldo",may:70000,min:99990,stock:27,minStock:3},
+
+  // ==== Flex ====
+  {id:3001,nombre:"Flex Terracobre King",marca:"Flex",cat:"Colchón",may:330000,min:400000,stock:5,minStock:2},
+  {id:3002,nombre:"Flex Terracobre 150x190",marca:"Flex",cat:"Colchón",may:200000,min:250000,stock:9,minStock:2},
+  {id:3003,nombre:"Flex Terracobre 150x200",marca:"Flex",cat:"Colchón",may:200000,min:250000,stock:5,minStock:2},
+  {id:3004,nombre:"Flex Terracobre 2.0PL BOX",marca:"Flex",cat:"Colchón",may:210000,min:255000,stock:5,minStock:2},
+  {id:3005,nombre:"Flex Majesty King",marca:"Flex",cat:"Colchón",may:380000,min:450000,stock:3,minStock:2,notas:"2 disponibles + 1 en exhibición"},
+  {id:3006,nombre:"Flex Majesty 2.0PL (150x190)",marca:"Flex",cat:"Colchón",may:260000,min:320000,stock:1,minStock:2},
+  {id:3007,nombre:"Flex Titanium 1PL",marca:"Flex",cat:"Colchón",may:105000,min:130000,stock:2,minStock:2},
+  {id:3008,nombre:"Flex Resort Inn King",marca:"Flex",cat:"Colchón",may:0,min:0,stock:2,minStock:2},
+  {id:3009,nombre:"Flex Resort Inn SuperKing",marca:"Flex",cat:"Colchón",may:0,min:0,stock:2,minStock:2},
+  {id:3010,nombre:"Flex SportVisco King",marca:"Flex",cat:"Colchón",may:100000,min:125000,stock:2,minStock:2},
+  {id:3011,nombre:"Flex SportVisco 1.5PL BOX",marca:"Flex",cat:"Colchón",may:100000,min:125000,stock:2,minStock:2},
+  {id:3012,nombre:"Flex Oslo King",marca:"Flex",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+  {id:3013,nombre:"Flex Therapedic King",marca:"Flex",cat:"Colchón",may:200000,min:250000,stock:1,minStock:2},
+  {id:3014,nombre:"Flex Therapedic 1.5PL",marca:"Flex",cat:"Colchón",may:75000,min:90000,stock:2,minStock:2},
+  {id:3015,nombre:"Flex Nine King",marca:"Flex",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+  {id:3016,nombre:"Flex Eternity King",marca:"Flex",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+  {id:3017,nombre:"Flex Black King",marca:"Flex",cat:"Colchón",may:300000,min:380000,stock:2,minStock:2},
+  {id:3018,nombre:"Velador Verna Flex IZQ",marca:"Flex",cat:"Velador",may:40000,min:50000,stock:13,minStock:2},
+
+  // ==== Rosen ====
+  {id:4001,nombre:"Rosen Swag 105x190",marca:"Rosen",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+  {id:4012,nombre:"Rosen Ergo-t 150x190 (2 plazas)",marca:"Rosen",cat:"Colchón",may:110000,min:130000,stock:4,minStock:2},
+  {id:4002,nombre:"Respaldo Madrid 2P Rosen",marca:"Rosen",cat:"Respaldo",may:30000,min:40000,stock:1,minStock:2},
+  {id:4003,nombre:"Respaldo Barcelona 2P Rosen",marca:"Rosen",cat:"Respaldo",may:40000,min:50000,stock:0,minStock:2},
+  {id:4004,nombre:"Respaldo Mérida King Rosen",marca:"Rosen",cat:"Respaldo",may:78000,min:89990,stock:10,minStock:2},
+  {id:4005,nombre:"Respaldo Mérida 2P Rosen",marca:"Rosen",cat:"Respaldo",may:70000,min:89990,stock:12,minStock:2},
+  {id:4006,nombre:"Respaldo Vera King Rosen",marca:"Rosen",cat:"Respaldo",may:75000,min:99990,stock:9,minStock:2},
+  {id:4007,nombre:"Respaldo Doménico King Rosen",marca:"Rosen",cat:"Respaldo",may:60000,min:75000,stock:13,minStock:2},
+  {id:4008,nombre:"Velador Barcelona Rosen",marca:"Rosen",cat:"Velador",may:39000,min:55000,stock:47,minStock:5},
+  {id:4009,nombre:"Velador Sevilla Rosen",marca:"Rosen",cat:"Velador",may:36500,min:50000,stock:28,minStock:5},
+  {id:4010,nombre:"Velador Mérida Rosen",marca:"Rosen",cat:"Velador",may:41000,min:60000,stock:165,minStock:5},
+  {id:4011,nombre:"Velador Valencia Rosen",marca:"Rosen",cat:"Velador",may:36500,min:50000,stock:31,minStock:5},
+
+  // ==== CIC ====
+  {id:5001,nombre:"CIC Excellence Plus 90x190",marca:"CIC",cat:"Colchón",may:0,min:0,stock:2,minStock:2},
+  {id:5002,nombre:"CIC Ortopedic 90x190",marca:"CIC",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+
+  // ==== Drom ====
+  {id:6001,nombre:"Drom Linne SuperKing",marca:"Drom",cat:"Colchón",may:0,min:0,stock:1,minStock:2},
+];
+
+// Ventas Mayo 2026
+const VENTAS_DEFAULT = [
+  {id:20001,fecha:'2026-05-02',tipo:'min',cliente:'Cristina Díaz',tel:'51815075',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:200000,notas:'',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000}],subtotal:200000,total:200000,saldo:0},
+  {id:20002,fecha:'2026-05-02',tipo:'min',cliente:'Victor Lopez Garrido',tel:'82166382',vendedor:'Isaías',pago:'Tarjeta',desp:20000,despCalle:'Lautaro',despNumero:'100473',despComuna:'San Ramón',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:234990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus 150x200',qty:1,precio:234990}],subtotal:234990,total:234990,saldo:0},
+  {id:20003,fecha:'2026-05-02',tipo:'min',cliente:'Karla Soto Brito',tel:'45530111',vendedor:'Isaías',pago:'Tarjeta',desp:20000,despCalle:'Inglaterra',despNumero:'59, Depto 1513',despComuna:'La Florida',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:470000,notas:'Respaldo Grafito Líneas',items:[{prodId:null,desc:'Cama Europea Flex Majesty + Respaldo (2 Plazas, Respaldo Grafito Líneas)',qty:1,precio:470000}],subtotal:470000,total:470000,saldo:0},
+  {id:20004,fecha:'2026-05-02',tipo:'min',cliente:'Melanie Carvajal',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:290000,notas:'',items:[{prodId:null,desc:'Cama Baúl Infinity Plus 1.05x190',qty:1,precio:290000}],subtotal:290000,total:290000,saldo:0},
+  {id:20005,fecha:'2026-05-02',tipo:'min',cliente:'María Vivenes',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:124990,notas:'',items:[{prodId:null,desc:'Infinity Soft 90x190',qty:1,precio:64990},{prodId:null,desc:'Futón',qty:1,precio:60000}],subtotal:124990,total:124990,saldo:0},
+  {id:20006,fecha:'2026-05-02',tipo:'min',cliente:'Indi Agelvis',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-02',cancelado:149990,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x200',qty:1,precio:149990}],subtotal:149990,total:149990,saldo:0},
+  {id:20007,fecha:'2026-05-04',tipo:'min',cliente:'Paola Oyarzún',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-04',cancelado:200000,notas:'',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000}],subtotal:200000,total:200000,saldo:0},
+  {id:20008,fecha:'2026-05-06',tipo:'min',cliente:'Francisca Santana',tel:'92522829',vendedor:'Isaías',pago:'Transferencia',desp:40000,despCalle:'Alberto Undurraga',despNumero:'1780',despComuna:'Huechuraba',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-06',cancelado:640000,notas:'',items:[{prodId:null,desc:'Base Baúl 150x190',qty:1,precio:230000},{prodId:null,desc:'Base Baúl 150x200',qty:1,precio:230000},{prodId:null,desc:'Base Baúl 105x190',qty:1,precio:180000}],subtotal:640000,total:640000,saldo:0},
+  {id:20009,fecha:'2026-05-11',tipo:'min',cliente:'Yvanna Kazinczi',tel:'66893233',vendedor:'Daniela',pago:'Tarjeta',desp:20000,despCalle:'Paso El Roble',despNumero:'50, Depto 905',despComuna:'La Florida',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-11',cancelado:220000,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Soft + Respaldo 150x190',qty:1,precio:220000}],subtotal:220000,total:220000,saldo:0},
+  {id:20010,fecha:'2026-05-05',tipo:'min',cliente:'Veronica Santibañez',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-05',cancelado:350000,notas:'',items:[{prodId:null,desc:'Cama Europea Flex Terracobre 2.0PL',qty:1,precio:350000}],subtotal:350000,total:350000,saldo:0},
+  {id:20011,fecha:'2026-05-05',tipo:'min',cliente:'Ana Golzio',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Tarde (15:00 - 18:00)',estado:'despachado',fechaDesp:'2026-05-05',cancelado:460000,notas:'Despacho a las 15:00',items:[{prodId:null,desc:'Cama Europea Flex Terracobre + Respaldo 2.0PL',qty:1,precio:400000},{prodId:null,desc:'Futón Morado',qty:1,precio:60000}],subtotal:460000,total:460000,saldo:0},
+  {id:20012,fecha:'2026-05-05',tipo:'min',cliente:'Constanza Mateluna',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-05',cancelado:250000,notas:'',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000},{prodId:null,desc:'Respaldo 2 Plazas',qty:1,precio:50000}],subtotal:250000,total:250000,saldo:0},
+  {id:20013,fecha:'2026-05-05',tipo:'may',cliente:'Victor Torres',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-05',cancelado:290000,notas:'',items:[{prodId:null,desc:'Infinity Plus 105x190',qty:2,precio:90000},{prodId:null,desc:'Rosen Ergo-t 150x190 (2 plazas)',qty:1,precio:110000}],subtotal:290000,total:290000,saldo:0},
+  {id:20014,fecha:'2026-05-06',tipo:'min',cliente:'Sylvya Salinaz',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-06',cancelado:320000,notas:'',items:[{prodId:null,desc:'Flex Majesty 2.0PL (150x190)',qty:1,precio:320000}],subtotal:320000,total:320000,saldo:0},
+  {id:20015,fecha:'2026-05-08',tipo:'min',cliente:'Nicolle Jara',tel:'',vendedor:'Daniela',pago:'Crédito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-08',cancelado:244990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 105x190',qty:1,precio:194990},{prodId:null,desc:'Velador Valencia Rosen',qty:1,precio:50000}],subtotal:244990,total:244990,saldo:0},
+  {id:20016,fecha:'2026-05-08',tipo:'min',cliente:'Elizabeth Bravo',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-08',cancelado:50,notas:'paga pendiente de 150.000. abono 50.000',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000}],subtotal:200000,total:200000,saldo:199950},
+  {id:20017,fecha:'2026-05-08',tipo:'min',cliente:'Victor Carcamo',tel:'',vendedor:'Daniela',pago:'Transferencia',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-08',cancelado:0,notas:'',items:[{prodId:null,desc:'Rosen Ergo-t 150x190 (2 plazas)',qty:1,precio:130000}],subtotal:130000,total:130000,saldo:130000},
+  {id:20018,fecha:'2026-05-08',tipo:'min',cliente:'Marco Marchan',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-08',cancelado:79990,notas:'',items:[{prodId:null,desc:'Infinity Soft 105x190',qty:1,precio:79990}],subtotal:79990,total:79990,saldo:0},
+  {id:20019,fecha:'2026-05-09',tipo:'min',cliente:'Jessika Navarro Jara',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:20,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-09',cancelado:284990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 150x190',qty:1,precio:284990}],subtotal:284990,total:284990,saldo:0},
+  {id:20020,fecha:'2026-05-09',tipo:'min',cliente:'Elizabeth Bravo Jara',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-09',cancelado:200000,notas:'',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000}],subtotal:200000,total:200000,saldo:0},
+  {id:20021,fecha:'2026-05-09',tipo:'min',cliente:'Fabian Espinoza',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-09',cancelado:109990,notas:'',items:[{prodId:null,desc:'Infinity Soft 150x190',qty:1,precio:109990}],subtotal:109990,total:109990,saldo:0},
+  {id:20022,fecha:'2026-05-11',tipo:'min',cliente:'Luis Gatica',tel:'',vendedor:'Daniela',pago:'Débito',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-11',cancelado:479990,notas:'',items:[{prodId:null,desc:'Velador Verna Flex IZQ',qty:2,precio:50000},{prodId:null,desc:'Sofá L',qty:1,precio:0},{prodId:null,desc:'Cama Europea Infinity Plus 2PL',qty:1,precio:379990}],subtotal:479990,total:479990,saldo:0},
+  {id:20023,fecha:'2026-05-11',tipo:'min',cliente:'Juan Gajardo',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-11',cancelado:137000,notas:'',items:[{prodId:null,desc:'Pack Almohadas Cannon Feather Blend',qty:1,precio:24000},{prodId:null,desc:'Rosen Ergo-t 105x190',qty:1,precio:100000},{prodId:null,desc:'Almohada Cannon Feather Blend 50x70',qty:1,precio:13000}],subtotal:137000,total:137000,saldo:0},
+  {id:20024,fecha:'2026-05-11',tipo:'min',cliente:'Lorena Arellano Abarca',tel:'',vendedor:'Daniela',pago:'Débito',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-11',cancelado:270000,notas:'Despacho en Efectivo o Transferencia',items:[{prodId:null,desc:'Flex Terracobre 150x190',qty:1,precio:250000}],subtotal:250000,total:250000,saldo:0},
+  {id:20025,fecha:'2026-05-11',tipo:'may',cliente:'Seba',tel:'',vendedor:'Isaías',pago:'Transferencia',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-11',cancelado:407000,notas:'',items:[{prodId:null,desc:'Velador Mérida Rosen',qty:2,precio:41000},{prodId:null,desc:'Flex Therapedic 1.5PL',qty:1,precio:75000},{prodId:null,desc:'Futón segunda',qty:1,precio:0},{prodId:null,desc:'Sofá L',qty:1,precio:0},{prodId:null,desc:'Plumón Patagónico Cannon 1.5P',qty:1,precio:20000},{prodId:null,desc:'Plumón Patagónico Cannon King',qty:2,precio:30000},{prodId:null,desc:'Plumón Patagónico Cannon 2P',qty:1,precio:25000}],subtotal:407000,total:407000,saldo:0},
+  {id:20026,fecha:'2026-05-12',tipo:'min',cliente:'Ivonne Vera',tel:'',vendedor:'Isaías',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-12',cancelado:65000,notas:'',items:[{prodId:null,desc:'Base Europea 105x190',qty:1,precio:65000}],subtotal:65000,total:65000,saldo:0},
+  {id:20027,fecha:'2026-05-12',tipo:'min',cliente:'Adriana Fuentealba Sáez',tel:'',vendedor:'Isaías',pago:'Débito',desp:25000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-12',cancelado:0,notas:'',items:[{prodId:null,desc:'Velador Sevilla Rosen',qty:3,precio:36500},{prodId:null,desc:'Velador Valencia Rosen',qty:2,precio:36500}],subtotal:250000,total:250000,saldo:250000},
+  {id:20028,fecha:'2026-05-12',tipo:'min',cliente:'Mauricio Salinas',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-12',cancelado:219990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Soft + Respaldo 150x190',qty:1,precio:219990}],subtotal:219990,total:219990,saldo:0},
+  {id:20029,fecha:'2026-05-12',tipo:'min',cliente:'Paola Tobar',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-12',cancelado:109990,notas:'',items:[{prodId:null,desc:'Infinity Plus 105x190',qty:1,precio:109990}],subtotal:109990,total:109990,saldo:0},
+  {id:20030,fecha:'2026-05-12',tipo:'min',cliente:'Gustavo Pineda',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-12',cancelado:64990,notas:'',items:[{prodId:null,desc:'Infinity Soft 90x190',qty:1,precio:64990}],subtotal:64990,total:64990,saldo:0},
+  {id:20031,fecha:'2026-05-12',tipo:'min',cliente:'Rose Candia',tel:'',vendedor:'Daniela',pago:'Débito',desp:25000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-12',cancelado:159990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Soft + Respaldo 105x190',qty:1,precio:159990}],subtotal:159990,total:159990,saldo:0},
+  {id:20032,fecha:'2026-05-13',tipo:'min',cliente:'Hector Mora',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-13',cancelado:194990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo Rosen Tabor 105x200',qty:1,precio:194990}],subtotal:194990,total:194990,saldo:0},
+  {id:20033,fecha:'2026-05-13',tipo:'may',cliente:'Paisano Chico',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-13',cancelado:750000,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x190',qty:2,precio:120000},{prodId:null,desc:'Infinity Soft 105x190',qty:3,precio:65000},{prodId:null,desc:'Base 105x190',qty:3,precio:0},{prodId:null,desc:'Rosen Ergo-t 105x190',qty:2,precio:110000}],subtotal:750000,total:750000,saldo:0},
+  {id:20034,fecha:'2026-05-13',tipo:'min',cliente:'José Ascencio',tel:'',vendedor:'Isaías',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-13',cancelado:659990,notas:'',items:[{prodId:null,desc:'Cama Europea Flex Majesty King Box',qty:1,precio:520000},{prodId:null,desc:'Respaldo Vera King Rosen',qty:1,precio:99990},{prodId:null,desc:'Velador Mérida Rosen',qty:1,precio:40000}],subtotal:659990,total:659990,saldo:0},
+  {id:20035,fecha:'2026-05-13',tipo:'min',cliente:'Charissa Arenas',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-13',cancelado:0,notas:'',items:[{prodId:null,desc:'Cama Cannon Still 2.0 PL 150x200',qty:1,precio:200000}],subtotal:200000,total:200000,saldo:200000},
+  {id:20036,fecha:'2026-05-14',tipo:'min',cliente:'Nassira Ábila',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:25000,despCalle:'',despNumero:'',despComuna:'Depto. 408',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-14',cancelado:634970,notas:'Depto. 408',items:[{prodId:null,desc:'Cama Europea Infinity Soft + Respaldo 150x190',qty:2,precio:219990},{prodId:null,desc:'Cama Europea Rosen Ergo-t + Respaldo 105x190',qty:1,precio:194990}],subtotal:634970,total:634970,saldo:0},
+  {id:20037,fecha:'2026-05-14',tipo:'min',cliente:'Makarena Ávila',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-14',cancelado:64990,notas:'',items:[{prodId:null,desc:'Infinity Soft 90x190',qty:1,precio:64990}],subtotal:64990,total:64990,saldo:0},
+  {id:20038,fecha:'2026-05-14',tipo:'min',cliente:'Cecilia Carvajal',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:25000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-14',cancelado:10000,notas:'',items:[{prodId:null,desc:'Medida especial 103x180x15',qty:1,precio:85000},{prodId:null,desc:'Medida especial 105x190x23',qty:1,precio:100000}],subtotal:185000,total:185000,saldo:175000},
+  {id:20039,fecha:'2026-05-15',tipo:'min',cliente:'Angie Morillo',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:1,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:159990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Soft 105x190',qty:1,precio:159990}],subtotal:159990,total:159990,saldo:0},
+  {id:20040,fecha:'2026-05-15',tipo:'min',cliente:'Marcela Morales',tel:'',vendedor:'Daniela',pago:'Crédito',desp:1,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:354980,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus 90x190',qty:1,precio:194990},{prodId:null,desc:'Infinity Plus 90x190',qty:1,precio:84990},{prodId:null,desc:'Base Baúl 90x190',qty:1,precio:75000}],subtotal:354980,total:354980,saldo:0},
+  {id:20041,fecha:'2026-05-15',tipo:'min',cliente:'Yamna Achui Soto',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:30000,notas:'',items:[{prodId:null,desc:'Respaldo 1.5PL',qty:1,precio:30000}],subtotal:30000,total:30000,saldo:0},
+  {id:20042,fecha:'2026-05-15',tipo:'min',cliente:'IM Company',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:124990,notas:'',items:[{prodId:null,desc:'Soft 105x200',qty:1,precio:105990},{prodId:null,desc:'Base Flex 90x190',qty:1,precio:19000}],subtotal:124990,total:124990,saldo:0},
+  {id:20043,fecha:'2026-05-15',tipo:'min',cliente:'Orianna Perez Bascuñan',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:25000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-15',cancelado:0,notas:'Despacho $25.000',items:[{prodId:null,desc:'Infinity Soft 105x190',qty:2,precio:79990}],subtotal:159980,total:159980,saldo:159980},
+  {id:20044,fecha:'2026-05-15',tipo:'min',cliente:'Evelyn Contreras',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:20000,despCalle:'',despNumero:'',despComuna:'Av. Matta con Santa Elena',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:420000,notas:'Av. Matta con Santa Elena',items:[{prodId:null,desc:'Cama Europea Flex Terracobre King',qty:1,precio:420000}],subtotal:420000,total:420000,saldo:0},
+  {id:20045,fecha:'2026-05-15',tipo:'min',cliente:'Sergio Salazar',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-15',cancelado:255000,notas:'',items:[{prodId:null,desc:'Flex Terracobre 2.0PL BOX',qty:1,precio:255000}],subtotal:255000,total:255000,saldo:0},
+  {id:20046,fecha:'2026-05-16',tipo:'min',cliente:'Miguel Maldonado',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-16',cancelado:140000,notas:'',items:[{prodId:null,desc:'CIC Ortopedic 150x190',qty:1,precio:140000}],subtotal:140000,total:140000,saldo:0},
+  {id:20047,fecha:'2026-05-18',tipo:'min',cliente:'Alexander Rodriguez',tel:'',vendedor:'Isaías',pago:'Mixto',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-18',cancelado:1039970,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 105x190',qty:2,precio:194990},{prodId:null,desc:'Cama Europea Flex Majesty',qty:1,precio:470000},{prodId:null,desc:'Juego de Muebles Cannon Duero',qty:1,precio:180000}],subtotal:1039970,total:1039970,saldo:0},
+  {id:20048,fecha:'2026-05-18',tipo:'min',cliente:'Luis Felipe Rodriguez',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-18',cancelado:364990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 90x190',qty:1,precio:164990},{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 105x190',qty:1,precio:194990}],subtotal:359980,total:359980,saldo:0},
+  {id:20049,fecha:'2026-05-18',tipo:'may',cliente:'Mauri Paisa',tel:'',vendedor:'Isaías',pago:'Mixto',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-18',cancelado:816725,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x190',qty:3,precio:120000},{prodId:null,desc:'Infinity Soft 150x190',qty:3,precio:90000},{prodId:null,desc:'Infinity Plus 105x190',qty:6,precio:90000},{prodId:null,desc:'Rosen Ergo-t 105x190',qty:1,precio:110000},{prodId:null,desc:'Flex Oslo King',qty:1,precio:0},{prodId:null,desc:'Infinity Soft 90x190',qty:1,precio:55000}],subtotal:1525000,total:1525000,saldo:708275},
+  {id:20050,fecha:'2026-05-18',tipo:'may',cliente:'Fabiola Camas',tel:'',vendedor:'Isaías',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-18',cancelado:975000,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x190',qty:1,precio:120000},{prodId:null,desc:'Base Div. 150x190',qty:3,precio:0},{prodId:null,desc:'Base 90x190',qty:2,precio:0},{prodId:null,desc:'Cama Europea Flex Black King',qty:1,precio:380000},{prodId:null,desc:'Flex Titanium 1PL',qty:1,precio:105000},{prodId:null,desc:'Flex Majesty 90x190',qty:1,precio:370000}],subtotal:975000,total:975000,saldo:0},
+  {id:20051,fecha:'2026-05-18',tipo:'min',cliente:'Nancy',tel:'',vendedor:'Daniela',pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-18',cancelado:130000,notas:'',items:[{prodId:null,desc:'Cannon Still 150x190',qty:1,precio:130000}],subtotal:130000,total:130000,saldo:0},
+  {id:20052,fecha:'2026-05-19',tipo:'min',cliente:'Miguel Olea',tel:'',vendedor:'Daniela',pago:'Débito',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-19',cancelado:100000,notas:'Respaldo a piso - Abono 100.000',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 150x190',qty:1,precio:259990},{prodId:null,desc:'Respaldo a piso',qty:1,precio:20000}],subtotal:279990,total:279990,saldo:179990},
+  {id:20053,fecha:'2026-05-19',tipo:'min',cliente:'Yanina San Martin',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-19',cancelado:168990,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x200',qty:1,precio:144990},{prodId:null,desc:'Almohada Cannon Feather Blend 50x70',qty:1,precio:24000}],subtotal:168990,total:168990,saldo:0},
+  {id:20054,fecha:'2026-05-20',tipo:'min',cliente:'Jesus Crealozza',tel:'',vendedor:'Daniela',pago:'Transferencia',desp:20000,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'pendiente',fechaDesp:'2026-05-20',cancelado:0,notas:'',items:[{prodId:null,desc:'Infinity Plus 150x190',qty:1,precio:144990}],subtotal:144990,total:144990,saldo:144990},
+  {id:20055,fecha:'2026-05-20',tipo:'min',cliente:'Flor Dias',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-20',cancelado:220000,notas:'',items:[{prodId:null,desc:'Base Baúl 1.5x2.0',qty:1,precio:180000},{prodId:null,desc:'Respaldo 1.5 a piso',qty:1,precio:40000}],subtotal:220000,total:220000,saldo:0},
+  {id:20056,fecha:'2026-05-20',tipo:'min',cliente:'Francisco Macias',tel:'',vendedor:'Daniela',pago:'Crédito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-20',cancelado:384000,notas:'',items:[{prodId:null,desc:'Base Baúl 1.5x190',qty:1,precio:180000},{prodId:null,desc:'Respaldo a piso 1.5',qty:1,precio:40000},{prodId:null,desc:'Colchón CIC 1.5x190',qty:1,precio:116000},{prodId:null,desc:'Almohadas x2',qty:1,precio:48000}],subtotal:384000,total:384000,saldo:0},
+  {id:20057,fecha:'2026-05-20',tipo:'min',cliente:'Maria Macia',tel:'',vendedor:'Daniela',pago:'Débito',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-20',cancelado:50000,notas:'',items:[{prodId:null,desc:'Base completa 2.0x190',qty:1,precio:50000}],subtotal:50000,total:50000,saldo:0},
+  {id:20058,fecha:'2026-05-21',tipo:'min',cliente:'Leidy Ulloa',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-21',cancelado:259990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 150x190',qty:1,precio:259990}],subtotal:259990,total:259990,saldo:0},
+  {id:20059,fecha:'2026-05-22',tipo:'min',cliente:'Alvaro Betanza',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-22',cancelado:229990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus 150x190',qty:1,precio:229990}],subtotal:229990,total:229990,saldo:0},
+  {id:20060,fecha:'2026-05-22',tipo:'min',cliente:'Alejandro Bley',tel:'',vendedor:'Daniela',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-22',cancelado:74990,notas:'',items:[{prodId:null,desc:'Infinity Soft 90x190',qty:1,precio:74990}],subtotal:74990,total:74990,saldo:0},
+  {id:20061,fecha:'2026-05-23',tipo:'min',cliente:'Catherine Cabello Garrido',tel:'',vendedor:'Daniela',pago:'Mixto',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-23',cancelado:584000,notas:'',items:[{prodId:null,desc:'Cama Europea Cannon Pocket + Respaldo King',qty:1,precio:400000},{prodId:null,desc:'Cama Europea CIC Ortopedic + Respaldo 1.5PL',qty:1,precio:160000},{prodId:null,desc:'Pack Almohadas Cannon Feather Blend',qty:1,precio:24000}],subtotal:584000,total:584000,saldo:0},
+  {id:20062,fecha:'2026-05-25',tipo:'min',cliente:'Luis Castro',tel:'',vendedor:'Isaías',pago:'Transferencia',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-25',cancelado:259990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 150x190',qty:1,precio:259990}],subtotal:259990,total:259990,saldo:0},
+  {id:20063,fecha:'2026-05-25',tipo:'min',cliente:'Pablo Valdebenito',tel:'',vendedor:'Isaías',pago:'Tarjeta',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',estado:'despachado',fechaDesp:'2026-05-25',cancelado:269990,notas:'',items:[{prodId:null,desc:'Cama Europea Infinity Plus + Respaldo 150x190',qty:1,precio:269990}],subtotal:269990,total:269990,saldo:0},
+];
+
+
+// =========== ESTADO GLOBAL ===========
+let inventario=[];
+let ventas=[];
+
+// =========== HELPERS ===========
+const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const today=()=>new Date().toISOString().slice(0,10);
+function uid(){return'id'+Date.now()+Math.floor(Math.random()*1000);}
+
+// =========== INIT FIREBASE ===========
+async function initFirebase(){
+  document.getElementById('loading').style.display='flex';
+  try{
+    const invSnap=await getDocs(collection(db,'inventario'));
+    if(invSnap.empty){
+      const batch=writeBatch(db);
+      INVENTARIO_DEFAULT.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));
+      await batch.commit();
+      inventario=[...INVENTARIO_DEFAULT];
+    }else{
+      inventario=invSnap.docs.map(d=>d.data());
+    }
+    const vtaSnap=await getDocs(collection(db,'ventas'));
+    if(vtaSnap.empty){
+      const batch=writeBatch(db);
+      VENTAS_DEFAULT.forEach(v=>batch.set(doc(db,'ventas',String(v.id)),v));
+      await batch.commit();
+      ventas=[...VENTAS_DEFAULT];
+    }else{
+      ventas=vtaSnap.docs.map(d=>d.data()).filter(v=>!v.cliente.toLowerCase().includes('prueba'));
+      const ids=new Set(ventas.map(v=>String(v.id)));
+      const nuevas=VENTAS_DEFAULT.filter(v=>!ids.has(String(v.id)));
+      if(nuevas.length){
+        const batch=writeBatch(db);
+        nuevas.forEach(v=>batch.set(doc(db,'ventas',String(v.id)),v));
+        await batch.commit();
+        ventas=[...ventas,...nuevas];
+      }
+    }
+    onSnapshot(collection(db,'inventario'),snap=>{
+      inventario=snap.docs.map(d=>d.data());
+      renderInv();
+    });
+    onSnapshot(collection(db,'ventas'),snap=>{
+      ventas=snap.docs.map(d=>d.data()).filter(v=>!v.cliente.toLowerCase().includes('prueba'));
+      const tab=document.querySelector('.nav-btn.active');
+      if(tab){const t=tab.getAttribute('onclick').match(/'(\w+)'/);if(t&&t[1]==='ventas')renderVentas();}
+    });
+  }catch(e){
+    alert('Error conectando a Firebase: '+e.message);
+    inventario=[...INVENTARIO_DEFAULT];
+    ventas=[...VENTAS_DEFAULT];
+  }
+  document.getElementById('loading').style.display='none';
+  renderInv();
+  renderVentas();
+}
+initFirebase();
+
+// =========== TABS ===========
+function setTab(t){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  event.target.classList.add('active');
+  if(t==='inventario')renderInv();
+  if(t==='ventas')renderVentas();
+  if(t==='despachos')renderDespachos();
+  if(t==='resumen')renderResumen();
+}
+
+// =========== MODALS ===========
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+// =========== INVENTARIO ===========
+let editProdId=null;
+
+function fillFiltrosInv(){
+  const marcas=[...new Set(inventario.map(p=>p.marca).filter(Boolean))].sort();
+  const cats=[...new Set(inventario.map(p=>p.cat).filter(Boolean))].sort();
+  const sm=document.getElementById('inv-marca');
+  const sc=document.getElementById('inv-cat');
+  const dm=document.getElementById('marca-list');
+  sm.innerHTML='<option value="">Todas las marcas</option>'+marcas.map(m=>`<option>${m}</option>`).join('');
+  sc.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  dm.innerHTML=marcas.map(m=>`<option>${m}</option>`).join('');
+}
+
+function renderInv(){
+  fillFiltrosInv();
+  const q=document.getElementById('inv-search').value.toLowerCase();
+  const fm=document.getElementById('inv-marca').value;
+  const fc=document.getElementById('inv-cat').value;
+  let items=inventario.filter(p=>{
+    if(q&&!(p.nombre+' '+p.marca).toLowerCase().includes(q))return false;
+    if(fm&&p.marca!==fm)return false;
+    if(fc&&p.cat!==fc)return false;
+    return true;
+  });
+
+  // Stats
+  const totalUnidades=items.reduce((a,p)=>a+(parseInt(p.stock)||0),0);
+  const valorMin=items.reduce((a,p)=>a+(parseInt(p.stock)||0)*(parseInt(p.min)||0),0);
+  const sinStock=items.filter(p=>(parseInt(p.stock)||0)<=0).length;
+  const bajoStock=items.filter(p=>{const s=parseInt(p.stock)||0;const m=parseInt(p.minStock)||2;return s>0&&s<=m}).length;
+
+  document.getElementById('inv-stats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">Productos</div><div class="stat-val">${items.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Unidades totales</div><div class="stat-val">${totalUnidades}</div></div>
+    <div class="stat"><div class="stat-lbl">Valor inventario</div><div class="stat-val" style="font-size:15px">${fmt(valorMin)}</div></div>
+    <div class="stat"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>`;
+
+  if(!items.length){
+    document.getElementById('inv-list').innerHTML='<div class="empty">No hay productos. Toca "+ Agregar producto" para empezar.</div>';
+    return;
+  }
+
+  // Group by category
+  const grupos={};
+  items.forEach(p=>{const c=p.cat||'Sin categoría';if(!grupos[c])grupos[c]=[];grupos[c].push(p)});
+
+  let html='';
+  Object.keys(grupos).sort().forEach(cat=>{
+    html+=`<h4 style="margin:12px 0 8px;font-size:13px;color:#57534e">${cat} <span class="pill">${grupos[cat].length}</span></h4>`;
+    grupos[cat].sort((a,b)=>(a.marca||'').localeCompare(b.marca||'')||a.nombre.localeCompare(b.nombre)).forEach(p=>{
+      const stock=parseInt(p.stock)||0;
+      const minStock=parseInt(p.minStock)||2;
+      const stockTag=stock<=0?'tag-stock-out':stock<=minStock?'tag-stock-low':'tag-stock-ok';
+      const stockTxt=stock<=0?'Sin stock':stock<=minStock?`${stock} u (bajo)`:`${stock} u`;
+      html+=`<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1;cursor:pointer" onclick="editProd(${p.id})">
+            <h4>${p.nombre}</h4>
+            <div style="margin-top:3px"><span class="pill">${p.marca||'—'}</span> <span class="tag ${stockTag}">${stockTxt}</span></div>
+            ${p.notas?`<div class="muted" style="font-size:11px;margin-top:4px;font-style:italic">${p.notas}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;color:#a87f3e">May ${fmt(p.may||0)}</div>
+            <div style="font-size:11px;color:#1e40af">Min ${fmt(p.min||0)}</div>
+            <div style="margin-top:6px;display:flex;gap:4px;justify-content:flex-end">
+              <button onclick="event.stopPropagation();editProd(${p.id})" style="padding:4px 8px;font-size:10px;background:#fff;color:#a87f3e;border:1px solid #a87f3e;border-radius:6px;cursor:pointer">✏️</button>
+              <button onclick="event.stopPropagation();delProdDirect(${p.id})" style="padding:4px 8px;font-size:10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+  });
+  document.getElementById('inv-list').innerHTML=html;
+}
+
+function openProd(){
+  editProdId=null;
+  document.getElementById('prod-title').textContent='Agregar producto';
+  document.getElementById('p-nombre').value='';
+  document.getElementById('p-marca').value='';
+  document.getElementById('p-cat').value='Colchón';
+  document.getElementById('p-may').value='';
+  document.getElementById('p-min').value='';
+  document.getElementById('p-stock').value='0';
+  document.getElementById('p-min-stock').value='2';
+  document.getElementById('p-notas').value='';
+  document.getElementById('del-prod-btn').style.display='none';
+  openModal('modal-prod');
+}
+
+function editProd(id){
+  const p=inventario.find(x=>x.id===id);
+  if(!p)return;
+  editProdId=id;
+  document.getElementById('prod-title').textContent='Editar producto';
+  document.getElementById('p-nombre').value=p.nombre;
+  document.getElementById('p-marca').value=p.marca||'';
+  document.getElementById('p-cat').value=p.cat||'Otro';
+  document.getElementById('p-may').value=p.may||'';
+  document.getElementById('p-min').value=p.min||'';
+  document.getElementById('p-stock').value=p.stock||0;
+  document.getElementById('p-min-stock').value=p.minStock||2;
+  document.getElementById('p-notas').value=p.notas||'';
+  document.getElementById('del-prod-btn').style.display='inline-block';
+  openModal('modal-prod');
+}
+
+async function saveProd(){
+  const nombre=document.getElementById('p-nombre').value.trim();
+  if(!nombre){alert('El nombre es obligatorio');return}
+  const data={
+    nombre,
+    marca:document.getElementById('p-marca').value.trim(),
+    cat:document.getElementById('p-cat').value,
+    may:parseInt(document.getElementById('p-may').value)||0,
+    min:parseInt(document.getElementById('p-min').value)||0,
+    stock:parseInt(document.getElementById('p-stock').value)||0,
+    minStock:parseInt(document.getElementById('p-min-stock').value)||2,
+    notas:document.getElementById('p-notas').value.trim()
+  };
+  if(editProdId){
+    const i=inventario.findIndex(p=>p.id===editProdId);
+    if(i>=0)inventario[i]={...inventario[i],...data};
+  }else{
+    data.id=uid();
+    inventario.push(data);
+  }
+  await saveProdDB(data.id?data:{...data,id:editProdId||uid()});
+  closeModal('modal-prod');
+  renderInv();
+}
+
+async function delProd(){
+  if(!confirm('¿Eliminar este producto del inventario?'))return;
+  inventario=inventario.filter(p=>p.id!==editProdId);
+  await delProdDB(editProdId);
+  closeModal('modal-prod');
+  renderInv();
+}
+
+async function delProdDirect(id){
+  const p=inventario.find(x=>x.id===id);
+  if(!p)return;
+  if(!confirm('¿Eliminar "'+p.nombre+'" del inventario?'))return;
+  inventario=inventario.filter(x=>x.id!==id);
+  await delProdDB(id);
+  renderInv();
+}
+
+// =========== VENTAS ===========
+let editVentaId=null;
+let ventaItems=[];
+
+function updTipoVenta(){
+  const t=document.getElementById('vt-tipo').value;
+  document.getElementById('vt-rut-row').style.display=t==='may'?'grid':'none';
+  recalcTotal();
+}
+
+function toggleDespCampos(){
+  const desp=parseInt(document.getElementById('vt-desp').value)||0;
+  document.getElementById('vt-desp-campos').style.display=desp>0?'block':'none';
+}
+
+function addItem(prodId,qty,precio){
+  ventaItems.push({prodId:prodId||null,desc:'',qty:qty||1,precio:precio||0});
+  renderItems();
+}
+
+function rmItem(i){ventaItems.splice(i,1);renderItems()}
+
+function renderItems(){
+  const tipo=document.getElementById('vt-tipo').value;
+  const cont=document.getElementById('vt-items');
+  if(!ventaItems.length){cont.innerHTML='<div class="muted" style="font-size:12px;padding:6px 0">Sin productos. Toca "+ Agregar producto"</div>';recalcTotal();return}
+
+  let html='';
+  ventaItems.forEach((it,i)=>{
+    const opts=inventario.map(p=>{
+      const precio=tipo==='may'?p.may:p.min;
+      return `<option value="${p.id}" ${it.prodId===p.id?'selected':''}>${p.nombre} (${fmt(precio)})</option>`;
+    }).join('');
+    html+=`<div class="add-item-row">
+      <select onchange="selProd(${i},this.value)">
+        <option value="">— Producto del inventario o escribir manual —</option>
+        ${opts}
+      </select>
+      <input type="number" min="1" value="${it.qty}" onchange="updItem(${i},'qty',this.value)" placeholder="Cant">
+      <input type="number" value="${it.precio}" onchange="updItem(${i},'precio',this.value)" placeholder="Precio">
+      <button class="btn btn-danger btn-sm" onclick="rmItem(${i})" style="padding:4px 8px">×</button>
+    </div>
+    ${!it.prodId?`<input type="text" value="${it.desc||''}" onchange="updItem(${i},'desc',this.value)" placeholder="Descripción manual del producto" style="margin-bottom:6px">`:''}`;
+  });
+  cont.innerHTML=html;
+  recalcTotal();
+}
+
+function selProd(i,id){
+  if(!id){ventaItems[i].prodId=null;ventaItems[i].desc='';renderItems();return}
+  const p=inventario.find(x=>x.id===parseInt(id));
+  if(p){
+    const tipo=document.getElementById('vt-tipo').value;
+    ventaItems[i].prodId=p.id;
+    ventaItems[i].desc=p.nombre;
+    ventaItems[i].precio=tipo==='may'?p.may:p.min;
+  }
+  renderItems();
+}
+
+function updItem(i,k,v){
+  ventaItems[i][k]=k==='qty'||k==='precio'?parseInt(v)||0:v;
+  recalcTotal();
+}
+
+function recalcTotal(){
+  const sub=ventaItems.reduce((a,it)=>a+it.qty*it.precio,0);
+  document.getElementById('vt-subtotal').textContent=fmt(sub);
+  document.getElementById('vt-total').textContent=fmt(sub);
+  const cancelado=parseInt(document.getElementById('vt-cancelado').value)||0;
+  const saldo=Math.max(0,sub-cancelado);
+  document.getElementById('vt-saldo').value=saldo;
+}
+
+function sincFechaDesp(){
+  document.getElementById('vt-fecha-desp').value=today();
+}
+
+const ESTADO_CFG={
+  pendiente:{label:'Pendiente',emoji:'🟡',color:'#92400e',bg:'#fef3c7'},
+  pagado:{label:'Pagado',emoji:'🟠',color:'#9a3412',bg:'#fed7aa'},
+  despachado:{label:'Despachado',emoji:'🟢',color:'#166534',bg:'#dcfce7'},
+  cancelado:{label:'Cancelado',emoji:'🔴',color:'#991b1b',bg:'#fee2e2'},
+};
+function estadoTag(e){const c=ESTADO_CFG[e]||ESTADO_CFG.pendiente;return`<span style="display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;background:${c.bg};color:${c.color}">${c.emoji} ${c.label}</span>`}
+
+function openVenta(){
+  editVentaId=null;
+  ventaItems=[];
+  document.getElementById('venta-title').textContent='Nueva venta';
+  document.getElementById('vt-fecha').value=today();
+  document.getElementById('vt-fecha-desp').value=today();
+  document.getElementById('vt-estado').value='pendiente';
+  document.getElementById('vt-tipo').value='min';
+  document.getElementById('vt-cliente').value='';
+  document.getElementById('vt-rut').value='';
+  document.getElementById('vt-empresa').value='';
+  document.getElementById('vt-tel').value='';
+  document.getElementById('vt-vendedor').value='Isaías';
+  document.getElementById('vt-dir').value='';
+  document.getElementById('vt-pago').value='Efectivo';
+  document.getElementById('vt-desp').value='0';
+  document.getElementById('vt-calle').value='';
+  document.getElementById('vt-numero').value='';
+  document.getElementById('vt-comuna').value='';
+  document.getElementById('vt-hora').value='Sin preferencia';
+  document.getElementById('vt-cancelado').value='';
+  document.getElementById('vt-saldo').value='';
+  document.getElementById('vt-notas').value='';
+  document.getElementById('del-venta-btn').style.display='none';
+  updTipoVenta();
+  toggleDespCampos();
+  renderItems();
+  openModal('modal-venta');
+}
+
+async function saveVenta(){
+  const cliente=document.getElementById('vt-cliente').value.trim();
+  if(!cliente){alert('Falta el nombre del cliente');return}
+  if(!ventaItems.length){alert('Agrega al menos un producto');return}
+
+  const v={
+    id:editVentaId||uid(),
+    fecha:document.getElementById('vt-fecha').value||today(),
+    fechaDesp:document.getElementById('vt-fecha-desp').value||document.getElementById('vt-fecha').value||today(),
+    estado:document.getElementById('vt-estado').value||'pendiente',
+    tipo:document.getElementById('vt-tipo').value,
+    cliente,
+    rut:document.getElementById('vt-rut').value.trim(),
+    empresa:document.getElementById('vt-empresa').value.trim(),
+    tel:document.getElementById('vt-tel').value.trim(),
+    vendedor:document.getElementById('vt-vendedor').value,
+    dir:document.getElementById('vt-dir').value.trim(),
+    pago:document.getElementById('vt-pago').value,
+    desp:parseInt(document.getElementById('vt-desp').value)||0,
+    despCalle:document.getElementById('vt-calle').value.trim(),
+    despNumero:document.getElementById('vt-numero').value.trim(),
+    despComuna:document.getElementById('vt-comuna').value.trim(),
+    despHora:document.getElementById('vt-hora').value,
+    cancelado:parseInt(document.getElementById('vt-cancelado').value)||0,
+    notas:document.getElementById('vt-notas').value.trim(),
+    items:ventaItems.map(it=>({...it})),
+  };
+  v.subtotal=v.items.reduce((a,it)=>a+it.qty*it.precio,0);
+  v.total=v.subtotal;
+  v.saldo=Math.max(0,v.total-v.cancelado);
+
+  // Descontar stock si es venta nueva
+  if(!editVentaId){
+    for(const it of v.items){
+      if(it.prodId){
+        const p=inventario.find(x=>x.id===it.prodId||x.id===String(it.prodId));
+        if(p){p.stock=(parseInt(p.stock)||0)-it.qty;await saveProdDB(p);}
+      }
+    }
+  }
+
+  const esNueva=!editVentaId;
+  if(editVentaId){
+    const i=ventas.findIndex(x=>x.id===editVentaId||x.id===String(editVentaId));
+    if(i>=0)ventas[i]=v;
+  }else{
+    ventas.push(v);
+  }
+  await saveVentaDB(v);
+  closeModal('modal-venta');
+  renderVentas();
+  if(esNueva){window._autoPrint=true;setTimeout(()=>imprimirVenta(v.id),300);}
+}
+
+function viewVenta(id){
+  const v=ventas.find(x=>x.id===id);
+  if(!v)return;
+  let html=`
+    <div class="card">
+      <h4>${v.cliente} <span class="tag ${v.tipo==='may'?'tag-may':'tag-min'}">${v.tipo==='may'?'Mayorista':'Minorista'}</span> ${estadoTag(v.estado||'pendiente')}</h4>
+      <div class="muted" style="font-size:11px;margin-top:3px">Venta: ${v.fecha.split('-').reverse().join('/')} · ${v.vendedor} · ${v.pago}</div>
+      ${v.desp>0&&v.fechaDesp?`<div style="font-size:11px;color:#a87f3e;margin-top:2px">🚚 Despacho: <strong>${v.fechaDesp.split('-').reverse().join('/')}</strong></div>`:''}
+    </div>
+    ${v.tel?`<div class="item-row"><span class="muted">Teléfono</span><span>${v.tel}</span></div>`:''}
+    ${v.rut?`<div class="item-row"><span class="muted">RUT</span><span>${v.rut}</span></div>`:''}
+    ${v.empresa?`<div class="item-row"><span class="muted">Empresa</span><span>${v.empresa}</span></div>`:''}
+    ${v.dir?`<div class="item-row"><span class="muted">Dirección</span><span style="text-align:right;font-size:11px">${v.dir}</span></div>`:''}
+    ${v.desp>0?`<div style="background:#fef9f0;padding:10px;border-radius:8px;margin-top:8px">
+      <div style="font-size:11px;color:#a87f3e;font-weight:600;margin-bottom:6px;text-transform:uppercase">📍 Datos de despacho</div>
+      ${v.despCalle?`<div class="item-row"><span class="muted">Calle</span><span style="text-align:right;font-size:11px">${v.despCalle}</span></div>`:''}
+      ${v.despNumero?`<div class="item-row"><span class="muted">N° / Depto</span><span style="text-align:right;font-size:11px">${v.despNumero}</span></div>`:''}
+      ${v.despComuna?`<div class="item-row"><span class="muted">Comuna</span><span style="text-align:right;font-size:11px">${v.despComuna}</span></div>`:''}
+      ${v.despHora?`<div class="item-row"><span class="muted">Hora estimada</span><span style="text-align:right;font-size:11px">${v.despHora}</span></div>`:''}
+    </div>`:''}
+    <h4 style="margin:12px 0 6px;font-size:13px">Productos</h4>
+    ${v.items.map(it=>`<div class="item-row">
+      <span>${it.qty}× ${it.desc||(inventario.find(p=>p.id===it.prodId)||{}).nombre||'Producto'}</span>
+      <span>${fmt(it.qty*it.precio)}</span>
+    </div>`).join('')}
+    <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e7e5e4">
+      <div class="item-row"><span class="muted">Subtotal</span><strong>${fmt(v.subtotal)}</strong></div>
+      ${v.desp>0?`<div class="item-row"><span class="muted">Despacho (no suma a venta)</span><span>${fmt(v.desp)}</span></div>`:''}
+      <div class="item-row"><span style="color:#a87f3e"><strong>TOTAL VENTA</strong></span><strong style="color:#a87f3e">${fmt(v.total)}</strong></div>
+      ${v.cancelado<v.total?`<div class="item-row"><span class="muted">Pagado</span><span>${fmt(v.cancelado)}</span></div><div class="item-row"><span class="warn"><strong>Saldo pendiente</strong></span><strong class="warn">${fmt(v.saldo)}</strong></div>`:''}
+    </div>
+    ${v.notas?`<div class="help" style="margin-top:12px">${v.notas}</div>`:''}`;
+  document.getElementById('det-content').innerHTML=html;
+  document.getElementById('edit-venta-btn').onclick=()=>{closeModal('modal-detalle');editVenta(id)};
+  document.getElementById('print-venta-btn').onclick=()=>{window._autoPrint=false;imprimirVenta(id)};
+  document.getElementById('pdf-venta-btn').onclick=()=>descargarPedidoHTML();
+  openModal('modal-detalle');
+}
+
+function descargarPDFVenta(id){
+  const v=ventas.find(x=>x.id===id);
+  if(!v)return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=20;
+  let y=M;
+
+  // Colores
+  const gold=[168,127,62];
+  const dark=[28,25,23];
+  const gray=[120,113,108];
+
+  // Línea superior dorada
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.8);
+  doc.line(M,y,W-M,y);
+  y+=8;
+
+  // Logo
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(26);
+  doc.setTextColor(...gold);
+  doc.text('Dream Rest',M,y+6);
+  y+=14;
+
+  // PEDIDO
+  doc.setFontSize(16);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(...dark);
+  doc.setLetterSpacing(3);
+  doc.text('PEDIDO',M,y);
+  doc.setLetterSpacing(0);
+  y+=10;
+
+  // Separador
+  doc.setDrawColor(230,229,228);
+  doc.setLineWidth(0.3);
+  doc.line(M,y,W-M,y);
+  y+=6;
+
+  // Info contacto (izq) y cliente (der)
+  const col2=M+70;
+  doc.setFontSize(8);
+  doc.setTextColor(...gold);
+  doc.text('+56 9 9552 0054',M,y);
+  doc.text('ventas@dreamrest.cl',M,y+5);
+  doc.text('www.dreamrest.cl',M,y+10);
+  doc.setTextColor(...gray);
+  doc.text('Rivas 590, San Joaquín, Santiago',M,y+18);
+
+  // Info cliente
+  const fechaFmt=v.fecha.split('-').reverse().join('/');
+  const tel=v.tel?('+56 9 '+v.tel):'';
+  doc.setTextColor(...dark);
+  doc.setFontSize(9);
+  const clienteLines=[
+    ['A la atención de:',v.vendedor||'Isaías'],
+    ['Fecha:',fechaFmt],
+    ['',''],
+    ['Nombre:',v.cliente],
+    ...(v.rut?[['RUT:',v.rut]]:[]),
+    ...(v.empresa?[['Empresa:',v.empresa]]:[]),
+    ['Medio de Pago:',v.pago||''],
+    ...(tel?[['Teléfono:',tel]]:[]),
+  ];
+  let cy=y;
+  clienteLines.forEach(([lbl,val])=>{
+    if(!lbl&&!val){cy+=3;return;}
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...gray);
+    doc.text(lbl,col2,cy);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...dark);
+    doc.text(val,col2+28,cy);
+    cy+=5;
+  });
+  y=Math.max(y+30,cy)+4;
+
+  // Dirección de despacho si aplica
+  if(v.desp>0){
+    const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'';
+    if(dir){
+      doc.setFontSize(8);
+      doc.setTextColor(...gray);
+      doc.text('Dirección de despacho: ',M,y);
+      doc.setTextColor(...dark);
+      doc.setFont('helvetica','bold');
+      doc.text(dir,M+38,y);
+      doc.setFont('helvetica','normal');
+      y+=5;
+    }
+    if(v.fechaDesp){
+      doc.setTextColor(...gray);
+      doc.text('Fecha despacho: ',M,y);
+      doc.setTextColor(...gold);
+      doc.setFont('helvetica','bold');
+      doc.text(v.fechaDesp.split('-').reverse().join('/'),M+29,y);
+      doc.setFont('helvetica','normal');
+      y+=5;
+    }
+  }
+  y+=3;
+
+  // Tabla encabezado
+  const colX=[M,M+90,M+115,M+145];
+  const colW=[90,25,30,25];
+  doc.setFillColor(...gold);
+  doc.rect(M,y,W-2*M,8,'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(255,255,255);
+  doc.text('Descripción',colX[0]+2,y+5.5);
+  doc.text('Cant.',colX[1]+2,y+5.5);
+  doc.text('P. Unitario',colX[2]+2,y+5.5);
+  doc.text('Total',colX[3]+2,y+5.5);
+  y+=8;
+
+  // Filas de productos
+  const rowH=8;
+  const fmtNum=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
+  v.items.forEach((it,i)=>{
+    const nom=it.desc||((inventario.find(p=>p.id===it.prodId)||{}).nombre)||'Producto';
+    doc.setFillColor(i%2===0?250:255,i%2===0?250:255,i%2===0?249:255);
+    doc.rect(M,y,W-2*M,rowH,'F');
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...dark);
+    doc.setFontSize(8);
+    // Texto largo del producto con wrap
+    const nomLines=doc.splitTextToSize(nom,86);
+    doc.text(nomLines,colX[0]+2,y+5);
+    doc.text(String(it.qty),colX[1]+2,y+5);
+    doc.text(fmtNum(it.precio),colX[2]+2,y+5);
+    doc.text(fmtNum(it.qty*it.precio),colX[3]+2,y+5);
+    y+=nomLines.length>1?nomLines.length*5:rowH;
+  });
+
+  // Línea separadora y total
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.5);
+  doc.line(M,y,W-M,y);
+  y+=6;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...gold);
+  doc.text('TOTAL',colX[2],y);
+  doc.text(fmtNum(v.total),colX[3]+2,y);
+
+  if(v.desp>0){
+    y+=6;
+    doc.setFontSize(8);
+    doc.setTextColor(...gray);
+    doc.setFont('helvetica','normal');
+    doc.text('Despacho (cobro aparte):',colX[2],y);
+    doc.text(fmtNum(v.desp),colX[3]+2,y);
+  }
+
+  if(v.saldo>0){
+    y+=7;
+    doc.setFillColor(255,245,230);
+    doc.rect(M,y-4,W-2*M,8,'F');
+    doc.setFontSize(8);
+    doc.setTextColor(146,64,14);
+    doc.setFont('helvetica','bold');
+    doc.text('Saldo pendiente: '+fmtNum(v.saldo)+' (Pagado: '+fmtNum(v.cancelado)+')',M+2,y+1);
+    y+=8;
+  }
+
+  if(v.notas){
+    y+=6;
+    doc.setFontSize(8);
+    doc.setFont('helvetica','italic');
+    doc.setTextColor(...gray);
+    const notasLines=doc.splitTextToSize('Nota: '+v.notas,W-2*M);
+    doc.text(notasLines,M,y);
+    y+=notasLines.length*5;
+  }
+
+  // Pie de página
+  const pieY=277;
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.8);
+  doc.line(M,pieY,W-M,pieY);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(...gray);
+  doc.text('Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.',M,pieY+5);
+  doc.text('El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado con el vendedor.',M,pieY+9);
+  doc.text('Atentamente, DreamRest.',M,pieY+13);
+
+  // Guardar
+  const nombre=v.cliente.replace(/\s+/g,'_');
+  doc.save(`Pedido_DreamRest_${nombre}_${fechaFmt.replace(/\//g,'-')}.pdf`);
+}
+
+function imprimirVenta(id){
+  const v=ventas.find(x=>x.id===id);
+  if(!v)return;
+  const fechaFmt=v.fecha.split('-').reverse().join('/');
+  const tel=v.tel?(v.tel.startsWith('+56')?v.tel:'+56 9 '+v.tel):'';
+
+  let itemsHtml='';
+  v.items.forEach(it=>{
+    const nom=it.desc||((inventario.find(p=>p.id===it.prodId)||{}).nombre)||'Producto';
+    itemsHtml+='<tr>'
+      +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc">'+nom+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:center">'+it.qty+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:right">'+fmt(it.precio)+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:right">'+fmt(it.qty*it.precio)+'</td>'
+      +'</tr>';
+  });
+  // Filas vacías para llegar a mínimo 4
+  const filasVacias=Math.max(0,4-v.items.length);
+  for(let i=0;i<filasVacias;i++){
+    itemsHtml+='<tr><td style="padding:8px 10px;border-bottom:1px dotted #ccc">&nbsp;</td><td style="padding:8px 10px;border-bottom:1px dotted #ccc"></td><td style="padding:8px 10px;border-bottom:1px dotted #ccc"></td><td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:right">0</td></tr>';
+  }
+
+  let dirCompleta='';
+  if(v.despCalle||v.despNumero||v.despComuna){
+    dirCompleta=(v.despCalle||'')+' '+(v.despNumero||'');
+    if(v.despComuna)dirCompleta+=', '+v.despComuna;
+  }else if(v.dir){
+    dirCompleta=v.dir;
+  }
+
+  let despachoBlock='';
+  if(v.desp>0){
+    despachoBlock='<div style="margin-top:14px;padding:10px 14px;background:#fef9f0;border-left:3px solid #a87f3e;font-size:12px">'
+      +'<strong style="color:#a87f3e">📍 DATOS DE DESPACHO</strong><br>'
+      +(v.despCalle||'')+' '+(v.despNumero||'')+'<br>'
+      +(v.despComuna||'')+'<br>'
+      +'<strong>Hora estimada:</strong> '+(v.despHora||'Sin preferencia')
+      +'</div>';
+  }
+
+  let saldoBlock='';
+  if(v.saldo>0){
+    saldoBlock='<div style="margin-top:8px;padding:10px;background:#fff5e6;border:1px solid #f59e0b;border-radius:4px;font-size:12px;color:#92400e">'
+      +'⚠ <strong>Saldo pendiente:</strong> '+fmt(v.saldo)+' (Pagado: '+fmt(v.cancelado)+')</div>';
+  }
+
+  let notasBlock='';
+  if(v.notas){
+    notasBlock='<div style="margin-top:14px;padding:10px 14px;background:#f9f9f9;border-left:3px solid #a87f3e;font-size:11px;font-style:italic">'+v.notas+'</div>';
+  }
+
+  let mayInfo='';
+  if(v.tipo==='may'){
+    if(v.rut)mayInfo+='RUT: <strong>'+v.rut+'</strong><br>';
+    if(v.empresa)mayInfo+='Empresa: <strong>'+v.empresa+'</strong><br>';
+  }
+
+  const cssStr='@page{size:A4;margin:0}'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Helvetica,Arial,sans-serif;color:#333;background:#fff}'
+    +'.page{width:210mm;min-height:297mm;padding:18mm 20mm;margin:0 auto;background:#fff;position:relative}'
+    +'.line-top{border-top:2px solid #a87f3e;margin-bottom:18px}'
+    +'.logo{font-family:Brush Script MT,Lucida Handwriting,cursive;font-size:36px;color:#a87f3e;margin-bottom:14px}'
+    +'.title{font-size:24px;color:#a87f3e;letter-spacing:3px;margin-bottom:24px;font-weight:300}'
+    +'.header-grid{display:grid;grid-template-columns:1fr 2fr;gap:30px;margin-bottom:30px;font-size:11px;line-height:1.6}'
+    +'.contact-info{color:#a87f3e}'
+    +'.contact-info a{color:#a87f3e;text-decoration:underline}'
+    +'.address{margin-top:14px;color:#666;font-size:10px;line-height:1.4}'
+    +'.client-info{font-size:13px;line-height:1.7}'
+    +'.tabla{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px}'
+    +'.tabla thead th{background:#a87f3e;color:#fff;padding:10px;text-align:left;font-weight:bold;font-size:11px}'
+    +'.tabla thead th:nth-child(2){text-align:center}'
+    +'.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}'
+    +'.total-row{font-weight:bold}'
+    +'.total-row td{border-top:2px solid #a87f3e;padding:10px}'
+    +'.total-row td:first-child{text-align:right;color:#666;font-weight:normal}'
+    +'.total-row td:last-child{text-align:right;color:#a87f3e;font-size:14px}'
+    +'.footer-text{font-size:11px;color:#666;line-height:1.6;position:absolute;bottom:30mm;left:20mm;right:20mm}'
+    +'.line-bottom{position:absolute;bottom:18mm;left:20mm;right:20mm;border-bottom:2px solid #a87f3e}'
+    +'.btnprint{position:fixed;top:10px;right:10px;background:#a87f3e;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
+    +'@media print{body{padding:0;margin:0}.page{padding:18mm 20mm;margin:0;page-break-after:always}.btnprint{display:none}}';
+
+  let body=''; // legacy - no usado
+
+  const autoPrint=!!window._autoPrint;
+  window._autoPrint=false;
+
+  const nombre=v.cliente.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_áéíóúÁÉÍÓÚñÑ]/g,'');
+
+  const htmlCompleto='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido '+v.cliente+'</title>'
+    +'<style>'+cssStr+'</style></head><body>'
+    +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+    +'<div class="page">'
+    +'<div class="line-top"></div>'
+    +'<div class="logo">Dream Rest</div>'
+    +'<div class="title">PEDIDO</div>'
+    +'<div class="header-grid">'
+    +'<div class="contact-info">'
+    +'<strong>+56 9 9552 0054</strong><br>'
+    +'ventas@dreamrest.cl<br>www.dreamrest.cl'
+    +'<div class="address"><strong>Rivas 590</strong><br>San Joaquín,<br>Santiago</div>'
+    +'</div>'
+    +'<div class="client-info">'
+    +'A la atención de: <strong>'+(v.vendedor||'Isaías')+'</strong><br>'
+    +'DreamRest<br>Rivas 590<br>San Joaquín, Santiago<br>'
+    +'Fecha: <strong>'+fechaFmt+'</strong><br><br>'
+    +'Nombre: <strong>'+v.cliente+'</strong><br>'
+    +mayInfo
+    +'Dirección: '+dirCompleta+'<br>'
+    +'Medio de Pago: <strong>'+(v.pago||'')+'</strong><br>'
+    +'Número de Teléfono: '+tel
+    +'</div></div>'
+    +'<table class="tabla">'
+    +'<thead><tr><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th></tr></thead>'
+    +'<tbody>'+itemsHtml
+    +'<tr class="total-row"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
+    +'</tbody></table>'
+    +despachoBlock+saldoBlock+notasBlock
+    +'<div class="footer-text">'
+    +'Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.<br>'
+    +'El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado<br>'
+    +'con el vendedor<br><br>Atentamente,<br><br>DreamRest.</div>'
+    +'<div class="line-bottom"></div>'
+    +'</div>'
+    +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>'
+    +'</body></html>';
+
+  // Guardar referencia global para descarga posterior
+  window._lastPedidoHtml=htmlCompleto;
+  window._lastPedidoNombre='Pedido_DreamRest_'+nombre+'_'+fechaFmt.replace(/\//g,'-')+'.html';
+
+  if(autoPrint){
+    // Al guardar venta: abrir en pestaña nueva para imprimir
+    const htmlAutoprint=htmlCompleto.replace('</body>','<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt></body>');
+    const blob=new Blob([htmlAutoprint],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const w=window.open(url,'_blank');
+    if(!w)alert('Activa las ventanas emergentes en Chrome para imprimir automáticamente.');
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }else{
+    // Botón imprimir: abrir en pestaña nueva sin autoprint
+    const blob=new Blob([htmlCompleto],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const w=window.open(url,'_blank');
+    if(!w)alert('Activa las ventanas emergentes en Chrome para imprimir.');
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }
+}
+
+function descargarPedidoHTML(){
+  if(!window._lastPedidoHtml){alert('Primero abre el pedido desde la lista de ventas.');return;}
+  const blob=new Blob([window._lastPedidoHtml],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=window._lastPedidoNombre;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);
+}
+
+function editVenta(id){
+  const v=ventas.find(x=>x.id===id);
+  if(!v)return;
+  editVentaId=id;
+  ventaItems=v.items.map(it=>({...it}));
+  document.getElementById('venta-title').textContent='Editar venta';
+  document.getElementById('vt-fecha').value=v.fecha;
+  document.getElementById('vt-fecha-desp').value=v.fechaDesp||v.fecha;
+  document.getElementById('vt-estado').value=v.estado||'pendiente';
+  document.getElementById('vt-tipo').value=v.tipo;
+  document.getElementById('vt-cliente').value=v.cliente;
+  document.getElementById('vt-rut').value=v.rut||'';
+  document.getElementById('vt-empresa').value=v.empresa||'';
+  document.getElementById('vt-tel').value=v.tel||'';
+  document.getElementById('vt-vendedor').value=v.vendedor||'Isaías';
+  document.getElementById('vt-dir').value=v.dir||'';
+  document.getElementById('vt-pago').value=v.pago||'Efectivo';
+  document.getElementById('vt-desp').value=v.desp||0;
+  document.getElementById('vt-calle').value=v.despCalle||'';
+  document.getElementById('vt-numero').value=v.despNumero||'';
+  document.getElementById('vt-comuna').value=v.despComuna||'';
+  document.getElementById('vt-hora').value=v.despHora||'Sin preferencia';
+  document.getElementById('vt-cancelado').value=v.cancelado||v.total;
+  document.getElementById('vt-notas').value=v.notas||'';
+  document.getElementById('del-venta-btn').style.display='inline-block';
+  updTipoVenta();
+  toggleDespCampos();
+  renderItems();
+  openModal('modal-venta');
+}
+
+async function delVenta(){
+  if(!confirm('¿Eliminar esta venta? Esta acción no se puede deshacer.'))return;
+  ventas=ventas.filter(v=>v.id!==editVentaId&&v.id!==String(editVentaId));
+  await delVentaDB(editVentaId);
+  closeModal('modal-venta');
+  renderVentas();
+}
+
+function limpiarFiltrosVentas(){
+  document.getElementById('v-search').value='';
+  document.getElementById('v-tipo').value='';
+  document.getElementById('v-desde').value='';
+  document.getElementById('v-hasta').value='';
+  document.getElementById('v-vendedor').value='';
+  document.getElementById('v-pago').value='';
+  document.getElementById('v-estado').value='';
+  renderVentas();
+}
+
+function renderVentas(){
+  const q=document.getElementById('v-search').value.toLowerCase();
+  const ft=document.getElementById('v-tipo').value;
+  const fDesde=document.getElementById('v-desde').value;
+  const fHasta=document.getElementById('v-hasta').value;
+  const fVend=document.getElementById('v-vendedor').value;
+  const fPago=document.getElementById('v-pago').value;
+  const fEstado=document.getElementById('v-estado').value;
+
+  const hayFiltros=q||ft||fDesde||fHasta||fVend||fPago||fEstado;
+
+  let items=ventas.filter(v=>{
+    if(q&&!v.cliente.toLowerCase().includes(q))return false;
+    if(ft&&v.tipo!==ft)return false;
+    if(fDesde&&v.fecha<fDesde)return false;
+    if(fHasta&&v.fecha>fHasta)return false;
+    if(fVend&&v.vendedor!==fVend)return false;
+    if(fPago&&v.pago!==fPago)return false;
+    if(fEstado&&(v.estado||'pendiente')!==fEstado)return false;
+    return true;
+  }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  const base=hayFiltros?items:ventas;
+  const totalGlobal=base.reduce((a,v)=>a+v.total,0);
+  const saldoTotal=base.reduce((a,v)=>a+(v.saldo||0),0);
+  const may=base.filter(v=>v.tipo==='may').reduce((a,v)=>a+v.total,0);
+  const min=base.filter(v=>v.tipo==='min').reduce((a,v)=>a+v.total,0);
+  const etiqueta=hayFiltros?'Ventas filtradas':'Total ventas';
+
+  document.getElementById('v-stats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">${etiqueta}</div><div class="stat-val">${base.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Total facturado</div><div class="stat-val" style="font-size:15px">${fmt(totalGlobal)}</div></div>
+    <div class="stat"><div class="stat-lbl">Mayorista</div><div class="stat-val may" style="font-size:15px">${fmt(may)}</div></div>
+    <div class="stat"><div class="stat-lbl">Minorista</div><div class="stat-val min" style="font-size:15px">${fmt(min)}</div></div>
+    ${saldoTotal>0?`<div class="stat"><div class="stat-lbl">Saldo pendiente</div><div class="stat-val warn" style="font-size:15px">${fmt(saldoTotal)}</div></div>`:''}`;
+
+  if(!items.length){
+    document.getElementById('v-list').innerHTML=`<div class="empty">${hayFiltros?'No hay ventas con esos filtros.':'No hay ventas registradas. Toca "+ Nueva venta" para empezar.'}</div>`;
+    return;
+  }
+
+  document.getElementById('v-list').innerHTML=items.map(v=>{
+    const est=v.estado||'pendiente';
+    const cfg=ESTADO_CFG[est]||ESTADO_CFG.pendiente;
+    return`<div class="card" onclick="viewVenta(${v.id})" style="cursor:pointer;border-left:3px solid ${cfg.bg}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.cliente}</h4>
+          <div style="margin-top:3px;font-size:11px;color:#78716c">
+            <span class="tag ${v.tipo==='may'?'tag-may':'tag-min'}">${v.tipo==='may'?'May':'Min'}</span>
+            ${estadoTag(est)}
+            ${v.fecha.split('-').reverse().join('/')} · ${v.vendedor||'—'}
+          </div>
+          ${v.desp>0&&v.fechaDesp?`<div style="font-size:11px;color:#a87f3e;margin-top:2px">🚚 Despacho: <strong>${v.fechaDesp.split('-').reverse().join('/')}</strong> ${v.despHora&&v.despHora!=='Sin preferencia'?'· '+v.despHora:''}</div>`:''}
+          ${v.saldo>0?`<div class="warn" style="font-size:11px;margin-top:3px">⚠ Saldo pendiente ${fmt(v.saldo)}</div>`:''}
+          ${v.notas?`<div class="muted" style="font-size:11px;margin-top:3px;font-style:italic">${v.notas.length>60?v.notas.slice(0,60)+'...':v.notas}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:600;color:#a87f3e">${fmt(v.total)}</div>
+          <div style="font-size:10px;color:#78716c">${v.items.length} ítem${v.items.length!==1?'s':''}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =========== DESPACHOS ===========
+function renderDespachos(){
+  const fEstado=document.getElementById('d-estado').value;
+  const fFecha=document.getElementById('d-fecha').value;
+
+  // Solo ventas con despacho (desp > 0) y que no estén canceladas
+  let items=ventas.filter(v=>{
+    if(!v.desp||v.desp<=0)return false;
+    if((v.estado||'pendiente')==='cancelado')return false;
+    if(fEstado&&(v.estado||'pendiente')!==fEstado)return false;
+    if(fFecha&&v.fechaDesp!==fFecha)return false;
+    return true;
+  }).sort((a,b)=>(a.fechaDesp||a.fecha).localeCompare(b.fechaDesp||b.fecha));
+
+  if(!items.length){
+    document.getElementById('d-list').innerHTML='<div class="empty">No hay despachos pendientes con esos filtros.</div>';
+    return;
+  }
+
+  // Agrupar por fecha de despacho
+  const grupos={};
+  items.forEach(v=>{
+    const k=v.fechaDesp||v.fecha;
+    if(!grupos[k])grupos[k]=[];
+    grupos[k].push(v);
+  });
+
+  const hoy=today();
+  let html='';
+  Object.keys(grupos).sort().forEach(fecha=>{
+    const d=new Date(fecha+'T12:00:00');
+    const diasDiff=Math.round((d-new Date(hoy+'T12:00:00'))/(1000*60*60*24));
+    let labelDia='';
+    if(diasDiff===0)labelDia=' <span style="background:#fef3c7;color:#92400e;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600">HOY</span>';
+    else if(diasDiff===1)labelDia=' <span style="background:#dbeafe;color:#1e40af;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600">MAÑANA</span>';
+    else if(diasDiff<0)labelDia=' <span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600">ATRASADO</span>';
+
+    html+=`<h4 style="margin:12px 0 8px;font-size:13px;color:#57534e">${fecha.split('-').reverse().join('/')}${labelDia} <span class="pill">${grupos[fecha].length} despacho${grupos[fecha].length!==1?'s':''}</span></h4>`;
+    grupos[fecha].forEach(v=>{
+      const est=v.estado||'pendiente';
+      const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'Sin dirección';
+      html+=`<div class="card" onclick="viewVenta(${v.id})" style="cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <h4>${v.cliente}</h4>
+            <div style="font-size:11px;color:#78716c;margin-top:2px">📍 ${dir}</div>
+            ${v.despHora&&v.despHora!=='Sin preferencia'?`<div style="font-size:11px;color:#a87f3e;margin-top:2px">⏰ ${v.despHora}</div>`:''}
+            ${v.tel?`<div style="font-size:11px;color:#78716c;margin-top:2px">📞 +56 9 ${v.tel}</div>`:''}
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              ${estadoTag(est)}
+              <button onclick="event.stopPropagation();cambiarEstado(${v.id},'despachado')" style="font-size:10px;padding:3px 8px;background:#dcfce7;color:#166534;border:1px solid #166534;border-radius:6px;cursor:pointer">✓ Marcar despachado</button>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:600;color:#a87f3e">${fmt(v.total)}</div>
+            <div style="font-size:10px;color:#78716c">Desp. ${fmt(v.desp)}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+  });
+
+  document.getElementById('d-list').innerHTML=html;
+}
+
+function cambiarEstado(id,nuevoEstado){
+  const v=ventas.find(x=>x.id===id||x.id===String(id));
+  if(!v)return;
+  v.estado=nuevoEstado;
+  saveVentaDB(v);
+  renderDespachos();
+}
+
+
+// =========== RESUMEN ===========
+function fillResumenSelects(){
+  const anios=[...new Set(ventas.map(v=>v.fecha.slice(0,4)))].sort((a,b)=>b-a);
+  const cur=new Date();
+  if(!anios.includes(String(cur.getFullYear())))anios.unshift(String(cur.getFullYear()));
+  const sa=document.getElementById('r-anio');
+  const sm=document.getElementById('r-mes');
+  if(!sa.options.length){
+    sa.innerHTML=anios.map(a=>`<option value="${a}" ${a==cur.getFullYear()?'selected':''}>${a}</option>`).join('');
+    sm.innerHTML='<option value="">Todo el año</option>'+MESES.map((m,i)=>`<option value="${i}" ${i===cur.getMonth()?'selected':''}>${m}</option>`).join('');
+  }
+}
+
+function renderResumen(){
+  fillResumenSelects();
+  const anio=parseInt(document.getElementById('r-anio').value);
+  const mesV=document.getElementById('r-mes').value;
+  const mes=mesV===''?null:parseInt(mesV);
+
+  const items=ventas.filter(v=>{
+    const d=new Date(v.fecha);
+    if(d.getFullYear()!==anio)return false;
+    if(mes!==null&&d.getMonth()!==mes)return false;
+    return true;
+  });
+
+  const total=items.reduce((a,v)=>a+v.total,0);
+  const may=items.filter(v=>v.tipo==='may').reduce((a,v)=>a+v.total,0);
+  const min=items.filter(v=>v.tipo==='min').reduce((a,v)=>a+v.total,0);
+  const saldo=items.reduce((a,v)=>a+(v.saldo||0),0);
+
+  document.getElementById('r-stats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">Ventas del período</div><div class="stat-val">${items.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val" style="font-size:15px">${fmt(total)}</div></div>
+    <div class="stat"><div class="stat-lbl">Mayorista</div><div class="stat-val may" style="font-size:15px">${fmt(may)}</div></div>
+    <div class="stat"><div class="stat-lbl">Minorista</div><div class="stat-val min" style="font-size:15px">${fmt(min)}</div></div>
+    ${saldo>0?`<div class="stat"><div class="stat-lbl">Saldo pendiente</div><div class="stat-val warn" style="font-size:15px">${fmt(saldo)}</div></div>`:''}`;
+
+  // Charts
+  let charts='';
+
+  if(mes===null){
+    // Por mes del año
+    const porMes=MESES.map((m,i)=>{
+      const mr=items.filter(v=>new Date(v.fecha).getMonth()===i);
+      return{label:m,val:mr.reduce((a,v)=>a+v.total,0),count:mr.length};
+    });
+    const max=Math.max(...porMes.map(m=>m.val),1);
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">Ventas por mes — ${anio}</h4>${porMes.map(m=>m.val>0?`
+      <div class="bar-row">
+        <div class="bar-lbl"><span>${m.label}</span><span><strong>${fmt(m.val)}</strong> <span class="muted">(${m.count})</span></span></div>
+        <div class="bar"><div class="bar-fill" style="width:${m.val/max*100}%"></div></div>
+      </div>`:'').join('')||'<div class="empty">Sin ventas</div>'}</div>`;
+  }else{
+    // Por día del mes
+    const porDia={};
+    items.forEach(v=>{
+      const d=v.fecha;
+      if(!porDia[d])porDia[d]={val:0,count:0};
+      porDia[d].val+=v.total;porDia[d].count++;
+    });
+    const dias=Object.entries(porDia).sort((a,b)=>a[0].localeCompare(b[0]));
+    const max=Math.max(...dias.map(d=>d[1].val),1);
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">Ventas por día</h4>${dias.length?dias.map(([d,v])=>`
+      <div class="bar-row">
+        <div class="bar-lbl"><span>${d.split('-').reverse().join('/')}</span><span><strong>${fmt(v.val)}</strong> <span class="muted">(${v.count})</span></span></div>
+        <div class="bar"><div class="bar-fill" style="width:${v.val/max*100}%"></div></div>
+      </div>`).join(''):'<div class="empty">Sin ventas</div>'}</div>`;
+  }
+
+  // Por vendedor
+  const vends={};
+  items.forEach(v=>{
+    const k=v.vendedor||'Sin asignar';
+    if(!vends[k])vends[k]={val:0,count:0};
+    vends[k].val+=v.total;vends[k].count++;
+  });
+  if(Object.keys(vends).length){
+    const maxV=Math.max(...Object.values(vends).map(v=>v.val),1);
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">Por vendedor</h4>${Object.entries(vends).sort((a,b)=>b[1].val-a[1].val).map(([k,v])=>`
+      <div class="bar-row">
+        <div class="bar-lbl"><span>${k}</span><span><strong>${fmt(v.val)}</strong> <span class="muted">(${v.count})</span></span></div>
+        <div class="bar"><div class="bar-fill" style="width:${v.val/maxV*100}%"></div></div>
+      </div>`).join('')}</div>`;
+  }
+
+  // Top clientes
+  const cli={};
+  items.forEach(v=>{
+    if(!cli[v.cliente])cli[v.cliente]={val:0,count:0};
+    cli[v.cliente].val+=v.total;cli[v.cliente].count++;
+  });
+  const top=Object.entries(cli).sort((a,b)=>b[1].val-a[1].val).slice(0,10);
+  if(top.length){
+    const maxC=top[0][1].val;
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">Top 10 clientes</h4>${top.map(([k,v])=>`
+      <div class="bar-row">
+        <div class="bar-lbl"><span>${k}</span><span><strong>${fmt(v.val)}</strong> <span class="muted">(${v.count})</span></span></div>
+        <div class="bar"><div class="bar-fill" style="width:${v.val/maxC*100}%"></div></div>
+      </div>`).join('')}</div>`;
+  }
+
+  document.getElementById('r-charts').innerHTML=charts;
+  document.getElementById('r-tabla').innerHTML='';
+}
+
+// =========== EXPORT ===========
+function exportInv(){
+  const csv=['Marca,Categoría,Producto,Mayorista,Minorista,Stock,Stock mínimo'];
+  inventario.forEach(p=>csv.push(`"${p.marca||''}","${p.cat||''}","${p.nombre.replace(/"/g,'""')}",${p.may||0},${p.min||0},${p.stock||0},${p.minStock||0}`));
+  downloadCSV('inventario_dreamrest_'+today()+'.csv',csv.join('\n'));
+}
+
+function exportVentas(){
+  const csv=['Fecha,Cliente,Tipo,Vendedor,Pago,Productos,Subtotal,Despacho,Total venta,Pagado,Saldo,Notas'];
+  ventas.forEach(v=>{
+    const prods=v.items.map(it=>`${it.qty}x ${it.desc||(inventario.find(p=>p.id===it.prodId)||{}).nombre||'?'}`).join('; ');
+    csv.push(`${v.fecha},"${v.cliente.replace(/"/g,'""')}",${v.tipo==='may'?'Mayorista':'Minorista'},"${v.vendedor||''}",${v.pago||''},"${prods.replace(/"/g,'""')}",${v.subtotal},${v.desp||0},${v.total},${v.cancelado||0},${v.saldo||0},"${(v.notas||'').replace(/"/g,'""')}"`);
+  });
+  downloadCSV('ventas_dreamrest_'+today()+'.csv',csv.join('\n'));
+}
+
+function downloadCSV(name,content){
+  // Usar data URI en vez de createObjectURL para compatibilidad con archivos locales
+  const encoded='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(content);
+  const a=document.createElement('a');
+  a.href=encoded;
+  a.download=name;
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>document.body.removeChild(a),200);
+}
+
+document.getElementById('vt-cancelado').addEventListener('input',recalcTotal);
+
+// Exponer todas las funciones al scope global (requerido por type="module")
+Object.assign(window,{
+  setTab,openProd,editProd,saveProd,delProd,delProdDirect,
+  openVenta,saveVenta,editVenta,delVenta,viewVenta,
+  addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
+  renderInv,renderVentas,renderDespachos,renderResumen,
+  limpiarFiltrosVentas,cambiarEstado,
+  exportInv,exportVentas,openModal,closeModal,
+  imprimirVenta,descargarPedidoHTML
+});
+</script>
+</body>
+</html>
