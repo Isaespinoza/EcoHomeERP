@@ -207,9 +207,9 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
   <div class="sidebar-nav">
     <div class="sidebar-section-title">Principal</div>
-    <button class="sidebar-item active" id="si-inicio" onclick="setTab('inicio')"><span class="icon">🏠</span><span class="label">Inicio</span></button>
+    <button class="sidebar-item" id="si-inicio" onclick="setTab('inicio')"><span class="icon">🏠</span><span class="label">Inicio</span></button>
     <button class="sidebar-item" id="si-nueva-venta" onclick="setTab('nueva-venta')"><span class="icon">➕</span><span class="label">Nueva Venta</span></button>
-    <button class="sidebar-item" id="si-ventas" onclick="setTab('ventas')"><span class="icon">🛒</span><span class="label">Ventas</span></button>
+    <button class="sidebar-item active" id="si-ventas" onclick="setTab('ventas')"><span class="icon">🛒</span><span class="label">Ventas</span></button>
     <button class="sidebar-item" id="si-cotizaciones" onclick="setTab('cotizaciones')"><span class="icon">📋</span><span class="label">Cotizaciones</span></button>
     <button class="sidebar-item" id="si-despachos" onclick="setTab('despachos')"><span class="icon">🚚</span><span class="label">Despachos</span></button>
     <button class="sidebar-item" id="si-caja" onclick="setTab('caja')"><span class="icon">🧮</span><span class="label">Caja</span></button>
@@ -251,7 +251,7 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
 
   <!-- INICIO -->
-  <div id="tab-inicio" class="section active">
+  <div id="tab-inicio" class="section">
     <div id="inicio-content"></div>
   </div>
 
@@ -261,7 +261,7 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
 
   <!-- VENTAS -->
-  <div id="tab-ventas" class="section">
+  <div id="tab-ventas" class="section active">
     <div class="toolbar">
       <button class="btn btn-sec btn-sm" onclick="exportVentas()">📥 Exportar</button>
     </div>
@@ -449,7 +449,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="vt-cliente" oninput="autocompleteCliente('vt-cliente','vt-ac')" autocomplete="off">
-      <div id="vt-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="vt-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row" id="vt-rut-row" style="display:none">
       <div class="field"><label>RUT</label><input type="text" id="vt-rut" placeholder="12.345.678-9"></div>
@@ -537,7 +537,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="cot-cliente" autocomplete="off" oninput="autocompleteCliente('cot-cliente','cot-cli-ac')">
-      <div id="cot-cli-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="cot-cli-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row">
       <div class="field"><label>Teléfono</label>
@@ -1107,7 +1107,7 @@ function renderNuevaVentaTab(){
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="nv-cliente" placeholder="Cliente mostrador" oninput="autocompleteCliente('nv-cliente','nv-ac')" autocomplete="off">
-      <div id="nv-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto"></div>
+      <div id="nv-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div id="nv-rut-row" style="display:none">
       <div class="row">
@@ -1352,7 +1352,7 @@ function renderItemsNV(){
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="nv-prod-input-${i}" value="${(nombreActual).replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoNV(${i})" style="width:100%">
-        <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>`;
 
     // Si es colchón, mostrar opciones de armado
@@ -1477,7 +1477,7 @@ function autocompleteProductoNV(i){
     const precioHtml=pc.promo
       ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:#a8a29e;font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#166534">${fmt(pc.precio)}</strong></span>`
       :`<span style="color:#a87f3e;white-space:nowrap">${fmt(pc.precio)}</span>`;
-    return`<div onclick="selProdAutoNV(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:12px;transition:background .15s" onmouseover="this.style.background='#fef9f0'" onmouseout="this.style.background=''">
+    return`<div onclick="selProdAutoNV(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
       <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:#dcfce7;color:#166534">PROMO</span>':''}</span>${precioHtml}</div>
       <div style="color:#78716c;font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
     </div>`;
@@ -1635,7 +1635,7 @@ function autocompleteCliente(inputId,acId){
   if(!val||val.length<2){ac.style.display='none';return;}
   const clientes=[...new Set(ventas.map(v=>v.cliente))].filter(c=>c.toLowerCase().includes(val)).slice(0,6);
   if(!clientes.length){ac.style.display='none';return;}
-  ac.innerHTML=clientes.map(c=>`<div onclick="selCliente('${inputId}','${acId}','${c.replace(/'/g,"\\'")}',event)" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:13px;transition:background .15s" onmouseover="this.style.background='#fef9f0'" onmouseout="this.style.background=''">${c}</div>`).join('');
+  ac.innerHTML=clientes.map(c=>`<div onclick="selCliente('${inputId}','${acId}','${c.replace(/'/g,"\\'")}',event)" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">${c}</div>`).join('');
   ac.style.display='block';
 }
 function selCliente(inputId,acId,nombre,e){
@@ -1885,7 +1885,7 @@ function renderCotItems(){
     html+=`<div style="background:#f9f6f0;border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="cot-prod-${i}" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off" oninput="autocompleteCot(${i})" style="width:100%">
-        <div id="cot-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="cot-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:#78716c;margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updCotItem(${i},'qty',this.value)"></div>
@@ -1906,7 +1906,7 @@ function autocompleteCot(i){
   const tipo=document.getElementById('cot-tipo').value;
   const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
-  ac.innerHTML=matches.map(p=>{const pc=precioConPromo(p,tipo);const precio=pc.precio;return`<div onclick="selCotProd(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:12px" onmouseover="this.style.background='#fef9f0'" onmouseout="this.style.background=''"><div style="display:flex;justify-content:space-between"><strong>${p.nombre}</strong><span style="color:#a87f3e">${fmt(precio)}</span></div><div style="color:#78716c;font-size:10px">${p.marca||''}</div></div>`;}).join('');
+  ac.innerHTML=matches.map(p=>{const pc=precioConPromo(p,tipo);const precio=pc.precio;return`<div onclick="selCotProd(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><div style="display:flex;justify-content:space-between"><strong>${p.nombre}</strong><span style="color:#a87f3e">${fmt(precio)}</span></div><div style="color:#78716c;font-size:10px">${p.marca||''}</div></div>`;}).join('');
   ac.style.display='block';
 }
 function selCotProd(i,id,e){
@@ -2101,7 +2101,7 @@ function renderPromociones(){
       <div class="field" style="position:relative">
         <label>Producto</label>
         <input type="text" id="promo-prod-input" placeholder="Escribe el producto..." autocomplete="off" oninput="autocompletePromoProd()">
-        <div id="promo-prod-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:100;max-height:180px;overflow-y:auto"></div>
+        <div id="promo-prod-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:100;max-height:180px;overflow-y:auto"></div>
       </div>
       <div id="promo-form" style="display:none">
         <div style="font-size:12px;color:#57534e;margin-bottom:8px" id="promo-prod-info"></div>
@@ -2172,7 +2172,7 @@ function autocompletePromoProd(){
   if(!val||val.length<2){ac.style.display='none';return;}
   const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
-  ac.innerHTML=matches.map(p=>`<div onclick="selPromoProd('${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:12px" onmouseover="this.style.background='#fef9f0'" onmouseout="this.style.background=''"><strong>${p.nombre}</strong> <span class="muted">· Min ${fmt(p.min)} / May ${fmt(p.may)}</span></div>`).join('');
+  ac.innerHTML=matches.map(p=>`<div onclick="selPromoProd('${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><strong>${p.nombre}</strong> <span class="muted">· Min ${fmt(p.min)} / May ${fmt(p.may)}</span></div>`).join('');
   ac.style.display='block';
 }
 function selPromoProd(id,e){
@@ -2563,6 +2563,16 @@ function renderFinanzas(){
   const sueldosSec=renderSueldosSection(mesStr,MESES[mesSel]);
   const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos;
 
+  // IVA del mes (estimado): débito de ventas, crédito de compras con factura
+  const ivaDebito=totalVentas/1.19*0.19;
+  const ivaCredito=comprasMes.filter(g=>g.conIVA).reduce((a,g)=>a+(g.monto||0)/1.19*0.19,0);
+  const ivaAPagar=ivaDebito-ivaCredito;
+
+  // Ventas agrupadas por día (control de boletas)
+  const ventasPorDia={};
+  ventasMes.forEach(v=>{(ventasPorDia[v.fecha]=ventasPorDia[v.fecha]||[]).push(v);});
+  const diasOrdenados=Object.keys(ventasPorDia).sort((a,b)=>b.localeCompare(a));
+
   let html=`<div class="section-title">💰 Finanzas</div>
     <div class="fil">
       <select onchange="window._finMes=parseInt(this.value);renderFinanzas()">
@@ -2613,7 +2623,7 @@ function renderFinanzas(){
         <button class="btn btn-sm" style="background:#0369a1" onclick="abrirCompra()">+ Registrar compra</button>
       </div>
       ${comprasMes.length?comprasMes.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(g=>`
-        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f5f5f4">
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">
           ${g.foto?`<img src="${g.foto}" onclick="verFotoCompra('${g.id}')" style="width:44px;height:44px;object-fit:cover;border-radius:6px;cursor:pointer;flex-shrink:0;border:1px solid #e7e5e4">`:'<div style="width:44px;height:44px;background:#f5f5f4;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧾</div>'}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600">${g.descripcion}</div>
@@ -2632,6 +2642,42 @@ function renderFinanzas(){
           <strong>Total compras del mes</strong><strong style="color:#0369a1">${fmt(totalCompras)}</strong>
         </div>`
       :'<div class="muted" style="font-size:12px;padding:8px 0">Sin compras este mes. Registra aquí lo que compras día a día: materia prima, productos, insumos.</div>'}
+    </div>
+
+    <!-- IVA DEL MES -->
+    <div class="card" style="border-top:3px solid #7c3aed;margin-top:14px">
+      <h4 style="margin-bottom:10px">📑 IVA del mes (estimado)</h4>
+      <div class="item-row"><span>IVA débito (ventas)</span><strong>${fmt(ivaDebito)}</strong></div>
+      <div class="item-row"><span>IVA crédito (compras con factura)</span><strong style="color:#166534">−${fmt(ivaCredito)}</strong></div>
+      <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
+        <strong>${ivaAPagar>=0?'IVA a pagar (aprox.)':'Remanente de crédito (aprox.)'}</strong>
+        <strong style="color:${ivaAPagar>=0?'#dc2626':'#166534'}">${fmt(Math.abs(ivaAPagar))}</strong>
+      </div>
+      <div class="help" style="margin-top:10px">Estimación basada en tus ventas y compras registradas. El F29 real puede incluir remanentes de meses anteriores, PPM u otros ajustes.</div>
+    </div>
+
+    <!-- CONTROL DE BOLETAS -->
+    <div class="card" style="border-top:3px solid #166534;margin-top:14px">
+      <h4 style="margin-bottom:10px">🧾 Control de boletas — ${MESES[mesSel]}</h4>
+      <div class="help" style="border-left-color:#166534;background:var(--green-bg);color:#166534">Marca las ventas que NO emitieron boleta individual (ej: pagos en efectivo). Sirven para armar el "resumen de boletas no emitidas" del SII al cierre del día. El IVA del mes ya cuenta el total de ventas, con o sin boleta individual.</div>
+      ${diasOrdenados.length?diasOrdenados.map(fecha=>{
+        const vs=ventasPorDia[fecha];
+        const totalDia=vs.reduce((a,v)=>a+v.total,0);
+        const sinBoleta=vs.filter(v=>v.boletaEmitida===false).length;
+        return`<div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>${fecha.split('-').reverse().join('/')}</span>
+            <span>${fmt(totalDia)}${sinBoleta?` · <span style="color:#dc2626">${sinBoleta} sin boleta</span>`:''}</span>
+          </div>
+          ${vs.map(v=>{
+            const conBoleta=v.boletaEmitida!==false;
+            return`<div class="item-row">
+              <span>${v.cliente} <span class="muted" style="font-size:10px">· ${v.pago||''} · ${fmt(v.total)}</span></span>
+              <button class="btn btn-sm ${conBoleta?'btn-sec':''}" style="${conBoleta?'':'background:#dc2626'}" onclick="toggleBoletaVenta('${v.id}')">${conBoleta?'🧾 Con boleta':'⚠ Sin boleta'}</button>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0">Sin ventas este mes.</div>'}
     </div>`;
 
   cont.innerHTML=html;
@@ -2747,6 +2793,15 @@ async function eliminarCompra(id){
   if(!confirm('¿Eliminar esta compra?'))return;
   compras=compras.filter(g=>String(g.id)!==String(id));
   await delCompraDB(id);
+  renderFinanzas();
+}
+
+// --- Control de boletas ---
+async function toggleBoletaVenta(id){
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  v.boletaEmitida=(v.boletaEmitida===false);
+  await saveVentaDB(v);
   renderFinanzas();
 }
 function verFotoCompra(id){
@@ -3166,9 +3221,9 @@ async function toggleAdmin(){
     if(confirm('¿Bloquear el modo administrador en este equipo?')){
       sessionStorage.removeItem('dr_admin');
       pintarCandado();
-      // Si está en una pestaña protegida, volver al inicio
-      const resumenActivo=document.getElementById('tab-resumen').classList.contains('active');
-      if(resumenActivo)setTab('inicio');
+      // Si está en una pestaña protegida, volver a Ventas
+      const tabProtegida=['inicio','resumen','finanzas','costosfab'].some(t=>document.getElementById('tab-'+t).classList.contains('active'));
+      if(tabProtegida)setTab('ventas');
     }
   }else{
     await requiereAdmin();
@@ -3318,8 +3373,8 @@ function initTheme(){
 }
 
 function setTab(t){
-  // El Resumen y Finanzas (datos sensibles) requieren modo administrador
-  if((t==='resumen'||t==='finanzas'||t==='costosfab')&&!esAdmin()){
+  // El Inicio, Resumen y Finanzas (datos sensibles) requieren modo administrador
+  if((t==='inicio'||t==='resumen'||t==='finanzas'||t==='costosfab')&&!esAdmin()){
     requiereAdmin().then(ok=>{if(ok)setTab(t);});
     closeSidebar();
     return;
@@ -3558,7 +3613,7 @@ function renderItems(){
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="vt-prod-input-${i}" value="${nombreActual.replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoVT(${i})" style="width:100%">
-        <div id="vt-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e7e5e4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="vt-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:#78716c;margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItem(${i},'qty',this.value)"></div>
@@ -3588,7 +3643,7 @@ function autocompleteProductoVT(i){
     const precioHtml=pc.promo
       ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:#a8a29e;font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#166534">${fmt(pc.precio)}</strong></span>`
       :`<span style="color:#a87f3e;white-space:nowrap">${fmt(pc.precio)}</span>`;
-    return`<div onclick="selProdAutoVT(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:12px" onmouseover="this.style.background='#fef9f0'" onmouseout="this.style.background=''">
+    return`<div onclick="selProdAutoVT(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
       <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:#dcfce7;color:#166534">PROMO</span>':''}</span>${precioHtml}</div>
       <div style="color:#78716c;font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
     </div>`;
@@ -4140,6 +4195,7 @@ function imprimirVenta(id){
       +(v.despCalle||'')+' '+(v.despNumero||'')+'<br>'
       +(v.despComuna||'')+'<br>'
       +'<strong>Hora estimada:</strong> '+(v.despHora||'Sin preferencia')
+      +'<div style="margin-top:6px;font-size:13px"><strong style="color:#92400e">💰 Cobrar despacho: '+fmt(v.desp)+'</strong> <span style="font-size:10px;color:#78716c">(cobro aparte, no incluido en el total ni en el saldo)</span></div>'
       +'</div>';
   }
 
@@ -4406,7 +4462,10 @@ function renderVentas(){
             ${estadoTag(est)}
             ${v.fecha.split('-').reverse().join('/')} · ${v.vendedor||'—'}
           </div>
-          ${v.desp>0&&v.fechaDesp?`<div style="font-size:11px;color:#a87f3e;margin-top:2px">🚚 Despacho: <strong>${v.fechaDesp.split('-').reverse().join('/')}</strong> ${v.despHora&&v.despHora!=='Sin preferencia'?'· '+v.despHora:''}</div>`:''}
+          ${v.desp>0?`<div style="margin-top:6px;padding:7px 10px;background:var(--gold-bg2);border-radius:6px;font-size:12px;font-weight:600;color:var(--gold);display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+            <span>🚚 DESPACHO${v.fechaDesp?' · '+v.fechaDesp.split('-').reverse().join('/'):''}${v.despHora&&v.despHora!=='Sin preferencia'?' · '+v.despHora:''}</span>
+            ${v.tel?`<span>📞 +56 9 ${v.tel}</span>`:''}
+          </div>`:''}
           ${v.saldo>0?`<div class="warn" style="font-size:11px;margin-top:3px">⚠ Saldo pendiente ${fmt(v.saldo)}</div>`:''}
           ${v.notas?`<div class="muted" style="font-size:11px;margin-top:3px;font-style:italic">${v.notas.length>60?v.notas.slice(0,60)+'...':v.notas}</div>`:''}
         </div>
@@ -4771,7 +4830,7 @@ function mostrarPreviewImport(filas){
   html+='<div style="max-height:200px;overflow-y:auto;margin-bottom:10px">';
   productos.forEach(p=>{
     const existe=inventario.find(x=>x.nombre.toLowerCase()===p.nombre.toLowerCase());
-    html+=`<div style="font-size:11px;padding:6px 8px;border-bottom:1px solid #f5f5f4;display:flex;justify-content:space-between">
+    html+=`<div style="font-size:11px;padding:6px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
       <span>${existe?'🔄':'🆕'} ${p.nombre} <span class="pill">${p.marca||'—'}</span></span>
       <span class="muted">${p.stock} u · ${fmt(p.min)}${p.costo>0?' · costo '+fmt(p.costo):''}</span>
     </div>`;
