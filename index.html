@@ -669,14 +669,50 @@ tbody tr:hover{background:var(--gold-bg)}
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocs,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app=initializeApp({apiKey:"AIzaSyC9ApU52_dJTeDgp0M9jURItgv0kDlvVHc",authDomain:"dreamrest-erp.firebaseapp.com",projectId:"dreamrest-erp",storageBucket:"dreamrest-erp.firebasestorage.app",messagingSenderId:"317820280893",appId:"1:317820280893:web:66834520da9dc21cd80a54"});
-const db=getFirestore(app);
+// Persistencia offline: las escrituras se confirman al instante en local y sincronizan en 2do plano.
+// Si el navegador no la soporta, cae a Firestore normal sin romper nada.
+let db;
+try{
+  db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
+}catch(e){
+  db=getFirestore(app);
+}
 
 // Modo vendedora: link de solo "Nueva Venta" (?modo=venta), sin acceso a otras pestañas ni datos sensibles
 const MODO_VENDEDORA=new URLSearchParams(location.search).get('modo')==='venta';
 if(MODO_VENDEDORA)document.body.classList.add('modo-vendedora');
+
+// Detección de móvil (iPhone/iPad/Android) para evitar el auto-imprimir que congela Safari iOS
+const ES_MOVIL=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent));
+
+// Aviso no bloqueante (reemplaza alert() para no congelar la UI). Opcionalmente con un botón de acción.
+function toast(msg,accionTxt,accionFn){
+  let cont=document.getElementById('toast-cont');
+  if(!cont){
+    cont=document.createElement('div');
+    cont.id='toast-cont';
+    cont.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none';
+    document.body.appendChild(cont);
+  }
+  const t=document.createElement('div');
+  t.style.cssText='pointer-events:auto;background:#1f2937;color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;gap:14px;align-items:center;max-width:90vw';
+  t.innerHTML='<span>'+msg+'</span>';
+  let dur=2600;
+  if(accionTxt&&accionFn){
+    dur=7000;
+    const b=document.createElement('button');
+    b.textContent=accionTxt;
+    b.style.cssText='background:#a87f3e;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+    b.onclick=()=>{try{accionFn();}finally{t.remove();}};
+    t.appendChild(b);
+  }
+  cont.appendChild(t);
+  setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),300);},dur);
+}
+window.toast=toast;
 
 async function saveProdDB(p){await setDoc(doc(db,'inventario',String(p.id)),p);}
 async function delProdDB(id){await deleteDoc(doc(db,'inventario',String(id)));}
@@ -1651,20 +1687,29 @@ async function saveVentaNV(){
     notas:document.getElementById('nv-notas').value.trim(),
     items,subtotal:sub,descuento:desc,descuentoPromos:descPromos,total:totalFinal,saldo:Math.max(0,totalFinal-cancelado)
   };
-  // Descontar stock (con combos)
-  await descontarStockItems(v.items);
-  // Agregar al inventario los productos manuales que no existan
-  await agregarProductosManuales(v.items,v.tipo);
+  // Todas las escrituras (stock + productos nuevos + venta) en UN solo batch atómico = 1 viaje de red
+  const batch=writeBatch(db);
+  descontarStockItems(v.items,batch);              // descuenta stock (con combos) -> al batch
+  await agregarProductosManuales(v.items,v.tipo,batch); // crea productos manuales -> al batch
+  batch.set(doc(db,'ventas',String(v.id)),v);
   ventas.push(v);
-  await saveVentaDB(v);
-  window._autoPrint=true;
-  setTimeout(()=>imprimirVenta(v.id),300);
-  alert('✅ Venta guardada');
+  // UI optimista: refresca de inmediato; el guardado sincroniza en 2do plano (offline-first)
   renderNuevaVentaTab();
+  batch.commit().catch(e=>toast('⚠️ Error al sincronizar la venta: '+e.message));
+  // Impresión: en PC se abre automáticamente; en celular queda un botón para no congelar Safari iOS
+  if(ES_MOVIL){
+    toast('✅ Venta guardada','Imprimir / PDF',()=>{window._autoPrint=true;imprimirVenta(v.id);});
+  }else{
+    toast('✅ Venta guardada');
+    window._autoPrint=true;
+    setTimeout(()=>imprimirVenta(v.id),300);
+  }
 }
 
-// Crea productos nuevos en el inventario a partir de ítems manuales (sin prodId)
-async function agregarProductosManuales(items,tipo){
+// Crea productos nuevos en el inventario a partir de ítems manuales (sin prodId).
+// Si se pasa un batch, agrega las escrituras al batch en vez de guardar una por una.
+async function agregarProductosManuales(items,tipo,batch){
+  const nuevos=[];
   for(const it of items){
     if(it.prodId)continue; // ya existe en inventario
     const desc=(it.desc||'').trim();
@@ -1684,8 +1729,11 @@ async function agregarProductosManuales(items,tipo){
     const precio=it.precio||0;
     const nuevo={id:uid(),nombre:desc,marca:'',cat,may:tipo==='may'?precio:0,min:tipo==='may'?0:precio,stock:0,minStock:2,notas:'Creado automáticamente desde una venta'};
     inventario.push(nuevo);
-    await saveProdDB(nuevo);
+    nuevos.push(nuevo);
   }
+  if(batch){nuevos.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));}
+  else{await Promise.all(nuevos.map(p=>saveProdDB(p)));}
+  return nuevos;
 }
 
 // =========== AUTOCOMPLETE CLIENTES ===========
@@ -3340,7 +3388,8 @@ async function initFirebase(){
     }
     onSnapshot(collection(db,'inventario'),snap=>{
       inventario=snap.docs.map(d=>d.data());
-      renderInv();
+      const tabInv=document.getElementById('tab-inventario');
+      if(tabInv&&tabInv.classList.contains('active'))renderInv();
     });
 
     if(!MODO_VENDEDORA){
@@ -3841,14 +3890,16 @@ async function saveVenta(){
   v.total=v.subtotal;
   v.saldo=Math.max(0,v.total-v.cancelado);
 
+  // Todas las escrituras de stock + la venta en UN solo batch atómico (1 viaje de red en vez de N)
+  const batch=writeBatch(db);
   // Stock: venta nueva descuenta; venta editada devuelve lo anterior y descuenta lo nuevo
   if(!editVentaId){
-    await descontarStockItems(v.items);
+    descontarStockItems(v.items,batch);
   }else{
     const orig=ventas.find(x=>String(x.id)===String(editVentaId));
     if(orig&&!orig.stockDevuelto){
-      await restaurarStockItems(orig.items||[]);
-      await descontarStockItems(v.items);
+      restaurarStockItems(orig.items||[],batch);
+      descontarStockItems(v.items,batch);
     }
     if(orig&&orig.stockDevuelto)v.stockDevuelto=true; // venta cancelada con stock ya devuelto
   }
@@ -3860,56 +3911,77 @@ async function saveVenta(){
   }else{
     ventas.push(v);
   }
-  await saveVentaDB(v);
+  batch.set(doc(db,'ventas',String(v.id)),v);
+  // UI optimista: cerrar y refrescar de inmediato; sincroniza en 2do plano
   closeModal('modal-venta');
   renderVentas();
-  if(esNueva){window._autoPrint=true;setTimeout(()=>imprimirVenta(v.id),300);}
+  batch.commit().catch(e=>toast('⚠️ Error al sincronizar la venta: '+e.message));
+  if(esNueva){
+    if(ES_MOVIL){
+      toast('✅ Venta guardada','Imprimir / PDF',()=>{window._autoPrint=true;imprimirVenta(v.id);});
+    }else{
+      window._autoPrint=true;
+      setTimeout(()=>imprimirVenta(v.id),300);
+    }
+  }else{
+    toast('✅ Venta actualizada');
+  }
 }
 
-async function restaurarStockItems(items){
+async function restaurarStockItems(items,batch){
   // Devuelve al stock lo que una venta había descontado (espejo de descontarStockItems)
+  const tocados=[];
+  const marcar=p=>{if(p&&!tocados.includes(p))tocados.push(p);};
   for(const it of items){
     if(!it.prodId)continue;
     const p=inventario.find(x=>String(x.id)===String(it.prodId));
     if(p){
       if(p.combo&&p.combo.colchonId){
         const colchon=inventario.find(x=>String(x.id)===String(p.combo.colchonId));
-        if(colchon){colchon.stock=(parseInt(colchon.stock)||0)+it.qty;await saveProdDB(colchon);}
+        if(colchon){colchon.stock=(parseInt(colchon.stock)||0)+it.qty;marcar(colchon);}
       }else if(p.combo&&p.combo.almohadaId){
         const almohada=inventario.find(x=>String(x.id)===String(p.combo.almohadaId));
         const cant=(p.combo.cantidad||2)*it.qty;
-        if(almohada){almohada.stock=(parseInt(almohada.stock)||0)+cant;await saveProdDB(almohada);}
+        if(almohada){almohada.stock=(parseInt(almohada.stock)||0)+cant;marcar(almohada);}
       }else{
-        p.stock=(parseInt(p.stock)||0)+it.qty;await saveProdDB(p);
+        p.stock=(parseInt(p.stock)||0)+it.qty;marcar(p);
       }
     }
     if(it.respaldoId){
       const resp=inventario.find(x=>String(x.id)===String(it.respaldoId));
-      if(resp){resp.stock=(parseInt(resp.stock)||0)+it.qty;await saveProdDB(resp);}
+      if(resp){resp.stock=(parseInt(resp.stock)||0)+it.qty;marcar(resp);}
     }
   }
+  if(batch){tocados.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));}
+  else{await Promise.all(tocados.map(p=>saveProdDB(p)));}
+  return tocados;
 }
-async function descontarStockItems(items){
+async function descontarStockItems(items,batch){
+  const tocados=[];
+  const marcar=p=>{if(p&&!tocados.includes(p))tocados.push(p);};
   for(const it of items){
     if(!it.prodId)continue;
     const p=inventario.find(x=>String(x.id)===String(it.prodId));
     if(!p)continue;
     if(p.combo&&p.combo.colchonId){
       const colchon=inventario.find(x=>String(x.id)===String(p.combo.colchonId));
-      if(colchon){colchon.stock=(parseInt(colchon.stock)||0)-it.qty;await saveProdDB(colchon);}
+      if(colchon){colchon.stock=(parseInt(colchon.stock)||0)-it.qty;marcar(colchon);}
     }else if(p.combo&&p.combo.almohadaId){
       const almohada=inventario.find(x=>String(x.id)===String(p.combo.almohadaId));
       const cant=(p.combo.cantidad||2)*it.qty;
-      if(almohada){almohada.stock=(parseInt(almohada.stock)||0)-cant;await saveProdDB(almohada);}
+      if(almohada){almohada.stock=(parseInt(almohada.stock)||0)-cant;marcar(almohada);}
     }else{
-      p.stock=(parseInt(p.stock)||0)-it.qty;await saveProdDB(p);
+      p.stock=(parseInt(p.stock)||0)-it.qty;marcar(p);
     }
     // Si el ítem es una cama con respaldo, descontar el respaldo elegido
     if(it.respaldoId){
       const resp=inventario.find(x=>String(x.id)===String(it.respaldoId));
-      if(resp){resp.stock=(parseInt(resp.stock)||0)-it.qty;await saveProdDB(resp);}
+      if(resp){resp.stock=(parseInt(resp.stock)||0)-it.qty;marcar(resp);}
     }
   }
+  if(batch){tocados.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));}
+  else{await Promise.all(tocados.map(p=>saveProdDB(p)));}
+  return tocados;
 }
 
 function descontarStockItemsLegacy(){}
