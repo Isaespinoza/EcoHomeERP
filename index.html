@@ -5043,7 +5043,7 @@ float fbm(vec2 p){return gn(p)*.5+gn(p*2.+vec2(1.7,9.2))*.25+gn(p*4.+vec2(3.1,5.
 /* paleta 5 pasos: gris claro -> gris calido -> cobre -> oro -> crema */
 vec3 pal(float t){
   vec3 c=mix(vec3(.74,.72,.71),vec3(.84,.82,.80),smoothstep(0.,.25,t));
-  c=mix(c,vec3(.72,.32,.22),smoothstep(.25,.52,t));
+  c=mix(c,vec3(.85,.55,.38),smoothstep(.25,.52,t));
   c=mix(c,vec3(.92,.74,.38),smoothstep(.52,.78,t));
   c=mix(c,vec3(.99,.97,.92),smoothstep(.78,1.,t));
   return c;
