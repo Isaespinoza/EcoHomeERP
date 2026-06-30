@@ -203,7 +203,7 @@ tbody tr:hover{background:var(--gold-bg)}
 .card{animation:cardIn .2s ease both}
 @keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 /* ===== SHADER BG ===== */
-#shader-bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;opacity:.55;pointer-events:none;display:block}
+#shader-bg{display:none}
 </style>
 </head>
 <body>
@@ -4252,6 +4252,39 @@ function imprimirVenta(id){
       +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:right">'+fmt(it.qty*it.precio)+'</td>'
       +'</tr>';
   });
+
+  if(v.cliente==='Cliente mostrador'){
+    const autoPrintM=!!window._autoPrint;
+    window._autoPrint=false;
+    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Helvetica,Arial,sans-serif;color:#333;background:#fff}.page{width:148mm;padding:12mm 14mm;margin:0 auto}.logo{font-family:Brush Script MT,Lucida Handwriting,cursive;font-size:28px;color:#a87f3e;margin-bottom:4px}.ln{border-top:2px solid #a87f3e;margin:8px 0 10px}.meta{font-size:11px;color:#666;margin-bottom:10px}.tabla{width:100%;border-collapse:collapse;font-size:12px}.tabla thead th{background:#a87f3e;color:#fff;padding:7px 8px;text-align:left;font-size:10px;font-weight:bold}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #ccc}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tr-tot td{border-top:2px solid #a87f3e;padding:9px 8px;font-weight:bold}.tr-tot td:first-child{text-align:right;color:#666;font-weight:normal}.tr-tot td:last-child{text-align:right;color:#a87f3e;font-size:14px}.footer{font-size:10px;color:#aaa;text-align:center;margin-top:20px}.btnprint{position:fixed;top:10px;right:10px;background:#a87f3e;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media print{.btnprint{display:none}}';
+    const descM=v.descuento>0?'<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#166534">Descuento aplicado</td><td style="padding:6px 8px;text-align:right;color:#166534">-'+fmt(v.descuento)+'</td></tr>':'';
+    const saldoM=v.saldo>0?'<div style="margin-top:8px;padding:8px;background:#fff5e6;border:1px solid #f59e0b;border-radius:4px;font-size:11px;color:#92400e">⚠ <strong>Saldo pendiente:</strong> '+fmt(v.saldo)+' (Pagado: '+fmt(v.cancelado)+')</div>':'';
+    const notasM=v.notas?'<div style="margin-top:10px;padding:8px 10px;background:#f9f9f9;border-left:3px solid #a87f3e;font-size:11px;font-style:italic">'+v.notas+'</div>':'';
+    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante DreamRest</title><style>'+cssM+'</style></head><body>'
+      +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+      +'<div class="page">'
+      +'<div class="logo">Dream Rest</div>'
+      +'<div class="ln"></div>'
+      +'<div class="meta">Fecha: <strong>'+fechaFmt+'</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Pago: <strong>'+(v.pago||'—')+'</strong></div>'
+      +'<table class="tabla"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>'
+      +'<tbody>'+itemsHtml+descM
+      +'<tr class="tr-tot"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
+      +'</tbody></table>'
+      +saldoM+notasM
+      +'<div class="footer">Dream Rest &nbsp;·&nbsp; Gracias por tu compra</div>'
+      +'</div></body></html>';
+    window._lastPedidoHtml=htmlM;
+    window._lastPedidoNombre='Comprobante_DreamRest_'+fechaFmt.replace(/\//g,'-')+'.html';
+    const autoS='<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>';
+    const finalM=autoPrintM?htmlM.replace('</body>',autoS+'</body>'):htmlM;
+    const blobM=new Blob([finalM],{type:'text/html;charset=utf-8'});
+    const urlM=URL.createObjectURL(blobM);
+    const wM=window.open(urlM,'_blank');
+    if(!wM)alert('Activa las ventanas emergentes en Chrome para imprimir.');
+    setTimeout(()=>URL.revokeObjectURL(urlM),5000);
+    return;
+  }
+
   // Filas vacías para llegar a mínimo 4
   const filasVacias=Math.max(0,4-v.items.length);
   for(let i=0;i<filasVacias;i++){
@@ -5019,12 +5052,9 @@ Object.assign(window,{
 </script>
 
 <script>
-/* ===== SHADER BG: WebGL nebula dorada ===== */
+/* shader-bg deshabilitado por rendimiento */
 (function(){
-  const C = document.getElementById('shader-bg');
-  if (!C) return;
-  const gl = C.getContext('webgl') || C.getContext('experimental-webgl');
-  if (!gl) { C.style.display = 'none'; return; }
+  return;
 
   const VS = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
 
