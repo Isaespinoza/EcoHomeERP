@@ -5,54 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#a87f3e">
+<meta name="theme-color" content="#26262b">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="DreamRest">
+<link rel="manifest" href='data:application/manifest+json,{"name":"DreamRest ERP","short_name":"DreamRest","display":"standalone","background_color":"%230d0d10","theme_color":"%2326262b","start_url":"."}'>
 <title>DreamRest ERP</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --gold:#a87f3e;--gold-light:#c89958;--gold-dark:#8b6831;
-  --gold-bg:#fef9f0;--gold-bg2:#fef3e2;
-  --cream:#fdfcf8;--cream2:#f9f6f0;
-  --text:#1c1917;--text2:#57534e;--text3:#78716c;
-  --border:#e7e5e4;--border2:#d6d3d1;
+  --gold:#b8894a;--gold-light:#cda668;--gold-dark:#96702f;
+  --gold-bg:#faf6ee;--gold-bg2:#f3ebda;
+  --cream:#ffffff;--cream2:#f6f5f3;
+  --graphite:#26262b;--graphite2:#34343c;--graphite-soft:#3d3d46;
+  --text:#1a1a1d;--text2:#55555d;--text3:#8a8a93;
+  --border:#eae8e5;--border2:#dcd9d4;
   --white:#ffffff;
   --red:#dc2626;--red-bg:#fee2e2;
   --blue:#1e40af;--blue-bg:#dbeafe;
   --green:#166534;--green-bg:#dcfce7;
   --orange:#9a3412;--orange-bg:#fed7aa;
-  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
-  --shadow-md:0 4px 12px rgba(0,0,0,.1);
-  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(20,20,25,.05),0 1px 2px rgba(20,20,25,.04);
+  --shadow-md:0 8px 26px rgba(20,20,25,.10);
+  --radius:14px;--radius-sm:10px;
 }
 body.dark{
-  --cream:#1c1917;--cream2:#0c0a09;
-  --white:#262220;
-  --text:#f5f5f4;--text2:#d6d3d1;--text3:#a8a29e;
-  --border:#3a3531;--border2:#44403c;
-  --gold-bg:#2a2118;--gold-bg2:#332817;
+  --cream:#1a1a1e;--cream2:#0e0e11;
+  --white:#232329;
+  --graphite:#0e0e11;--graphite2:#17171b;--graphite-soft:#232329;
+  --text:#f4f4f5;--text2:#c8c8ce;--text3:#9a9aa2;
+  --border:#33333a;--border2:#3f3f47;
+  --gold:#cda862;--gold-light:#e0c88f;--gold-dark:#b08f4a;
+  --gold-bg:#26221a;--gold-bg2:#2f2a1e;
   --blue-bg:#1e2a4a;--green-bg:#16321f;--orange-bg:#3a2410;--red-bg:#3a1818;
-  --shadow:0 1px 3px rgba(0,0,0,.3);
-  --shadow-md:0 4px 12px rgba(0,0,0,.4);
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+  --shadow-md:0 8px 26px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);padding-bottom:80px;-webkit-font-smoothing:antialiased;
-  background:#efe6d4;
+  background:#eceae6;
   background-image:
-    radial-gradient(ellipse at 15% 10%, rgba(200,153,88,.22) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 20%, rgba(168,127,62,.16) 0%, transparent 42%),
-    radial-gradient(ellipse at 50% 100%, rgba(139,104,49,.14) 0%, transparent 50%),
-    linear-gradient(165deg, #f5eddd 0%, #efe5d2 45%, #e9dcc4 100%);
+    radial-gradient(ellipse at 12% 8%, rgba(184,137,74,.10) 0%, transparent 46%),
+    radial-gradient(ellipse at 88% 14%, rgba(38,38,43,.05) 0%, transparent 42%),
+    linear-gradient(165deg, #f4f3f0 0%, #edece8 55%, #e6e3de 100%);
   background-attachment:fixed;
   min-height:100vh}
 body.dark{
-  background:#161310;
+  background:#0d0d10;
   background-image:
-    radial-gradient(ellipse at 15% 10%, rgba(200,153,88,.13) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 20%, rgba(168,127,62,.10) 0%, transparent 42%),
-    radial-gradient(ellipse at 50% 100%, rgba(139,104,49,.10) 0%, transparent 50%),
-    linear-gradient(165deg, #211c15 0%, #181410 55%, #0e0b08 100%);
+    radial-gradient(ellipse at 12% 8%, rgba(205,168,98,.08) 0%, transparent 46%),
+    radial-gradient(ellipse at 88% 18%, rgba(255,255,255,.03) 0%, transparent 42%),
+    linear-gradient(165deg, #17171b 0%, #101013 55%, #0a0a0c 100%);
   background-attachment:fixed}
 
 /* ===== SIDEBAR MENU ===== */
@@ -60,7 +64,7 @@ body.dark{
 .sidebar-overlay.open{opacity:1;pointer-events:all}
 .sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:var(--white);z-index:201;transition:left .3s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-md);display:flex;flex-direction:column;overflow:hidden}
 .sidebar.open{left:0}
-.sidebar-header{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-light) 100%);padding:28px 20px 20px;flex-shrink:0}
+.sidebar-header{background:linear-gradient(135deg,#1c1c21 0%,#2b2b31 100%);padding:28px 20px 20px;flex-shrink:0;border-bottom:2px solid var(--gold)}
 .sidebar-logo{display:flex;align-items:center;gap:12px}
 .sidebar-logo img{width:120px;filter:brightness(0) invert(1);opacity:.95}
 .sidebar-subtitle{font-size:10px;color:rgba(255,255,255,.75);margin-top:6px;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
@@ -71,11 +75,18 @@ body.dark{
 .sidebar-item.active{background:var(--gold-bg2);color:var(--gold);font-weight:600;border-left-color:var(--gold)}
 .sidebar-item .icon{width:24px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sidebar-item .icon svg{width:18px;height:18px}
 .sidebar-item .label{flex:1}
+.sidebar-item .badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:19px;height:19px;padding:0 6px;border-radius:10px;display:none;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.sidebar-item .badge.show{display:inline-flex}
+.sidebar-item .badge.amber{background:#d97706}
+.alert-atraso{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:12px;box-shadow:0 4px 14px rgba(220,38,38,.35);animation:atrasoPulse 2s ease-in-out infinite;display:flex;align-items:center;gap:8px}
+@keyframes atrasoPulse{0%,100%{box-shadow:0 4px 14px rgba(220,38,38,.35)}50%{box-shadow:0 4px 22px rgba(220,38,38,.6)}}
+.card.atrasado{border-left:4px solid #dc2626!important;background:linear-gradient(90deg,color-mix(in srgb,var(--red) 8%,var(--white)),var(--white))}
+.card.desp-hoy{border-left:4px solid #d97706!important}
 .sidebar-divider{height:1px;background:var(--border);margin:8px 20px}
 .sidebar-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;padding:12px 20px 4px}
 
 /* ===== HEADER ===== */
-.hdr{background:linear-gradient(135deg,#8b6831 0%,#a87f3e 40%,#c89958 75%,#b8894a 100%);color:#fff;padding:16px;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(139,104,49,.35);display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+.hdr{background:linear-gradient(135deg,#1c1c21 0%,#28282e 55%,#34343c 100%);color:#fff;padding:16px;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(20,20,25,.28);border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
 .hdr::after{content:'';position:absolute;top:-50%;right:-10%;width:60%;height:200%;background:radial-gradient(ellipse,rgba(255,255,255,.14) 0%,transparent 65%);pointer-events:none}
 .hdr-left{display:flex;align-items:center;gap:12px}
 .hamburger{background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;transition:background .2s;flex-shrink:0}
@@ -137,6 +148,65 @@ label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-wei
 .field{margin-bottom:12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ===== Botón y ventana de Ayuda ===== */
+.help-fab{position:fixed;bottom:20px;right:20px;z-index:900;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;border:none;border-radius:30px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(168,127,62,.5);display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;animation:helpPulse 2.6s ease-in-out infinite}
+.help-fab:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(168,127,62,.6)}
+.help-fab svg{width:20px;height:20px}
+@keyframes helpPulse{0%,100%{box-shadow:0 6px 20px rgba(168,127,62,.5)}50%{box-shadow:0 6px 26px rgba(168,127,62,.85)}}
+@media(max-width:640px){.help-fab{bottom:14px;right:14px;padding:12px 17px;font-size:14px}}
+.ayuda-intro{background:var(--gold-bg);border:1px solid color-mix(in srgb,var(--gold) 25%,var(--border));border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:var(--text2);margin-bottom:14px}
+.ayuda-intro b{color:var(--gold)}
+.ayuda-item{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--white)}
+.ayuda-item summary{padding:13px 14px;cursor:pointer;font-weight:600;font-size:14.5px;list-style:none;display:flex;align-items:center;gap:9px;color:var(--text)}
+.ayuda-item summary::-webkit-details-marker{display:none}
+.ayuda-item summary::after{content:'\25B8';margin-left:auto;color:var(--text3);transition:transform .2s;font-size:13px}
+.ayuda-item[open] summary::after{transform:rotate(90deg)}
+.ayuda-item[open] summary{background:var(--gold-bg);color:var(--gold)}
+.ayuda-body{padding:6px 16px 15px;font-size:13.5px;line-height:1.65;color:var(--text2)}
+.ayuda-body ol,.ayuda-body ul{margin:6px 0 6px 20px;padding:0}
+.ayuda-body li{margin-bottom:7px}
+.ayuda-body b{color:var(--text)}
+.ayuda-body .paso{background:var(--gold-bg2);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
+/* ===== Tour guiado ===== */
+#tour{position:fixed;inset:0;z-index:3000}
+#tour-spot{position:absolute;display:none;border-radius:12px;box-shadow:0 0 0 9999px rgba(14,14,18,.68);border:2px solid var(--gold);pointer-events:none;transition:all .32s cubic-bezier(.4,0,.2,1)}
+#tour-tip{position:absolute;max-width:290px;width:calc(100vw - 28px);background:var(--white);color:var(--text);border-radius:16px;padding:18px 16px 14px;box-shadow:0 16px 46px rgba(0,0,0,.4);border:1px solid var(--gold);transition:top .32s cubic-bezier(.4,0,.2,1),left .32s cubic-bezier(.4,0,.2,1)}
+#tour-tip-text{font-size:14.5px;line-height:1.55;margin-bottom:14px}
+#tour-tip-text b{color:var(--gold)}
+#tour-tip-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#tour-progress{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.03em}
+#tour-tip button{cursor:pointer;font-family:inherit}
+#tour-prev{background:none;border:none;color:var(--text3);font-size:13px;font-weight:600;padding:7px 10px;border-radius:8px}
+#tour-prev:hover{background:var(--cream2)}
+#tour-next{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;border:none;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(184,137,74,.4)}
+#tour-close{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text3);font-size:16px;line-height:1;padding:4px}
+
+/* ===== Pulido boutique: suavidad y elegancia ===== */
+.card{transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s ease,border-color .18s ease}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.btn{letter-spacing:.02em}
+.btn:hover{filter:brightness(1.05)}
+.btn:active{transform:translateY(1px)}
+.stat{transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s ease}
+.sidebar-item{transition:background .2s ease,color .2s ease,border-color .2s ease,padding-left .2s ease}
+.sidebar-item:hover{padding-left:24px}
+/* Acciones rápidas en tarjetas */
+.alertas{display:flex;flex-direction:column;gap:8px;margin:4px 0 18px}
+.alerta{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;border:1px solid var(--border);background:var(--white);transition:transform .15s ease,box-shadow .15s ease;box-shadow:var(--shadow)}
+.alerta:hover{transform:translateX(3px);box-shadow:var(--shadow-md)}
+.alerta .ico{font-size:20px;flex-shrink:0}
+.alerta .txt{flex:1;min-width:0}
+.alerta .txt b{font-size:14px;color:var(--text)}
+.alerta .txt div{font-size:11.5px;color:var(--text3);margin-top:1px}
+.alerta .cta{font-size:11px;color:var(--gold);font-weight:700;flex-shrink:0}
+.alerta.rojo{border-color:color-mix(in srgb,var(--red) 45%,var(--border));background:linear-gradient(90deg,color-mix(in srgb,var(--red) 9%,var(--white)),var(--white))}
+.alerta.ambar{border-color:color-mix(in srgb,#d97706 45%,var(--border));background:linear-gradient(90deg,color-mix(in srgb,#d97706 10%,var(--white)),var(--white))}
+.venta-acciones{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.qa{font-size:11px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--white);color:var(--text2);cursor:pointer;font-weight:600;transition:all .15s}
+.qa:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
+.qa.wa{border-color:#25d366;color:#128c3e}
+.qa.wa:hover{background:#25d366;color:#fff;border-color:#25d366}
 
 /* ===== MODAL ===== */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;padding:20px;align-items:flex-start;justify-content:center;overflow-y:auto;backdrop-filter:blur(4px)}
@@ -222,17 +292,19 @@ tbody tr:hover{background:var(--gold-bg)}
     <button class="sidebar-item" id="si-nueva-venta" onclick="setTab('nueva-venta')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span class="label">Nueva Venta</span></button>
     <button class="sidebar-item active" id="si-ventas" onclick="setTab('ventas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span><span class="label">Ventas</span></button>
     <button class="sidebar-item" id="si-cotizaciones" onclick="setTab('cotizaciones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="label">Cotizaciones</span></button>
-    <button class="sidebar-item" id="si-despachos" onclick="setTab('despachos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span><span class="label">Despachos</span></button>
+    <button class="sidebar-item" id="si-despachos" onclick="setTab('despachos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span><span class="label">Despachos</span><span class="badge" id="badge-despachos"></span></button>
     <button class="sidebar-item" id="si-caja" onclick="setTab('caja')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="label">Caja</span></button>
+    <button class="sidebar-item" id="si-saldos" onclick="setTab('saldos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span><span class="label">Saldos</span><span class="badge" id="badge-saldos"></span></button>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-title">Gestión</div>
-    <button class="sidebar-item" id="si-inventario" onclick="setTab('inventario')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="label">Inventario</span></button>
+    <button class="sidebar-item" id="si-inventario" onclick="setTab('inventario')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="label">Inventario</span><span class="badge" id="badge-inventario"></span></button>
     <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="label">Promociones</span></button>
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
     <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
     <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="label">Finanzas</span></button>
     <button class="sidebar-item" id="si-costosfab" onclick="setTab('costosfab')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="label">Costos Fábrica</span></button>
+    <button class="sidebar-item" id="si-ayuda" onclick="openModal('modal-ayuda');closeSidebar()"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="label">Ayuda</span></button>
   </div>
 </div>
 
@@ -318,6 +390,21 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
 
   <!-- DESPACHOS -->
+  <!-- SALDOS PENDIENTES -->
+  <div id="tab-saldos" class="section">
+    <div class="section-title">💵 Saldos Pendientes</div>
+    <div class="fil">
+      <input type="text" id="sp-search" placeholder="Buscar cliente..." oninput="renderSaldos()" style="flex:2;min-width:140px">
+      <select id="sp-orden" onchange="renderSaldos()" style="flex:1;min-width:150px">
+        <option value="antiguas">Más antiguas primero</option>
+        <option value="mayor">Mayor saldo primero</option>
+        <option value="cliente">Cliente (A-Z)</option>
+      </select>
+    </div>
+    <div id="sp-stats" class="stat-grid"></div>
+    <div id="sp-list"></div>
+  </div>
+
   <div id="tab-despachos" class="section">
     <div class="fil" style="align-items:center;gap:6px">
       <select id="d-estado" onchange="renderDespachos()" style="flex:1;min-width:130px">
@@ -405,6 +492,148 @@ tbody tr:hover{background:var(--gold-bg)}
 </div>
 
 <!-- Modal Producto -->
+<!-- Botón flotante de Ayuda (siempre visible) -->
+<button class="help-fab" onclick="openModal('modal-ayuda')" aria-label="Ayuda">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  Ayuda
+</button>
+
+<!-- Tour guiado (coach marks) -->
+<div id="tour" style="display:none">
+  <div id="tour-spot"></div>
+  <div id="tour-tip">
+    <button id="tour-close" onclick="cerrarTour()" aria-label="Cerrar">✕</button>
+    <div id="tour-tip-text"></div>
+    <div id="tour-tip-foot">
+      <span id="tour-progress"></span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button id="tour-prev" onclick="tourAnterior()">Atrás</button>
+        <button id="tour-next" onclick="tourSiguiente()">Siguiente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Recompra (clientes por reactivar) -->
+<div class="modal-bg" id="modal-recompra">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="margin:0">🔄 Clientes para reactivar</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-recompra')">✕ Cerrar</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:12px">Compraron hace más de 6 años. ¡Buen momento para ofrecerles renovar su colchón! 🛏️</div>
+    <div id="recompra-list"></div>
+  </div>
+</div>
+
+<!-- Modal Ayuda -->
+<div class="modal-bg" id="modal-ayuda">
+  <div class="modal" style="max-width:620px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h3 style="margin:0">🙋 Centro de Ayuda</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-ayuda')" aria-label="Cerrar">✕ Cerrar</button>
+    </div>
+    <div class="ayuda-intro">
+      Tranquil@ 😊 Este sistema es fácil. Lo único que necesitas para trabajar es: <b>Nueva Venta → llenar los datos → Guardar</b>. Toca cada tema de abajo para ver los pasos. <b>No puedes romper nada</b>: si te equivocas, se puede editar.
+    </div>
+    <button class="btn" style="width:100%;margin-bottom:14px;padding:13px" onclick="iniciarTour()">▶️ Empezar tour guiado <span style="font-weight:400;opacity:.9">(recomendado la primera vez)</span></button>
+
+    <details class="ayuda-item" open>
+      <summary>🛒 Cómo hacer una venta (lo más importante)</summary>
+      <div class="ayuda-body">
+        <ol>
+          <li>Toca el botón dorado <b>➕</b> arriba a la derecha, o abre el menú <b>☰</b> y entra a <b>Nueva Venta</b>.</li>
+          <li>La <b>fecha</b> ya viene puesta con la de hoy.</li>
+          <li>En <b>Tipo</b> elige <b>Minorista</b> (venta normal al público) o <b>Mayorista</b>.</li>
+          <li>Escribe el <b>nombre del cliente</b>. Si ya compró antes, aparecerá solo en una lista: tócalo y se rellena.</li>
+          <li>Escribe el <b>teléfono</b> (solo los 8 números; el <b>+56 9</b> ya está puesto).</li>
+          <li>Elige tu nombre en <b>Vendedor</b>.</li>
+          <li>Elige la <b>Forma de pago</b> (Efectivo, Tarjeta, Transferencia…).</li>
+          <li>En <b>Productos</b>, toca <b>+ Agregar producto</b> y elige el colchón o cama. Repite si lleva varios.</li>
+          <li>Si hay <b>despacho a domicilio</b>, escribe el costo del despacho y se abrirán los campos de dirección. Si el cliente <b>retira en tienda</b>, deja el despacho en <b>0</b>.</li>
+          <li>En <b>Monto cancelado</b> escribe lo que pagó. Si pagó todo, el saldo queda en 0; si abonó, abajo se ve el <b>saldo pendiente</b> solo.</li>
+          <li>Toca <b>Guardar venta</b>. ✅ ¡Listo, la venta quedó registrada!</li>
+        </ol>
+        <div class="paso">💡 Consejo: si no sabes un dato (ej. dirección exacta), déjalo en blanco y guárdalo igual. Puedes editar la venta después.</div>
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>🎨 Los colores de las ventas (estados)</summary>
+      <div class="ayuda-body">
+        Cada venta tiene un estado con color:
+        <ul>
+          <li>🟡 <b>Pendiente</b>: se tomó la venta, pero el cliente aún no paga.</li>
+          <li>🟠 <b>Pagado</b>: ya pagó, falta entregarle.</li>
+          <li>🟢 <b>Despachado</b>: ya se le entregó. ¡Venta terminada!</li>
+          <li>🔴 <b>Cancelado</b>: la venta se anuló.</li>
+        </ul>
+        Para cambiar el estado: entra a <b>Ventas</b>, abre la venta y cambia el campo <b>Estado</b>.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>✏️ Corregir o cambiar una venta ya hecha</summary>
+      <div class="ayuda-body">
+        Abre el menú <b>☰</b> → <b>Ventas</b>. Toca la venta que quieras cambiar, corrige lo que necesites y toca <b>Guardar venta</b>. También puedes buscar una venta escribiendo el nombre del cliente arriba.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>📦 Ver productos, precios y stock (Inventario)</summary>
+      <div class="ayuda-body">
+        Abre el menú <b>☰</b> → <b>Inventario</b>. Ahí ves todos los productos con su <b>precio</b> y cuánto <b>stock</b> queda. Para encontrar algo rápido, escribe el nombre en el buscador de arriba.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>📝 Solo pasar un precio (Cotización)</summary>
+      <div class="ayuda-body">
+        Si el cliente <b>solo quiere saber el precio</b> y todavía no compra, usa el menú <b>☰</b> → <b>Cotizaciones</b>. Creas la cotización con los productos y, si después decide comprar, se puede pasar a venta.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>🚚 Ver las entregas del día (Despachos)</summary>
+      <div class="ayuda-body">
+        En el menú <b>☰</b> → <b>Despachos</b> ves las entregas pendientes con su <b>dirección</b> y <b>hora</b>. Sirve para saber qué hay que llevar y a dónde.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>🌗 Que la pantalla se vea más clara u oscura</summary>
+      <div class="ayuda-body">
+        Toca el ícono de <b>luna 🌙</b> arriba a la derecha para cambiar entre modo claro y oscuro. Es solo para tu comodidad; no afecta nada de las ventas.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>🔒 Me pide una clave (modo administrador)</summary>
+      <div class="ayuda-body">
+        Algunas secciones (<b>Inicio, Resumen, Finanzas, Costos</b>) están protegidas con clave porque muestran información del dueño. <b>No las necesitas para vender.</b> Si te aparece la clave, simplemente vuelve a <b>Nueva Venta</b> o <b>Ventas</b> desde el menú ☰ y sigue trabajando normal.
+      </div>
+    </details>
+
+    <details class="ayuda-item">
+      <summary>😌 Si te pones nerviosa, lee esto</summary>
+      <div class="ayuda-body">
+        <ul>
+          <li><b>No se puede romper nada.</b> Si algo sale mal, se edita o se borra la venta.</li>
+          <li>Para vender solo necesitas 3 pasos: <b>Nueva Venta → llenar → Guardar</b>.</li>
+          <li>Si dudas de un dato, guárdalo igual y lo corriges después.</li>
+          <li>Este botón de <b>Ayuda</b> siempre está abajo a la derecha por si lo necesitas otra vez.</li>
+        </ul>
+        <div class="paso">📞 Si aun así te trabas, saca una foto de la pantalla y pregúntale a Isaías.</div>
+      </div>
+    </details>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sec btn-sm" onclick="exportarRespaldo()" title="Descarga una copia de seguridad de todos los datos">🗄️ Descargar respaldo</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-ayuda')">Entendido 👍</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-prod">
   <div class="modal">
     <h3 id="prod-title">Agregar producto</h3>
@@ -520,6 +749,7 @@ tbody tr:hover{background:var(--gold-bg)}
       </div>
     </div>
 
+    <div class="field"><label>Garantía (meses) <span style="text-transform:none;font-weight:400">— opcional, ej: 36</span></label><input type="number" id="vt-garantia" placeholder="Ej: 36" min="0"></div>
     <div class="field"><label>Notas</label><textarea id="vt-notas" rows="2" placeholder="Despacho por pagar, retira en tienda, etc."></textarea></div>
 
     <div style="background:#fef9f0;padding:10px;border-radius:8px;margin-top:8px">
@@ -1036,8 +1266,21 @@ function renderInicio(){
   const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const mesNom=MESES_ES[parseInt(mes.slice(5))-1]+' '+mes.slice(0,4);
 
+  // Panel de alertas accionables
+  const _despAtr=ventas.filter(v=>v.desp>0&&!['despachado','cancelado'].includes(v.estado||'pendiente')&&(v.fechaDesp||v.fecha)<hoy).length;
+  const _despHoy=ventas.filter(v=>v.desp>0&&!['despachado','cancelado'].includes(v.estado||'pendiente')&&(v.fechaDesp||v.fecha)===hoy).length;
+  const _nSaldos=ventas.filter(v=>(v.saldo||0)>0&&(v.estado||'pendiente')!=='cancelado').length;
+  const _alertas=[];
+  if(_despAtr>0)_alertas.push(`<div class="alerta rojo" onclick="setTab('despachos')"><span class="ico">🚚</span><div class="txt"><b>${_despAtr} despacho${_despAtr!==1?'s':''} atrasado${_despAtr!==1?'s':''}</b><div>Su fecha de entrega ya pasó</div></div><span class="cta">Ver →</span></div>`);
+  if(_despHoy>0)_alertas.push(`<div class="alerta ambar" onclick="setTab('despachos')"><span class="ico">📦</span><div class="txt"><b>${_despHoy} entrega${_despHoy!==1?'s':''} para hoy</b><div>Coordina y marca como despachado</div></div><span class="cta">Ver →</span></div>`);
+  if(_nSaldos>0)_alertas.push(`<div class="alerta ambar" onclick="setTab('saldos')"><span class="ico">💵</span><div class="txt"><b>${_nSaldos} venta${_nSaldos!==1?'s':''} por cobrar</b><div>Total pendiente ${fmt(saldoPend)}</div></div><span class="cta">Cobrar →</span></div>`);
+  const _recompra=recompraCandidatos().length;
+  if(_recompra>0)_alertas.push(`<div class="alerta ambar" onclick="abrirRecompra()"><span class="ico">🔄</span><div class="txt"><b>${_recompra} cliente${_recompra!==1?'s':''} para reactivar</b><div>Compraron hace años, quizá quieran renovar</div></div><span class="cta">Ver →</span></div>`);
+  if(sinStock>0||bajoStock>0)_alertas.push(`<div class="alerta rojo" onclick="setTab('inventario')"><span class="ico">📉</span><div class="txt"><b>${[sinStock>0?sinStock+' sin stock':'',bajoStock>0?bajoStock+' con stock bajo':''].filter(Boolean).join(' · ')}</b><div>Conviene reponer</div></div><span class="cta">Ver →</span></div>`);
+  const panelAlertas=_alertas.length?`<div class="alertas">${_alertas.join('')}</div>`:`<div class="alertas"><div class="alerta" style="cursor:default"><span class="ico">✅</span><div class="txt"><b>¡Todo al día!</b><div>Sin despachos atrasados ni saldos urgentes</div></div></div></div>`;
   document.getElementById('inicio-content').innerHTML=`
     <div class="section-title">${(()=>{const h=new Date().getHours();return h<12?'Buenos días ☀️':h<20?'Buenas tardes 👋':'Buenas noches 🌙';})()} <span style="font-size:12px;font-weight:400;color:var(--text3);font-family:'Inter',sans-serif">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</span></div>
+    ${panelAlertas}
 
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
       <div class="stat" style="background:linear-gradient(145deg,#a87f3e,#c89958);border:none">
@@ -1816,6 +2059,17 @@ function fillVendSelects(){
   sm.innerHTML='<option value="">Todo el año</option>'+MESES.map((m,i)=>`<option value="${i}" ${i===cur.getMonth()?'selected':''}>${m}</option>`).join('');
 }
 
+function metasVend(){try{return JSON.parse(localStorage.getItem('dr_metas_vend'))||{};}catch(e){return{};}}
+function guardarMetaVendedor(nom){
+  const key=nom.replace(/[^a-zA-Z0-9]/g,'_');
+  const inp=document.getElementById('meta-'+key);
+  const val=parseInt(inp&&inp.value)||0;
+  const m=metasVend();
+  if(val>0)m[nom]=val;else delete m[nom];
+  try{localStorage.setItem('dr_metas_vend',JSON.stringify(m));}catch(e){}
+  toast('🎯 Meta guardada');
+  renderVendedores();
+}
 function renderVendedores(){
   fillVendSelects();
   const anio=parseInt(document.getElementById('vend-anio').value);
@@ -1870,8 +2124,17 @@ function renderVendedores(){
     const diasOrd=Object.entries(d.dias).sort((a,b)=>a[0].localeCompare(b[0]));
     const maxDia=Math.max(...diasOrd.map(x=>x[1]),1);
     const promedio=d.total/d.count;
+    const _metasAll=metasVend();
+    const _meta=parseInt(_metasAll[nom])||0;
+    const _pct=_meta>0?Math.min(100,Math.round(d.total/_meta*100)):0;
+    const _metaKey=nom.replace(/[^a-zA-Z0-9]/g,'_');
+    const metaHtml=`<div style="background:var(--cream2);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text3);margin-bottom:6px"><span>🎯 Meta del período</span><span>${_meta>0?fmt(d.total)+' / '+fmt(_meta)+' · '+_pct+'%':'sin meta'}</span></div>
+      ${_meta>0?`<div style="height:9px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:${_pct}%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:6px;transition:width .5s"></div></div>${_pct>=100?'<div style="font-size:11px;color:var(--green);font-weight:700;margin-top:6px">🎉 ¡Meta cumplida!</div>':''}`:''}
+      <div style="display:flex;gap:6px;margin-top:8px"><input type="number" id="meta-${_metaKey}" value="${_meta||''}" placeholder="Fijar meta $ del mes" style="flex:1;padding:6px 9px;border:1px solid var(--border2);border-radius:7px;font-size:12px;background:var(--white);color:var(--text)"><button class="btn btn-sec btn-sm" onclick="guardarMetaVendedor('${nom.replace(/'/g,"\\'")}')">Guardar</button></div>
+    </div>`;
 
-    html+=`<div class="card" style="border-top:3px solid #a87f3e">
+    html+=`<div class="card" style="border-top:3px solid #a87f3e">${metaHtml}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div>
           <h4 style="font-size:17px">${nom}</h4>
@@ -3393,6 +3656,7 @@ async function initFirebase(){
       inventario=snap.docs.map(d=>d.data());
       const tabInv=document.getElementById('tab-inventario');
       if(tabInv&&tabInv.classList.contains('active'))renderInv();
+      actualizarBadges();
     });
 
     if(!MODO_VENDEDORA){
@@ -3414,8 +3678,8 @@ async function initFirebase(){
       }
       onSnapshot(collection(db,'ventas'),snap=>{
         ventas=snap.docs.map(d=>d.data()).filter(v=>!v.cliente.toLowerCase().includes('prueba'));
-        const tab=document.querySelector('.nav-btn.active');
-        if(tab){const t=tab.getAttribute('onclick').match(/'(\w+)'/);if(t&&t[1]==='ventas')renderVentas();}
+        refrescarVistaActiva();
+        actualizarBadges();
       });
       // Cargar cotizaciones
       cotizaciones=cotSnap.docs.map(d=>d.data());
@@ -3480,6 +3744,7 @@ async function initFirebase(){
   initTheme();
   renderInicio();
   renderVentas();
+  actualizarBadges();
   if(MODO_VENDEDORA)setTab('nueva-venta');
 }
 initFirebase();
@@ -3516,6 +3781,7 @@ function setTab(t){
   if(t==='inicio')renderInicio();
   if(t==='inventario')renderInv();
   if(t==='ventas')renderVentas();
+  if(t==='saldos')renderSaldos();
   if(t==='despachos')renderDespachos();
   if(t==='resumen')renderResumen();
   if(t==='nueva-venta')renderNuevaVentaTab();
@@ -3531,6 +3797,200 @@ function setTab(t){
 // =========== MODALS ===========
 function openModal(id){document.getElementById(id).classList.add('show')}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+// Re-renderiza la pestaña que está abierta ahora mismo (usado por la sync en tiempo real)
+function refrescarVistaActiva(){
+  const activa=document.querySelector('.section.active');
+  if(!activa)return;
+  const id=activa.id.replace('tab-','');
+  const fn={inicio:typeof renderInicio!=='undefined'&&renderInicio,ventas:renderVentas,saldos:renderSaldos,
+    despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
+    vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
+    clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora}[id];
+  if(typeof fn==='function'){try{fn();}catch(e){}}
+}
+
+// Contadores (badges) del menú lateral
+function setBadge(id,n,amber){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(n>0){el.textContent=n>99?'99+':n;el.classList.add('show');el.classList.toggle('amber',!!amber);}
+  else{el.classList.remove('show');el.classList.remove('amber');}
+}
+function actualizarBadges(){
+  try{
+    const hoy=today();
+    const despPend=(ventas||[]).filter(v=>v.desp>0&&!['despachado','cancelado'].includes(v.estado||'pendiente'));
+    const despAtras=despPend.filter(v=>(v.fechaDesp||v.fecha)<hoy).length;
+    setBadge('badge-despachos',despPend.length,despAtras>0);
+    const saldoPend=(ventas||[]).filter(v=>(v.saldo||0)>0&&(v.estado||'pendiente')!=='cancelado').length;
+    setBadge('badge-saldos',saldoPend,false);
+    const bajos=(inventario||[]).filter(p=>p.stock!=null&&parseInt(p.stock)<=parseInt(p.minStock||0)).length;
+    setBadge('badge-inventario',bajos,true);
+  }catch(e){}
+}
+
+// Días transcurridos desde una fecha ISO hasta hoy
+function diasDesde(fechaISO){
+  if(!fechaISO)return 0;
+  const d=new Date(fechaISO+'T12:00:00'),h=new Date(today()+'T12:00:00');
+  return Math.round((h-d)/86400000);
+}
+
+// ===== WhatsApp (click-to-chat) =====
+function telWa(tel){
+  let t=(tel||'').replace(/\D/g,'');
+  if(!t)return '';
+  if(t.length===8)t='569'+t;               // 8 dígitos → +56 9
+  else if(t.length===9&&t[0]==='9')t='56'+t; // 9xxxxxxxx
+  else if(!t.startsWith('56'))t='56'+t;
+  return t;
+}
+function abrirWa(tel,msg){
+  const t=telWa(tel);
+  if(!t){alert('Esta venta no tiene teléfono guardado');return;}
+  window.open('https://wa.me/'+t+'?text='+encodeURIComponent(msg),'_blank');
+}
+function waWhatsApp(id){
+  const v=ventas.find(x=>String(x.id)===String(id));if(!v)return;
+  abrirWa(v.tel,`Hola ${v.cliente} 👋, le escribimos de DreamRest.`);
+}
+function waCobro(id){
+  const v=ventas.find(x=>String(x.id)===String(id));if(!v)return;
+  abrirWa(v.tel,`Hola ${v.cliente} 👋, le saludamos de DreamRest. Le recordamos que tiene un saldo pendiente de ${fmt(v.saldo)} de su compra. ¿Cómo podríamos coordinar el pago? ¡Muchas gracias! 🙏`);
+}
+function waDespacho(id){
+  const v=ventas.find(x=>String(x.id)===String(id));if(!v)return;
+  const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'';
+  const cuando=v.fechaDesp?v.fechaDesp.split('-').reverse().join('/'):'';
+  abrirWa(v.tel,`Hola ${v.cliente} 👋, le escribimos de DreamRest para coordinar la entrega de su pedido${cuando?` para el ${cuando}`:''}${dir?` en ${dir}`:''}. ¿Nos confirma si estará disponible? ¡Gracias! 🚚`);
+}
+
+// Cambio de estado rápido desde la tarjeta (sin abrir el detalle)
+async function cambiarEstadoRapido(id,nuevo){
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  v.estado=nuevo;
+  await saveVentaDB(v);
+  toast('✅ Estado: '+((ESTADO_CFG[nuevo]||{}).label||nuevo));
+  refrescarVistaActiva();
+  actualizarBadges();
+}
+
+// =========== TOUR GUIADO ===========
+const TOUR_PASOS=[
+  {sel:null,texto:'👋 ¡Hola! En 1 minuto te enseño lo básico para usar DreamRest y vender sin ayuda. Toca <b>Siguiente</b>.',antes:()=>openSidebar()},
+  {sel:'#si-nueva-venta',texto:'🛒 Para hacer una venta entra aquí: <b>Nueva Venta</b>. Es lo que más vas a usar.',antes:()=>openSidebar()},
+  {sel:'#si-ventas',texto:'📋 En <b>Ventas</b> ves todo lo vendido. Puedes cambiar el estado, imprimir o mandar WhatsApp con un toque.',antes:()=>openSidebar()},
+  {sel:'#si-saldos',texto:'💵 En <b>Saldos</b> ves quién te debe y registras los abonos al instante. El número rojo avisa cuántos hay.',antes:()=>openSidebar()},
+  {sel:'#si-despachos',texto:'🚚 En <b>Despachos</b> están las entregas. Si alguna se atrasó, aparece en <b>rojo</b> para que no se te olvide.',antes:()=>openSidebar()},
+  {sel:'.help-fab',texto:'🙋 Y este botón de <b>Ayuda</b> siempre está aquí abajo. Puedes volver a ver este tour cuando quieras.',antes:()=>closeSidebar()},
+  {sel:null,texto:'✅ ¡Eso es todo! Recuerda: para vender solo son 3 pasos → <b>Nueva Venta → llenar → Guardar</b>. ¡Tú puedes! 💪',antes:()=>closeSidebar()}
+];
+let tourIdx=0;
+function iniciarTour(){closeModal('modal-ayuda');tourIdx=0;document.getElementById('tour').style.display='block';mostrarPasoTour();}
+function cerrarTour(){document.getElementById('tour').style.display='none';closeSidebar();}
+function tourSiguiente(){if(tourIdx>=TOUR_PASOS.length-1){cerrarTour();return;}tourIdx++;mostrarPasoTour();}
+function tourAnterior(){if(tourIdx>0){tourIdx--;mostrarPasoTour();}}
+function mostrarPasoTour(){
+  const paso=TOUR_PASOS[tourIdx];
+  if(paso.antes){try{paso.antes();}catch(e){}}
+  const spot=document.getElementById('tour-spot');
+  const tip=document.getElementById('tour-tip');
+  document.getElementById('tour-tip-text').innerHTML=paso.texto;
+  document.getElementById('tour-progress').textContent=`Paso ${tourIdx+1} de ${TOUR_PASOS.length}`;
+  document.getElementById('tour-prev').style.visibility=tourIdx===0?'hidden':'visible';
+  document.getElementById('tour-next').textContent=tourIdx>=TOUR_PASOS.length-1?'Terminar ✓':'Siguiente';
+  setTimeout(()=>{
+    const el=paso.sel?document.querySelector(paso.sel):null;
+    if(el&&el.getBoundingClientRect().width>0){
+      const r=el.getBoundingClientRect(),pad=6;
+      spot.style.display='block';
+      spot.style.left=(r.left-pad)+'px';spot.style.top=(r.top-pad)+'px';
+      spot.style.width=(r.width+pad*2)+'px';spot.style.height=(r.height+pad*2)+'px';
+      const tw=Math.min(290,window.innerWidth-28);
+      let tipLeft=r.right+14,tipTop=r.top;
+      if(tipLeft+tw>window.innerWidth){tipLeft=Math.max(14,Math.min(r.left,window.innerWidth-tw-14));tipTop=r.bottom+14;}
+      if(tipTop+190>window.innerHeight)tipTop=Math.max(14,window.innerHeight-200);
+      tip.style.left=tipLeft+'px';tip.style.top=tipTop+'px';tip.style.transform='none';
+    }else{
+      spot.style.display='none';
+      tip.style.left='50%';tip.style.top='50%';tip.style.transform='translate(-50%,-50%)';
+    }
+  },320);
+}
+
+// =========== RESPALDO / EXPORTAR DATOS ===========
+function exportarRespaldo(){
+  try{
+    const data={_app:'DreamRest ERP',_fecha:new Date().toISOString(),ventas,inventario};
+    try{data.cotizaciones=cotizaciones;}catch(e){}
+    try{data.promociones=promociones;}catch(e){}
+    try{data.gastos=gastos;}catch(e){}
+    try{data.compras=compras;}catch(e){}
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='DreamRest_respaldo_'+today()+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    toast('✅ Respaldo descargado');
+  }catch(e){alert('No se pudo generar el respaldo: '+e.message);}
+}
+
+// =========== RECOMPRA (clientes por reactivar) ===========
+const RECOMPRA_DIAS=2190; // ~6 años: un colchón se cambia cada 6-8 años
+function recompraContactados(){try{return JSON.parse(localStorage.getItem('dr_recompra_contactados'))||{};}catch(e){return{};}}
+function recompraCandidatos(){
+  const cont=recompraContactados(),porCliente={};
+  (ventas||[]).forEach(v=>{
+    if((v.estado||'pendiente')==='cancelado')return;
+    const k=(v.cliente||'').trim();
+    if(!k||/mostrador/i.test(k))return;
+    if(!porCliente[k])porCliente[k]={fecha:v.fecha,tel:v.tel||'',compras:0};
+    if(v.fecha>porCliente[k].fecha)porCliente[k].fecha=v.fecha;
+    if(v.tel&&!porCliente[k].tel)porCliente[k].tel=v.tel;
+    porCliente[k].compras++;
+  });
+  const out=[];
+  Object.entries(porCliente).forEach(([cli,d])=>{
+    const dias=diasDesde(d.fecha);
+    if(dias>=RECOMPRA_DIAS){
+      const c=cont[cli];
+      if(c&&diasDesde(c)<90)return; // contactado hace menos de 90 días
+      out.push({cliente:cli,fecha:d.fecha,tel:d.tel,dias,compras:d.compras});
+    }
+  });
+  return out.sort((a,b)=>b.dias-a.dias);
+}
+function abrirRecompra(){openModal('modal-recompra');renderRecompra();}
+function renderRecompra(){
+  const cands=recompraCandidatos(),cont=document.getElementById('recompra-list');
+  if(!cont)return;
+  if(!cands.length){cont.innerHTML='<div class="empty">Por ahora no hay clientes para reactivar. Aparecerán aquí quienes compraron hace más de 6 años. 🙂</div>';return;}
+  cont.innerHTML=cands.map(c=>{
+    const anios=(c.dias/365).toFixed(1);
+    const cliEsc=c.cliente.replace(/'/g,"\\'");
+    return`<div class="card">
+      <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.cliente}</h4>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Última compra ${c.fecha.split('-').reverse().join('/')} · hace ${anios} años · ${c.compras} compra${c.compras!==1?'s':''}${c.tel?` · 📞 +56 9 ${c.tel}`:''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        ${c.tel?`<button class="qa wa" onclick="waRecompra('${cliEsc}','${c.tel}')">📱 Escribir</button>`:''}
+        <button class="btn btn-sec btn-sm" onclick="marcarRecompraContactada('${cliEsc}')">✓ Contactado</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function marcarRecompraContactada(cli){
+  const c=recompraContactados();c[cli]=today();
+  try{localStorage.setItem('dr_recompra_contactados',JSON.stringify(c));}catch(e){}
+  toast('✅ Marcado como contactado');
+  renderRecompra();
+  const ti=document.getElementById('tab-inicio');if(ti&&ti.classList.contains('active'))renderInicio();
+}
+function waRecompra(cli,tel){
+  abrirWa(tel,`Hola ${cli} 👋, le saludamos de DreamRest. Ha pasado un tiempo desde su última compra y queríamos contarle que tenemos nuevos modelos de colchones y ofertas. ¿Le gustaría ver las novedades? 😊`);
+}
 
 // =========== INVENTARIO ===========
 let editProdId=null;
@@ -3854,6 +4314,7 @@ function openVenta(){
   document.getElementById('vt-hora').value='Sin preferencia';
   document.getElementById('vt-cancelado').value='';
   document.getElementById('vt-saldo').value='';
+  document.getElementById('vt-garantia').value='';
   document.getElementById('vt-notas').value='';
   document.getElementById('del-venta-btn').style.display='none';
   updTipoVenta();
@@ -3886,6 +4347,7 @@ async function saveVenta(){
     despComuna:document.getElementById('vt-comuna').value.trim(),
     despHora:document.getElementById('vt-hora').value,
     cancelado:parseInt(document.getElementById('vt-cancelado').value)||0,
+    garantiaMeses:parseInt(document.getElementById('vt-garantia').value)||0,
     notas:document.getElementById('vt-notas').value.trim(),
     items:ventaItems.map(it=>({...it})),
   };
@@ -4078,6 +4540,7 @@ function viewVenta(id){
       })():''}
       ${v.cancelado<v.total?`<div class="item-row"><span class="muted">Pagado</span><span>${fmt(v.cancelado)}</span></div><div class="item-row"><span class="warn"><strong>Saldo pendiente</strong></span><strong class="warn">${fmt(v.saldo)}</strong></div>`:''}
     </div>
+    ${v.garantiaMeses>0?(()=>{const venc=new Date(v.fecha+'T12:00:00');venc.setMonth(venc.getMonth()+v.garantiaMeses);const vig=new Date()<=venc;return`<div class="item-row" style="margin-top:12px"><span class="muted">🛡️ Garantía (${v.garantiaMeses} meses)</span><span style="font-weight:600;color:${vig?'var(--green)':'var(--red)'}">${vig?'Vigente':'Vencida'} · hasta ${venc.toLocaleDateString('es-CL')}</span></div>`;})():''}
     ${v.notas?`<div class="help" style="margin-top:12px">${v.notas}</div>`:''}`;
   document.getElementById('det-content').innerHTML=html;
   document.getElementById('edit-venta-btn').onclick=()=>{closeModal('modal-detalle');editVenta(id)};
@@ -4528,6 +4991,7 @@ async function editVenta(id){
   document.getElementById('vt-comuna').value=v.despComuna||'';
   document.getElementById('vt-hora').value=v.despHora||'Sin preferencia';
   document.getElementById('vt-cancelado').value=v.cancelado||v.total;
+  document.getElementById('vt-garantia').value=v.garantiaMeses||'';
   document.getElementById('vt-notas').value=v.notas||'';
   document.getElementById('del-venta-btn').style.display='inline-block';
   updTipoVenta();
@@ -4657,6 +5121,12 @@ function renderVentas(){
           <div style="font-size:10px;color:#78716c">${v.items.length} ítem${v.items.length!==1?'s':''}</div>
         </div>
       </div>
+      <div class="venta-acciones" onclick="event.stopPropagation()">
+        ${est==='pendiente'?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','pagado')">🟠 Pagado</button>`:''}
+        ${(est==='pendiente'||est==='pagado')?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','despachado')">🟢 Despachado</button>`:''}
+        ${v.tel?`<button class="qa wa" onclick="waWhatsApp('${v.id}')">📱 WhatsApp</button>`:''}
+        <button class="qa" onclick="imprimirVenta('${v.id}')">🖨️ Imprimir</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -4680,6 +5150,14 @@ function renderDespachos(){
     return;
   }
 
+  // Banner de despachos atrasados (llama la atención)
+  const hoyD=today();
+  const nAtras=items.filter(v=>(v.fechaDesp||v.fecha)<hoyD&&(v.estado||'pendiente')!=='despachado').length;
+  const nHoy=items.filter(v=>(v.fechaDesp||v.fecha)===hoyD&&(v.estado||'pendiente')!=='despachado').length;
+  let banner='';
+  if(nAtras>0)banner+=`<div class="alert-atraso">⚠️ ${nAtras} despacho${nAtras!==1?'s':''} ATRASADO${nAtras!==1?'S':''} — márcalos como "despachado" o reprograma la fecha</div>`;
+  if(nHoy>0)banner+=`<div style="background:var(--gold-bg);border:1px solid var(--gold);color:var(--gold);padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:12px">📦 ${nHoy} despacho${nHoy!==1?'s':''} para HOY</div>`;
+
   // Agrupar por fecha de despacho
   const grupos={};
   items.forEach(v=>{
@@ -4701,8 +5179,9 @@ function renderDespachos(){
     html+=`<h4 style="margin:12px 0 8px;font-size:13px;color:#57534e">${fecha.split('-').reverse().join('/')}${labelDia} <span class="pill">${grupos[fecha].length} despacho${grupos[fecha].length!==1?'s':''}</span></h4>`;
     grupos[fecha].forEach(v=>{
       const est=v.estado||'pendiente';
+      const claseCard=(diasDiff<0&&est!=='despachado')?' atrasado':(diasDiff===0&&est!=='despachado'?' desp-hoy':'');
       const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'Sin dirección';
-      html+=`<div class="card" onclick="viewVenta('${v.id}')" style="cursor:pointer">
+      html+=`<div class="card${claseCard}" onclick="viewVenta('${v.id}')" style="cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div style="flex:1">
             <h4>${v.cliente}</h4>
@@ -4712,6 +5191,7 @@ function renderDespachos(){
             <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               ${estadoTag(est)}
               <button onclick="event.stopPropagation();cambiarEstado('${v.id}','despachado')" style="font-size:10px;padding:3px 8px;background:#dcfce7;color:#166534;border:1px solid #166534;border-radius:6px;cursor:pointer">✓ Marcar despachado</button>
+              ${v.tel?`<button onclick="event.stopPropagation();waDespacho('${v.id}')" style="font-size:10px;padding:3px 8px;background:#fff;color:#128c3e;border:1px solid #25d366;border-radius:6px;cursor:pointer">📱 Coordinar</button>`:''}
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
@@ -4723,7 +5203,7 @@ function renderDespachos(){
     });
   });
 
-  document.getElementById('d-list').innerHTML=html;
+  document.getElementById('d-list').innerHTML=banner+html;
 }
 
 async function cambiarEstadoDetalle(id,nuevoEstado){
@@ -4763,6 +5243,87 @@ function cambiarEstado(id,nuevoEstado){
   v.estado=nuevoEstado;
   saveVentaDB(v);
   renderDespachos();
+}
+
+// =========== SALDOS PENDIENTES ===========
+function renderSaldos(){
+  const q=(document.getElementById('sp-search').value||'').toLowerCase();
+  const orden=document.getElementById('sp-orden').value||'antiguas';
+
+  let items=ventas.filter(v=>(v.saldo||0)>0&&(v.estado||'pendiente')!=='cancelado');
+  if(q)items=items.filter(v=>(v.cliente||'').toLowerCase().includes(q));
+
+  if(orden==='mayor')items.sort((a,b)=>(b.saldo||0)-(a.saldo||0));
+  else if(orden==='cliente')items.sort((a,b)=>(a.cliente||'').localeCompare(b.cliente||''));
+  else items.sort((a,b)=>a.fecha.localeCompare(b.fecha)); // antiguas primero
+
+  const totalPend=items.reduce((a,v)=>a+(v.saldo||0),0);
+  const nClientes=new Set(items.map(v=>v.cliente)).size;
+
+  document.getElementById('sp-stats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">Total por cobrar</div><div class="stat-val warn" style="font-size:15px">${fmt(totalPend)}</div></div>
+    <div class="stat"><div class="stat-lbl">Ventas con saldo</div><div class="stat-val">${items.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Clientes</div><div class="stat-val">${nClientes}</div></div>`;
+
+  if(!items.length){
+    document.getElementById('sp-list').innerHTML=`<div class="empty">🎉 No hay saldos pendientes${q?' con ese nombre':''}. ¡Todo cobrado!</div>`;
+    return;
+  }
+
+  document.getElementById('sp-list').innerHTML=items.map(v=>{
+    const est=v.estado||'pendiente';
+    const dias=diasDesde(v.fecha);
+    return`<div class="card" style="border-left:3px solid #d97706">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.cliente}</h4>
+          <div style="margin-top:3px;font-size:11px;color:#78716c">
+            ${estadoTag(est)} ${v.fecha.split('-').reverse().join('/')} · ${v.vendedor||'—'}
+            ${v.tel?` · 📞 +56 9 ${v.tel}`:''}
+          </div>
+          <div style="margin-top:5px;font-size:12px;color:#78716c">Total ${fmt(v.total)} · Pagado ${fmt(v.cancelado||0)}</div>
+          ${dias>0?`<div style="margin-top:5px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${dias>=30?'#fee2e2':dias>=15?'#fef3c7':'var(--cream2)'};color:${dias>=30?'#991b1b':dias>=15?'#92400e':'var(--text3)'}">⏳ ${dias} día${dias!==1?'s':''} sin saldar</span></div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="warn" style="font-weight:700;font-size:16px">${fmt(v.saldo)}</div>
+          <div style="font-size:10px;color:#78716c">por cobrar</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        <input type="number" id="sp-abono-${v.id}" placeholder="¿Cuánto abonó?" inputmode="numeric" style="flex:1;min-width:110px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--white);color:var(--text)">
+        <button class="btn btn-sm" onclick="abonarSaldo('${v.id}')">Abonar</button>
+        <button class="btn btn-sec btn-sm" onclick="pagarTotalSaldo('${v.id}')">✓ Pagó todo</button>
+        ${v.tel?`<button class="qa wa" onclick="waCobro('${v.id}')">📱 Cobrar</button>`:''}
+        <button class="btn btn-sec btn-sm" onclick="viewVenta('${v.id}')">Ver</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function abonarSaldo(id){
+  const inp=document.getElementById('sp-abono-'+id);
+  const abono=parseInt(inp&&inp.value)||0;
+  if(!abono){alert('Escribe cuánto abonó el cliente');if(inp)inp.focus();return;}
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  v.cancelado=(parseInt(v.cancelado)||0)+abono;
+  v.saldo=Math.max(0,v.total-v.cancelado);
+  if(v.saldo===0&&(v.estado||'pendiente')==='pendiente')v.estado='pagado';
+  await saveVentaDB(v);
+  toast(v.saldo===0?'✅ Saldo saldado por completo':'✅ Abono registrado');
+  renderSaldos();
+}
+
+async function pagarTotalSaldo(id){
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  if(!confirm(`¿Marcar como pagado el saldo de ${fmt(v.saldo)} de ${v.cliente}?`))return;
+  v.cancelado=v.total;
+  v.saldo=0;
+  if((v.estado||'pendiente')==='pendiente')v.estado='pagado';
+  await saveVentaDB(v);
+  toast('✅ Saldo saldado por completo');
+  renderSaldos();
 }
 
 
@@ -5105,6 +5666,11 @@ Object.assign(window,{
   setArmadoNV,setRespaldoNV,
   renderInv,renderVentas,renderDespachos,renderResumen,renderInicio,renderNuevaVentaTab,renderVendedores,
   limpiarFiltrosVentas,cambiarEstado,cambiarEstadoDetalle,registrarAbono,resetearInventario,
+  renderSaldos,abonarSaldo,pagarTotalSaldo,refrescarVistaActiva,actualizarBadges,
+  cambiarEstadoRapido,waWhatsApp,waCobro,waDespacho,
+  iniciarTour,tourSiguiente,tourAnterior,cerrarTour,exportarRespaldo,
+  abrirRecompra,renderRecompra,marcarRecompraContactada,waRecompra,
+  guardarMetaVendedor,
   verFichaCliente,agregarProductosManuales,
   renderCotizaciones,nuevaCotizacion,editarCotizacion,addCotItem,rmCotItem,updCotItem,renderCotItems,
   autocompleteCot,selCotProd,guardarCotizacion,eliminarCotizacion,convertirEnVenta,imprimirCotizacion,
