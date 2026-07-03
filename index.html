@@ -69,7 +69,7 @@ body.dark{
 .sidebar-item:hover{background:linear-gradient(90deg,var(--gold-bg),transparent);color:var(--gold);border-left-color:var(--gold-light)}
 .sidebar-item:hover{background:var(--gold-bg);color:var(--gold)}
 .sidebar-item.active{background:var(--gold-bg2);color:var(--gold);font-weight:600;border-left-color:var(--gold)}
-.sidebar-item .icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.sidebar-item .icon{width:24px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sidebar-item .icon svg{width:18px;height:18px}
 .sidebar-item .label{flex:1}
 .sidebar-divider{height:1px;background:var(--border);margin:8px 20px}
 .sidebar-section-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;padding:12px 20px 4px}
@@ -202,9 +202,12 @@ tbody tr:hover{background:var(--gold-bg)}
 /* ===== ANIMATIONS ===== */
 .card{animation:cardIn .2s ease both}
 @keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* ===== SHADER BG ===== */
+#shader-bg{display:none}
 </style>
 </head>
 <body>
+<canvas id="shader-bg" aria-hidden="true"></canvas>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
@@ -215,21 +218,21 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
   <div class="sidebar-nav">
     <div class="sidebar-section-title">Principal</div>
-    <button class="sidebar-item" id="si-inicio" onclick="setTab('inicio')"><span class="icon">🏠</span><span class="label">Inicio</span></button>
-    <button class="sidebar-item" id="si-nueva-venta" onclick="setTab('nueva-venta')"><span class="icon">➕</span><span class="label">Nueva Venta</span></button>
-    <button class="sidebar-item active" id="si-ventas" onclick="setTab('ventas')"><span class="icon">🛒</span><span class="label">Ventas</span></button>
-    <button class="sidebar-item" id="si-cotizaciones" onclick="setTab('cotizaciones')"><span class="icon">📋</span><span class="label">Cotizaciones</span></button>
-    <button class="sidebar-item" id="si-despachos" onclick="setTab('despachos')"><span class="icon">🚚</span><span class="label">Despachos</span></button>
-    <button class="sidebar-item" id="si-caja" onclick="setTab('caja')"><span class="icon">🧮</span><span class="label">Caja</span></button>
+    <button class="sidebar-item" id="si-inicio" onclick="setTab('inicio')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="label">Inicio</span></button>
+    <button class="sidebar-item" id="si-nueva-venta" onclick="setTab('nueva-venta')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span class="label">Nueva Venta</span></button>
+    <button class="sidebar-item active" id="si-ventas" onclick="setTab('ventas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span><span class="label">Ventas</span></button>
+    <button class="sidebar-item" id="si-cotizaciones" onclick="setTab('cotizaciones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="label">Cotizaciones</span></button>
+    <button class="sidebar-item" id="si-despachos" onclick="setTab('despachos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span><span class="label">Despachos</span></button>
+    <button class="sidebar-item" id="si-caja" onclick="setTab('caja')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="label">Caja</span></button>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-title">Gestión</div>
-    <button class="sidebar-item" id="si-inventario" onclick="setTab('inventario')"><span class="icon">📦</span><span class="label">Inventario</span></button>
-    <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon">🏷️</span><span class="label">Promociones</span></button>
-    <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon">🤝</span><span class="label">Clientes</span></button>
-    <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon">👥</span><span class="label">Vendedores</span></button>
-    <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon">📊</span><span class="label">Resumen</span></button>
-    <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon">💰</span><span class="label">Finanzas</span></button>
-    <button class="sidebar-item" id="si-costosfab" onclick="setTab('costosfab')"><span class="icon">🏭</span><span class="label">Costos Fábrica</span></button>
+    <button class="sidebar-item" id="si-inventario" onclick="setTab('inventario')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="label">Inventario</span></button>
+    <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="label">Promociones</span></button>
+    <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
+    <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
+    <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
+    <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="label">Finanzas</span></button>
+    <button class="sidebar-item" id="si-costosfab" onclick="setTab('costosfab')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="label">Costos Fábrica</span></button>
   </div>
 </div>
 
@@ -252,10 +255,10 @@ tbody tr:hover{background:var(--gold-bg)}
       <span class="modo-vendedora-badge">📝 Nueva Venta</span>
     </div>
     <div class="hdr-right">
-      <button class="hdr-sync" id="admin-btn" onclick="toggleAdmin()" title="Modo administrador">🔒</button>
-      <button class="hdr-sync" id="theme-btn" onclick="toggleTheme()" title="Modo oscuro/claro">🌙</button>
-      <button class="hdr-sync" id="btn-venta-rapida" onclick="openVenta()" title="Nueva venta rápida">➕</button>
-      <button class="hdr-sync" id="notif-btn" onclick="solicitarNotificaciones()" title="Notificaciones">🔔</button>
+      <button class="hdr-sync" id="admin-btn" onclick="toggleAdmin()" title="Modo administrador"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button class="hdr-sync" id="theme-btn" onclick="toggleTheme()" title="Modo oscuro/claro"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+      <button class="hdr-sync" id="btn-venta-rapida" onclick="openVenta()" title="Nueva venta rápida"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="hdr-sync" id="notif-btn" onclick="solicitarNotificaciones()" title="Notificaciones"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
     </div>
   </div>
 
@@ -1777,7 +1780,7 @@ async function solicitarNotificaciones(){
   if(perm==='granted'){
     programarNotificacionDiaria();
     alert('✅ Notificaciones activadas. Recibirás un resumen cada mañana a las 9:00 AM.');
-    document.getElementById('notif-btn').textContent='🔔✓';
+    document.getElementById('notif-btn').innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><circle cx="19" cy="5" r="3" fill="currentColor" stroke="none"/></svg>';
   }else{alert('Notificaciones bloqueadas. Actívalas en la configuración del navegador.');}
 }
 function programarNotificacionDiaria(){
@@ -4321,6 +4324,39 @@ function imprimirVenta(id){
       +'<td style="padding:8px 10px;border-bottom:1px dotted #ccc;text-align:right">'+fmt(it.qty*it.precio)+'</td>'
       +'</tr>';
   });
+
+  if(v.cliente==='Cliente mostrador'){
+    const autoPrintM=!!window._autoPrint;
+    window._autoPrint=false;
+    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Helvetica,Arial,sans-serif;color:#333;background:#fff}.page{width:148mm;padding:12mm 14mm;margin:0 auto}.logo{font-family:Brush Script MT,Lucida Handwriting,cursive;font-size:28px;color:#a87f3e;margin-bottom:4px}.ln{border-top:2px solid #a87f3e;margin:8px 0 10px}.meta{font-size:11px;color:#666;margin-bottom:10px}.tabla{width:100%;border-collapse:collapse;font-size:12px}.tabla thead th{background:#a87f3e;color:#fff;padding:7px 8px;text-align:left;font-size:10px;font-weight:bold}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #ccc}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tr-tot td{border-top:2px solid #a87f3e;padding:9px 8px;font-weight:bold}.tr-tot td:first-child{text-align:right;color:#666;font-weight:normal}.tr-tot td:last-child{text-align:right;color:#a87f3e;font-size:14px}.footer{font-size:10px;color:#aaa;text-align:center;margin-top:20px}.btnprint{position:fixed;top:10px;right:10px;background:#a87f3e;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media print{.btnprint{display:none}}';
+    const descM=v.descuento>0?'<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#166534">Descuento aplicado</td><td style="padding:6px 8px;text-align:right;color:#166534">-'+fmt(v.descuento)+'</td></tr>':'';
+    const saldoM=v.saldo>0?'<div style="margin-top:8px;padding:8px;background:#fff5e6;border:1px solid #f59e0b;border-radius:4px;font-size:11px;color:#92400e">⚠ <strong>Saldo pendiente:</strong> '+fmt(v.saldo)+' (Pagado: '+fmt(v.cancelado)+')</div>':'';
+    const notasM=v.notas?'<div style="margin-top:10px;padding:8px 10px;background:#f9f9f9;border-left:3px solid #a87f3e;font-size:11px;font-style:italic">'+v.notas+'</div>':'';
+    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante DreamRest</title><style>'+cssM+'</style></head><body>'
+      +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+      +'<div class="page">'
+      +'<div class="logo">Dream Rest</div>'
+      +'<div class="ln"></div>'
+      +'<div class="meta">Fecha: <strong>'+fechaFmt+'</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Pago: <strong>'+(v.pago||'—')+'</strong></div>'
+      +'<table class="tabla"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>'
+      +'<tbody>'+itemsHtml+descM
+      +'<tr class="tr-tot"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
+      +'</tbody></table>'
+      +saldoM+notasM
+      +'<div class="footer">Dream Rest &nbsp;·&nbsp; Gracias por tu compra</div>'
+      +'</div></body></html>';
+    window._lastPedidoHtml=htmlM;
+    window._lastPedidoNombre='Comprobante_DreamRest_'+fechaFmt.replace(/\//g,'-')+'.html';
+    const autoS='<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>';
+    const finalM=autoPrintM?htmlM.replace('</body>',autoS+'</body>'):htmlM;
+    const blobM=new Blob([finalM],{type:'text/html;charset=utf-8'});
+    const urlM=URL.createObjectURL(blobM);
+    const wM=window.open(urlM,'_blank');
+    if(!wM)alert('Activa las ventanas emergentes en Chrome para imprimir.');
+    setTimeout(()=>URL.revokeObjectURL(urlM),5000);
+    return;
+  }
+
   // Filas vacías para llegar a mínimo 4
   const filasVacias=Math.max(0,4-v.items.length);
   for(let i=0;i<filasVacias;i++){
@@ -5085,6 +5121,141 @@ Object.assign(window,{
   imprimirVenta,descargarPedidoHTML,
   autocompleteCliente,selCliente,solicitarNotificaciones
 });
+</script>
+
+<script>
+/* shader-bg deshabilitado por rendimiento */
+(function(){
+  return;
+
+  const VS = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+
+  const FS = `precision mediump float;
+uniform float T;
+uniform vec2 R,M;
+
+vec2 h2(vec2 p){p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));return fract(sin(p)*43758.5453)-.5;}
+float gn(vec2 p){
+  vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);
+  return mix(mix(dot(h2(i),f),dot(h2(i+vec2(1,0)),f-vec2(1,0)),u.x),
+             mix(dot(h2(i+vec2(0,1)),f-vec2(0,1)),dot(h2(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);
+}
+/* 4 octavas para mas detalle en las nubes */
+float fbm(vec2 p){return gn(p)*.5+gn(p*2.1+vec2(1.7,9.2))*.27+gn(p*4.3+vec2(3.1,5.7))*.14+gn(p*8.6+vec2(7.3,2.1))*.07;}
+/* rotacion lenta para que las nubes cambien de forma */
+vec2 rot(vec2 p,float a){float c=cos(a),s=sin(a);return vec2(p.x*c-p.y*s,p.x*s+p.y*c);}
+
+/* paleta 5 pasos: gris claro -> gris calido -> cobre -> oro -> crema */
+vec3 pal(float t){
+  vec3 c=mix(vec3(.74,.72,.71),vec3(.84,.82,.80),smoothstep(0.,.25,t));
+  c=mix(c,vec3(.85,.55,.38),smoothstep(.25,.52,t));
+  c=mix(c,vec3(.92,.74,.38),smoothstep(.52,.78,t));
+  c=mix(c,vec3(.99,.97,.92),smoothstep(.78,1.,t));
+  return c;
+}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/R;
+  float asp=R.x/R.y;
+  vec2 p=vec2(uv.x*asp,1.-uv.y)*2.8;
+  vec2 m=vec2(M.x*asp,M.y)*2.8;
+  float t=T*.18;
+
+  /* ripple muy intenso */
+  float md=length(p-m);
+  vec2 rip=normalize(p-m+.001)*exp(-md*0.9)*sin(md*14.-T*7.)*1.1;
+
+  /* warp con rotacion: cada capa gira lento -> nubes cambian de forma */
+  vec2 q=vec2(fbm(rot(p,T*.05)+t+rip), fbm(rot(p,-T*.04)+vec2(5.2,1.3)+t+rip));
+  vec2 r=vec2(fbm(rot(p+4.*q,T*.03)+vec2(1.7,9.2)+t*.85), fbm(p+4.*q+vec2(8.3,2.8)+t*.8));
+  float f=fbm(rot(p+4.*r,-T*.02)+t*.5);
+
+  /* dos capas causticas para destellos prismaticos */
+  float sh1=sin(p.x*5.+fbm(p+t*1.5)*7.+t*2.2)*sin(p.y*4.5+fbm(p*1.3+t*1.1)*5.-t*2.);
+  float sh2=sin((p.x-p.y)*3.5+fbm(p*1.8+t*.9)*4.+t*1.7)*.6;
+  float shimmer=(sh1*.65+sh2*.35)*.5+.5;
+
+  f=f*.62+shimmer*.38;
+  f=clamp(f*1.75+.08,0.,1.);
+
+  /* drift lento de paleta en el tiempo para sensacion de vida */
+  float drift=sin(T*.12)*.04;
+  vec3 c=pal(clamp(f+drift,0.,1.));
+
+  /* destello especular en los picos brillantes */
+  float spec=pow(max(shimmer-.55,0.)*2.3,3.)*.55;
+  c+=vec3(.99,.97,.90)*spec;
+
+  /* viñeta mas pronunciada para profundidad */
+  vec2 vg=uv-.5;
+  c*=mix(.78,1.,clamp(1.-dot(vg,vg)*1.4,0.,1.));
+
+  gl_FragColor=vec4(c,1.);
+}`;
+
+  function mkShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { gl.deleteShader(s); return null; }
+    return s;
+  }
+  const vs = mkShader(gl.VERTEX_SHADER, VS);
+  const fs = mkShader(gl.FRAGMENT_SHADER, FS);
+  if (!vs || !fs) { C.style.display = 'none'; return; }
+
+  const pg = gl.createProgram();
+  gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
+  if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) { C.style.display = 'none'; return; }
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const aLoc = gl.getAttribLocation(pg, 'a');
+  const uT   = gl.getUniformLocation(pg, 'T');
+  const uR   = gl.getUniformLocation(pg, 'R');
+  const uM   = gl.getUniformLocation(pg, 'M');
+
+  let mx = {x:.5,y:.5}, tx = {x:.5,y:.5}, raf, paused = false, st = performance.now(), pausedAt = 0;
+  /* resolucion reducida: 70% desktop, 55% movil */
+  const SCALE = window.innerWidth > 768 ? 0.70 : 0.55;
+
+  function resize() {
+    C.width  = Math.round(window.innerWidth  * SCALE);
+    C.height = Math.round(window.innerHeight * SCALE);
+    gl.viewport(0, 0, C.width, C.height);
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  window.addEventListener('mousemove',  e => { tx.x = e.clientX/innerWidth;          tx.y = 1-e.clientY/innerHeight;          }, {passive:true});
+  window.addEventListener('touchmove',  e => { tx.x = e.touches[0].clientX/innerWidth; tx.y = 1-e.touches[0].clientY/innerHeight; }, {passive:true});
+  window.addEventListener('touchstart', e => { tx.x = e.touches[0].clientX/innerWidth; tx.y = 1-e.touches[0].clientY/innerHeight; }, {passive:true});
+
+  /* pausar cuando la pestana no esta visible */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      paused = true; cancelAnimationFrame(raf);
+      pausedAt = (performance.now()-st)/1000;
+    } else {
+      paused = false; st = performance.now() - pausedAt*1000; draw();
+    }
+  });
+
+  function draw() {
+    raf = requestAnimationFrame(draw);
+    const elapsed = (performance.now()-st)/1000;
+    mx.x += (tx.x-mx.x)*.06; mx.y += (tx.y-mx.y)*.06;
+    gl.useProgram(pg);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.enableVertexAttribArray(aLoc);
+    gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform1f(uT, elapsed);
+    gl.uniform2f(uR, C.width, C.height);
+    gl.uniform2f(uM, mx.x, mx.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+  draw();
+})();
 </script>
 </body>
 </html>
