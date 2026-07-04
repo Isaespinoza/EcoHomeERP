@@ -8,7 +8,8 @@
 <meta name="theme-color" content="#26262b">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="DreamRest">
-<link rel="manifest" href='data:application/manifest+json,{"name":"DreamRest ERP","short_name":"DreamRest","display":"standalone","background_color":"%230d0d10","theme_color":"%2326262b","start_url":"."}'>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>DreamRest ERP</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -5822,6 +5823,15 @@ void main(){
   }
   draw();
 })();
+</script>
+<script>
+  // Registro del service worker: habilita instalar la app (PWA) cuando está hosteada (GitHub Pages).
+  // En file:// no hace nada (los navegadores no permiten SW en file://).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW no registrado:', err));
+    });
+  }
 </script>
 </body>
 </html>
