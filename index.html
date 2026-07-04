@@ -394,8 +394,11 @@ tbody tr:hover{background:var(--gold-bg)}
   <!-- DESPACHOS -->
   <!-- SALDOS PENDIENTES -->
   <div id="tab-saldos" class="section">
-    <div class="section-title">💵 Saldos Pendientes</div>
-    <div class="fil">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div class="section-title" style="margin-bottom:0">💵 Saldos Pendientes</div>
+      <button class="btn btn-sec btn-sm" onclick="abrirRegistroAbonos()">🧾 Registro de abonos</button>
+    </div>
+    <div class="fil" style="margin-top:12px">
       <input type="text" id="sp-search" placeholder="Buscar cliente..." oninput="renderSaldos()" style="flex:2;min-width:140px">
       <select id="sp-orden" onchange="renderSaldos()" style="flex:1;min-width:150px">
         <option value="antiguas">Más antiguas primero</option>
@@ -405,6 +408,22 @@ tbody tr:hover{background:var(--gold-bg)}
     </div>
     <div id="sp-stats" class="stat-grid"></div>
     <div id="sp-list"></div>
+  </div>
+
+  <!-- Modal Registro de abonos -->
+  <div class="modal-bg" id="modal-abonos">
+    <div class="modal" style="max-width:640px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0">🧾 Registro de abonos</h3>
+        <button class="btn btn-sec btn-sm" onclick="closeModal('modal-abonos')" aria-label="Cerrar">✕ Cerrar</button>
+      </div>
+      <div class="fil">
+        <input type="text" id="ra-search" placeholder="Buscar cliente..." oninput="renderRegistroAbonos()" style="flex:2;min-width:140px">
+        <input type="month" id="ra-mes" onchange="renderRegistroAbonos()" style="flex:1;min-width:130px">
+      </div>
+      <div id="ra-stats" class="stat-grid" style="margin:10px 0"></div>
+      <div id="ra-list"></div>
+    </div>
   </div>
 
   <div id="tab-despachos" class="section">
@@ -4552,6 +4571,37 @@ function viewVenta(id){
   // Botones rápidos de estado
   const actEl=document.getElementById('det-acciones-rapidas');
   if(actEl){
+    // Historial de pagos (pago inicial reconstruido + cada abono) y formulario de abono
+    const _abonos=Array.isArray(v.abonos)?v.abonos:[];
+    const _sumAb=_abonos.reduce((a,x)=>a+(parseInt(x.monto)||0),0);
+    const _inicial=Math.max(0,(parseInt(v.cancelado)||0)-_sumAb);
+    const _opsPago=['Efectivo','Tarjeta','Transferencia','Débito','Crédito'];
+    let _hist='';
+    if(_inicial>0||_abonos.length){
+      _hist='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e7e5e4">'
+        +'<div style="font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600">🧾 Historial de pagos</div>';
+      if(_inicial>0)_hist+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px dotted #e7e5e4"><span>'+v.fecha.split('-').reverse().join('/')+' · Pago inicial · '+(v.pago||'—')+'</span><strong>'+fmt(_inicial)+'</strong></div>';
+      _abonos.forEach((ab,i)=>{
+        _hist+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px dotted #e7e5e4">'
+          +'<span>'+(ab.fecha||'').split('-').reverse().join('/')+' · Abono · '+(ab.pago||'—')+'</span>'
+          +'<span style="display:flex;align-items:center;gap:6px"><strong>'+fmt(ab.monto)+'</strong>'
+          +'<button onclick="editarAbono(\''+id+'\','+i+')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px">✏️</button>'
+          +'<button onclick="borrarAbono(\''+id+'\','+i+')" title="Borrar" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px">🗑️</button>'
+          +'</span></div>';
+      });
+      _hist+='</div>';
+    }
+    let _form='';
+    if(v.saldo>0){
+      _form='<div style="margin-top:10px">'
+        +'<div style="font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600">Registrar abono</div>'
+        +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+        +'<input type="number" id="abono-input" placeholder="Monto abono" style="flex:1;min-width:100px;padding:8px;border:1px solid #d6d3d1;border-radius:6px;font-size:13px">'
+        +'<select id="abono-pago" style="padding:8px;border:1px solid #d6d3d1;border-radius:6px;font-size:13px">'+_opsPago.map(o=>'<option>'+o+'</option>').join('')+'</select>'
+        +'<button onclick="registrarAbono(\''+id+'\')" style="padding:8px 12px;background:#a87f3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">Abonar</button>'
+        +'</div></div>';
+    }
+    const abonoHTML=_hist+_form;
     actEl.innerHTML=`
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e7e5e4">
         <div style="font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600">Cambiar estado</div>
@@ -4561,13 +4611,7 @@ function viewVenta(id){
             return`<button onclick="cambiarEstadoDetalle('${id}','${e}')" style="padding:6px 10px;font-size:11px;background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.color};border-radius:6px;cursor:pointer;font-weight:600">${cfg.emoji} ${cfg.label}</button>`;
           }).join('')}
         </div>
-        ${v.saldo>0?`<div style="margin-top:10px">
-          <div style="font-size:10px;color:#78716c;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600">Registrar abono</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="number" id="abono-input" placeholder="Monto abono" style="flex:1;padding:8px;border:1px solid #d6d3d1;border-radius:6px;font-size:13px">
-            <button onclick="registrarAbono('${id}')" style="padding:8px 12px;background:#a87f3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">Abonar</button>
-          </div>
-        </div>`:''}
+        ${abonoHTML}
       </div>`;
   }
   openModal('modal-detalle');
@@ -5232,6 +5276,8 @@ async function registrarAbono(id){
   if(!v)return;
   const abono=parseInt(document.getElementById('abono-input').value)||0;
   if(!abono){alert('Ingresa un monto de abono');return;}
+  const pago=(document.getElementById('abono-pago')||{}).value||'Efectivo';
+  _pushAbono(v,abono,pago);
   v.cancelado=(parseInt(v.cancelado)||0)+abono;
   v.saldo=Math.max(0,v.total-v.cancelado);
   if(v.saldo===0)v.estado='pagado';
@@ -5293,6 +5339,7 @@ function renderSaldos(){
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
         <input type="number" id="sp-abono-${v.id}" placeholder="¿Cuánto abonó?" inputmode="numeric" style="flex:1;min-width:110px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--white);color:var(--text)">
+        <select id="sp-pago-${v.id}" title="Medio de pago" style="padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--white);color:var(--text)"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select>
         <button class="btn btn-sm" onclick="abonarSaldo('${v.id}')">Abonar</button>
         <button class="btn btn-sec btn-sm" onclick="pagarTotalSaldo('${v.id}')">✓ Pagó todo</button>
         ${v.tel?`<button class="qa wa" onclick="waCobro('${v.id}')">📱 Cobrar</button>`:''}
@@ -5308,6 +5355,8 @@ async function abonarSaldo(id){
   if(!abono){alert('Escribe cuánto abonó el cliente');if(inp)inp.focus();return;}
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v)return;
+  const pago=(document.getElementById('sp-pago-'+id)||{}).value||'Efectivo';
+  _pushAbono(v,abono,pago);
   v.cancelado=(parseInt(v.cancelado)||0)+abono;
   v.saldo=Math.max(0,v.total-v.cancelado);
   if(v.saldo===0&&(v.estado||'pendiente')==='pendiente')v.estado='pagado';
@@ -5320,12 +5369,81 @@ async function pagarTotalSaldo(id){
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v)return;
   if(!confirm(`¿Marcar como pagado el saldo de ${fmt(v.saldo)} de ${v.cliente}?`))return;
+  const pago=(document.getElementById('sp-pago-'+id)||{}).value||'Efectivo';
+  const resto=Math.max(0,(parseInt(v.total)||0)-(parseInt(v.cancelado)||0));
+  if(resto>0)_pushAbono(v,resto,pago);
   v.cancelado=v.total;
   v.saldo=0;
   if((v.estado||'pendiente')==='pendiente')v.estado='pagado';
   await saveVentaDB(v);
   toast('✅ Saldo saldado por completo');
   renderSaldos();
+}
+
+// ---- Registro de abonos ----
+// Guarda un abono con fecha + monto + medio de pago en la venta.
+function _pushAbono(v,monto,pago){
+  if(!Array.isArray(v.abonos))v.abonos=[];
+  v.abonos.push({fecha:today(),monto:parseInt(monto)||0,pago:pago||'Efectivo'});
+}
+// Recalcula cancelado/saldo/estado manteniendo fijo el pago inicial.
+function _recalcAbonos(v,inicial){
+  const sum=(v.abonos||[]).reduce((a,x)=>a+(parseInt(x.monto)||0),0);
+  v.cancelado=inicial+sum;
+  v.saldo=Math.max(0,(parseInt(v.total)||0)-v.cancelado);
+  if(v.saldo>0&&v.estado==='pagado')v.estado='pendiente';
+  else if(v.saldo===0&&(v.estado||'pendiente')==='pendiente')v.estado='pagado';
+}
+async function editarAbono(id,idx){
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v||!Array.isArray(v.abonos)||!v.abonos[idx])return;
+  const ab=v.abonos[idx];
+  const inicial=Math.max(0,(parseInt(v.cancelado)||0)-v.abonos.reduce((a,x)=>a+(parseInt(x.monto)||0),0));
+  const nuevo=prompt('Nuevo monto del abono ('+(ab.pago||'—')+' · '+(ab.fecha||'')+'):',ab.monto);
+  if(nuevo===null)return;
+  const monto=parseInt(nuevo)||0;
+  if(monto<=0){alert('Monto inválido. Para eliminarlo usá 🗑️');return;}
+  ab.monto=monto;
+  _recalcAbonos(v,inicial);
+  await saveVentaDB(v);
+  viewVenta(id);
+}
+async function borrarAbono(id,idx){
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v||!Array.isArray(v.abonos)||!v.abonos[idx])return;
+  const ab=v.abonos[idx];
+  if(!confirm('¿Borrar el abono de '+fmt(ab.monto)+' ('+(ab.pago||'—')+')?'))return;
+  const inicial=Math.max(0,(parseInt(v.cancelado)||0)-v.abonos.reduce((a,x)=>a+(parseInt(x.monto)||0),0));
+  v.abonos.splice(idx,1);
+  _recalcAbonos(v,inicial);
+  await saveVentaDB(v);
+  viewVenta(id);
+}
+function abrirRegistroAbonos(){openModal('modal-abonos');renderRegistroAbonos();}
+function renderRegistroAbonos(){
+  const q=(document.getElementById('ra-search').value||'').toLowerCase();
+  const mes=document.getElementById('ra-mes').value||'';
+  const rows=[];
+  ventas.forEach(v=>{
+    (v.abonos||[]).forEach((ab,idx)=>{
+      rows.push({ventaId:v.id,cliente:v.cliente||'Cliente mostrador',fecha:ab.fecha||'',monto:parseInt(ab.monto)||0,pago:ab.pago||'—',idx});
+    });
+  });
+  let filt=rows;
+  if(q)filt=filt.filter(r=>r.cliente.toLowerCase().includes(q));
+  if(mes)filt=filt.filter(r=>(r.fecha||'').startsWith(mes));
+  filt.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const totalAb=filt.reduce((a,r)=>a+r.monto,0);
+  document.getElementById('ra-stats').innerHTML=
+    '<div class="stat"><div class="stat-lbl">Abonos</div><div class="stat-val">'+filt.length+'</div></div>'+
+    '<div class="stat"><div class="stat-lbl">Total abonado</div><div class="stat-val" style="font-size:15px">'+fmt(totalAb)+'</div></div>';
+  document.getElementById('ra-list').innerHTML=filt.length?filt.map(r=>
+    '<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px">'+
+      '<div style="min-width:0"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.cliente+'</div>'+
+      '<div style="font-size:11px;color:#78716c">'+(r.fecha||'').split('-').reverse().join('/')+' · '+r.pago+'</div></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><strong>'+fmt(r.monto)+'</strong>'+
+      '<button class="btn btn-sec btn-sm" onclick="viewVenta(\''+r.ventaId+'\')">Ver</button></div>'+
+    '</div>').join(''):'<div class="empty">Sin abonos registrados'+(q||mes?' con ese filtro':' todavía')+'.</div>';
 }
 
 
@@ -5756,6 +5874,7 @@ Object.assign(window,{
   setArmadoNV,setRespaldoNV,
   renderInv,renderVentas,renderDespachos,renderResumen,renderInicio,renderNuevaVentaTab,renderVendedores,
   limpiarFiltrosVentas,cambiarEstado,cambiarEstadoDetalle,registrarAbono,resetearInventario,
+  editarAbono,borrarAbono,abrirRegistroAbonos,renderRegistroAbonos,
   renderSaldos,abonarSaldo,pagarTotalSaldo,refrescarVistaActiva,actualizarBadges,
   cambiarEstadoRapido,waWhatsApp,waCobro,waDespacho,
   iniciarTour,tourSiguiente,tourAnterior,cerrarTour,exportarRespaldo,
