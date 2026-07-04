@@ -5921,6 +5921,35 @@ void main(){
       navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW no registrado:', err));
     });
   }
+
+  /* iOS scroll-lock: mientras haya un modal abierto (.modal-bg.show), congelamos
+     el fondo con position:fixed en el body. En Safari, overflow:hidden no basta:
+     el dedo sigue arrastrando el documento por detras del modal. Al congelar el
+     body, el gesto de scroll pasa al modal (que tiene su propio overflow-y:auto).
+     Un MutationObserver sobre cada .modal-bg lo cubre sin importar como se abra. */
+  (function(){
+    let scrollY = 0, locked = false;
+    const anyOpen = () => !!document.querySelector('.modal-bg.show');
+    function sync(){
+      const open = anyOpen();
+      const b = document.body.style;
+      if (open && !locked) {
+        scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        b.position = 'fixed'; b.top = (-scrollY) + 'px'; b.left = '0'; b.right = '0'; b.width = '100%';
+        locked = true;
+      } else if (!open && locked) {
+        b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = '';
+        window.scrollTo(0, scrollY);
+        locked = false;
+      }
+    }
+    function init(){
+      const obs = new MutationObserver(sync);
+      document.querySelectorAll('.modal-bg').forEach(m => obs.observe(m, {attributes:true, attributeFilter:['class']}));
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
 </script>
 </body>
 </html>
