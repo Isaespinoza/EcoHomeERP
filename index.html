@@ -5359,15 +5359,53 @@ function renderResumen(){
   const min=items.filter(v=>v.tipo==='min').reduce((a,v)=>a+v.total,0);
   const saldo=items.reduce((a,v)=>a+(v.saldo||0),0);
 
+  // Ticket promedio, unidades vendidas y mix mayorista/minorista
+  const ticketProm=items.length?Math.round(total/items.length):0;
+  let unidades=0;
+  items.forEach(v=>(v.items||[]).forEach(it=>unidades+=(parseInt(it.qty)||0)));
+  const mmTot=may+min;
+  const mayPct=mmTot?Math.round(may/mmTot*100):0;
+  const minPct=mmTot?100-mayPct:0;
+
+  // Comparativo con el período anterior (mes vs mes anterior, o año vs año anterior)
+  let prevTotal=0,prevLabel='';
+  if(mes===null){
+    prevTotal=ventas.filter(v=>new Date(v.fecha).getFullYear()===anio-1).reduce((a,v)=>a+v.total,0);
+    prevLabel=String(anio-1);
+  }else{
+    let pm=mes-1,py=anio; if(pm<0){pm=11;py=anio-1;}
+    prevTotal=ventas.filter(v=>{const d=new Date(v.fecha);return d.getFullYear()===py&&d.getMonth()===pm;}).reduce((a,v)=>a+v.total,0);
+    prevLabel=MESES[pm]+' '+py;
+  }
+  const difPct=prevTotal>0?Math.round((total-prevTotal)/prevTotal*100):null;
+
   document.getElementById('r-stats').innerHTML=`
     <div class="stat"><div class="stat-lbl">Ventas del período</div><div class="stat-val">${items.length}</div></div>
     <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val" style="font-size:15px">${fmt(total)}</div></div>
-    <div class="stat"><div class="stat-lbl">Mayorista</div><div class="stat-val may" style="font-size:15px">${fmt(may)}</div></div>
-    <div class="stat"><div class="stat-lbl">Minorista</div><div class="stat-val min" style="font-size:15px">${fmt(min)}</div></div>
+    <div class="stat"><div class="stat-lbl">🎟️ Ticket promedio</div><div class="stat-val" style="font-size:15px">${fmt(ticketProm)}</div></div>
+    <div class="stat"><div class="stat-lbl">📦 Unidades</div><div class="stat-val">${unidades}</div></div>
+    <div class="stat"><div class="stat-lbl">Mayorista</div><div class="stat-val may" style="font-size:15px">${fmt(may)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${mayPct}%</div></div>
+    <div class="stat"><div class="stat-lbl">Minorista</div><div class="stat-val min" style="font-size:15px">${fmt(min)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${minPct}%</div></div>
     ${saldo>0?`<div class="stat"><div class="stat-lbl">Saldo pendiente</div><div class="stat-val warn" style="font-size:15px">${fmt(saldo)}</div></div>`:''}`;
 
   // Charts
   let charts='';
+
+  // Comparativo con el período anterior
+  if(difPct!==null){
+    charts+=`<div class="card"><h4 style="margin-bottom:8px">📊 Comparativa con ${prevLabel}</h4>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--text3)">${mes===null?'Este año':'Período elegido'}</div>
+          <div style="font-size:18px;font-weight:700;color:#a87f3e">${fmt(total)}</div>
+        </div>
+        <div style="font-size:24px;font-weight:700;color:${difPct>=0?'#166534':'#dc2626'}">${difPct>=0?'↑':'↓'} ${Math.abs(difPct)}%</div>
+        <div style="flex:1;text-align:right">
+          <div style="font-size:11px;color:var(--text3)">${prevLabel}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text3)">${fmt(prevTotal)}</div>
+        </div>
+      </div></div>`;
+  }
 
   if(mes===null){
     // Por mes del año
@@ -5406,11 +5444,38 @@ function renderResumen(){
     vends[k].val+=v.total;vends[k].count++;
   });
   if(Object.keys(vends).length){
-    const maxV=Math.max(...Object.values(vends).map(v=>v.val),1);
-    charts+=`<div class="card"><h4 style="margin-bottom:10px">Por vendedor</h4>${Object.entries(vends).sort((a,b)=>b[1].val-a[1].val).map(([k,v])=>`
+    const ents=Object.entries(vends).sort((a,b)=>b[1].val-a[1].val);
+    const maxV=ents[0][1].val||1;
+    let destacados='';
+    if(ents.length>=2){
+      const best=ents[0], worst=ents[ents.length-1];
+      destacados=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #d97706;border-radius:99px;padding:5px 12px;font-size:11px;color:#92400e">🏆 Estrella: <strong>${best[0]}</strong> · ${fmt(best[1].val)}</div>
+        <div style="background:var(--surface2,#f5f5f4);border:1px solid var(--border,#e7e5e4);border-radius:99px;padding:5px 12px;font-size:11px;color:var(--text3)">🐢 El que menos vende: <strong>${worst[0]}</strong> · ${fmt(worst[1].val)}</div>
+      </div>`;
+    }
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">Por vendedor</h4>${destacados}${ents.map(([k,v])=>`
       <div class="bar-row">
         <div class="bar-lbl"><span>${k}</span><span><strong>${fmt(v.val)}</strong> <span class="muted">(${v.count})</span></span></div>
         <div class="bar"><div class="bar-fill" style="width:${v.val/maxV*100}%"></div></div>
+      </div>`).join('')}</div>`;
+  }
+
+  // Top productos del período (por unidades)
+  const prodV={};
+  items.forEach(v=>(v.items||[]).forEach(it=>{
+    const k=it.desc||(inventario.find(p=>p.id===it.prodId||p.id===String(it.prodId))||{}).nombre||'Producto';
+    const q=parseInt(it.qty)||0;
+    if(!prodV[k])prodV[k]={qty:0,total:0};
+    prodV[k].qty+=q; prodV[k].total+=q*(parseFloat(it.precio)||0);
+  }));
+  const topP=Object.entries(prodV).sort((a,b)=>b[1].qty-a[1].qty).slice(0,8);
+  if(topP.length){
+    const maxP=topP[0][1].qty||1;
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">🛏️ Top productos</h4>${topP.map(([k,v])=>`
+      <div class="bar-row">
+        <div class="bar-lbl"><span>${k}</span><span><strong>${v.qty} u</strong> <span class="muted">${fmt(v.total)}</span></span></div>
+        <div class="bar"><div class="bar-fill" style="width:${v.qty/maxP*100}%"></div></div>
       </div>`).join('')}</div>`;
   }
 
@@ -5428,6 +5493,29 @@ function renderResumen(){
         <div class="bar-lbl"><span>${k}</span><span><strong>${fmt(v.val)}</strong> <span class="muted">(${v.count})</span></span></div>
         <div class="bar"><div class="bar-fill" style="width:${v.val/maxC*100}%"></div></div>
       </div>`).join('')}</div>`;
+  }
+
+  // Medios de pago del período
+  const PAGO_COLORES={'Efectivo':'#166534','Tarjeta':'#7c3aed','Transferencia':'#0369a1','Débito':'#c2410c','Debito':'#c2410c','Crédito':'#be185d','Credito':'#be185d','Mixto':'#a87f3e'};
+  const pagos={};
+  items.forEach(v=>{
+    if(v.pago==='Mixto'&&v.pagoDesglose){
+      Object.entries(v.pagoDesglose).forEach(([k,val])=>{if(val>0){const nom=k.charAt(0).toUpperCase()+k.slice(1);pagos[nom]=(pagos[nom]||0)+val;}});
+    }else{pagos[v.pago||'—']=(pagos[v.pago||'—']||0)+v.total;}
+  });
+  const pagosOrd=Object.entries(pagos).sort((a,b)=>b[1]-a[1]);
+  if(pagosOrd.length){
+    const totalPagos=pagosOrd.reduce((a,[,v])=>a+v,0)||1;
+    charts+=`<div class="card"><h4 style="margin-bottom:10px">💳 Medios de pago</h4>
+      <div style="display:flex;height:14px;border-radius:99px;overflow:hidden;margin-bottom:10px">
+        ${pagosOrd.map(([k,v])=>`<div style="width:${Math.max(2,v/totalPagos*100)}%;background:${PAGO_COLORES[k]||'#78716c'}" title="${k}: ${fmt(v)}"></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${pagosOrd.map(([k,v])=>`<div style="font-size:11px;display:flex;align-items:center;gap:5px">
+          <span style="width:9px;height:9px;border-radius:50%;background:${PAGO_COLORES[k]||'#78716c'};display:inline-block"></span>
+          ${k} <strong>${fmt(v)}</strong> <span class="muted">(${Math.round(v/totalPagos*100)}%)</span>
+        </div>`).join('')}
+      </div></div>`;
   }
 
   document.getElementById('r-charts').innerHTML=charts;
