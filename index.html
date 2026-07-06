@@ -305,6 +305,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="label">Promociones</span></button>
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
+    <button class="sidebar-item" id="si-asistencia" onclick="setTab('asistencia')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="label">Asistencia</span></button>
     <button class="sidebar-item" id="si-hermanos" onclick="setTab('hermanos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="label">Hermanos</span><span class="badge" id="badge-hermanos"></span></button>
     <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
     <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="label">Finanzas</span></button>
@@ -477,6 +478,11 @@ tbody tr:hover{background:var(--gold-bg)}
   <div id="tab-clientes" class="section">
     <div class="search"><input type="text" id="cli-search" placeholder="Buscar cliente..." oninput="renderClientesDeb()"></div>
     <div id="clientes-content"></div>
+  </div>
+
+  <!-- ASISTENCIA -->
+  <div id="tab-asistencia" class="section">
+    <div id="asistencia-content"></div>
   </div>
 
   <!-- HERMANOS -->
@@ -1033,11 +1039,14 @@ async function delPromoDB(id){await deleteDoc(doc(db,'promociones',String(id)));
 async function delCotDB(id){await deleteDoc(doc(db,'cotizaciones',String(id)));}
 async function saveHermanoDB(m){await setDoc(doc(db,'hermanos',String(m.id)),m);}
 async function delHermanoDB(id){await deleteDoc(doc(db,'hermanos',String(id)));}
+async function saveAsistDB(r){await setDoc(doc(db,'asistencia',String(r.id)),r);}
+async function delAsistDB(id){await deleteDoc(doc(db,'asistencia',String(id)));}
 
 // Exponemos al scope global para que los onclick del HTML puedan llamarlas
 window.saveProdDB=saveProdDB;window.delProdDB=delProdDB;
 window.saveVentaDB=saveVentaDB;window.delVentaDB=delVentaDB;
 window.saveHermanoDB=saveHermanoDB;window.delHermanoDB=delHermanoDB;
+window.saveAsistDB=saveAsistDB;window.delAsistDB=delAsistDB;
 window.db=db;window.fsCollection=collection;window.fsDoc=doc;
 
 // =========== DATOS DEFAULT ===========
@@ -1234,6 +1243,7 @@ let cajas=[];
 let empleados=[];
 let rrhhEventos=[];
 let ventasHermanos=[];
+let asistencia=[];
 
 // =========== HELPERS ===========
 const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
@@ -2521,13 +2531,34 @@ function saldoHermano(nombre){
   },0);
 }
 
+// Lista compacta de movimientos de un mismo tipo (retiro, aporte o abono)
+function listaMovsHno(movs,vacioTxt){
+  if(!movs.length)return `<div class="muted" style="font-size:12px;padding:4px 0 2px">${vacioTxt}</div>`;
+  return movs.map(m=>{
+    const detalle=(m.items||[]).map(it=>`${it.qty}x ${it.desc}`).join(', ')||m.notas||'';
+    return `<div class="item-row" style="cursor:pointer;align-items:flex-start" onclick="editHermano('${m.id}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px">${m.fecha.split('-').reverse().join('/')}</div>
+        <div class="muted" style="font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detalle}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;font-weight:600">${fmt(m.monto||0)}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderHermanos(){
   let html=`<div class="section-title">🤝 Hermanos</div>
-    <div class="help">Lo que se llevan Caia y Benjamín descuenta stock pero no cuenta como venta del mes. Queda aparte, con su propio saldo pendiente.</div>`;
+    <div class="help">Lo que se llevan Caia y Benjamín descuenta stock (a valor mayorista) pero no cuenta como venta del mes. Queda aparte, con su propio saldo pendiente.</div>`;
 
   HERMANOS_LISTA.forEach(nombre=>{
-    const movs=ventasHermanos.filter(m=>m.hermano===nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-    const saldo=saldoHermano(nombre);
+    const movs=ventasHermanos.filter(m=>m.hermano===nombre);
+    const retiros=movs.filter(m=>m.tipo==='retiro').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const aportes=movs.filter(m=>m.tipo==='aporte').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const abonos=movs.filter(m=>m.tipo==='abono').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const totalRetiros=retiros.reduce((a,m)=>a+(m.monto||0),0);
+    const totalAportes=aportes.reduce((a,m)=>a+(m.monto||0),0);
+    const totalAbonos=abonos.reduce((a,m)=>a+(m.monto||0),0);
+    const saldo=totalRetiros-totalAportes-totalAbonos;
     const saldoTxt=saldo>0?`Te debe ${fmt(saldo)}`:(saldo<0?`Le debes ${fmt(-saldo)}`:'Sin saldo pendiente');
     const saldoClass=saldo>0?'warn':(saldo<0?'danger':'ok');
 
@@ -2536,24 +2567,23 @@ function renderHermanos(){
         <h4 style="margin:0">${nombre}</h4>
         <button class="btn btn-sm" onclick="openMovHno('${nombre}')">+ Movimiento</button>
       </div>
-      <div class="${saldoClass}" style="font-size:13px;font-weight:600;margin-bottom:10px">${saldoTxt}</div>`;
+      <div class="${saldoClass}" style="font-size:13px;font-weight:600;margin-bottom:10px">${saldoTxt}</div>
 
-    if(!movs.length){
-      html+='<div class="empty" style="padding:16px">Sin movimientos registrados.</div>';
-    }else{
-      const TIPO_LBL={retiro:'📤 Se llevó',aporte:'📥 Trajo/prestó',abono:'💵 Abonó'};
-      html+=movs.map(m=>{
-        const detalle=m.tipo==='abono'?(m.notas||'Abono'):(m.items||[]).map(it=>`${it.qty}x ${it.desc}`).join(', ');
-        return `<div class="item-row" style="cursor:pointer;align-items:flex-start" onclick="editHermano('${m.id}')">
-          <div style="flex:1;min-width:0">
-            <div><strong>${TIPO_LBL[m.tipo]||m.tipo}</strong> · ${m.fecha.split('-').reverse().join('/')}</div>
-            <div class="muted" style="font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detalle}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;font-weight:600">${fmt(m.monto||0)}</div>
-        </div>`;
-      }).join('');
-    }
-    html+='</div>';
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;color:#78716c;margin:10px 0 4px">
+        <span>📤 Se llevó (mayorista)</span><span>${fmt(totalRetiros)}</span>
+      </div>
+      ${listaMovsHno(retiros,'Nada registrado.')}
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;color:#78716c;margin:14px 0 4px">
+        <span>📥 Trajo / prestó</span><span>${fmt(totalAportes)}</span>
+      </div>
+      ${listaMovsHno(aportes,'Nada registrado.')}
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;color:#78716c;margin:14px 0 4px">
+        <span>💵 Abonos</span><span>${fmt(totalAbonos)}</span>
+      </div>
+      ${listaMovsHno(abonos,'Sin abonos.')}
+    </div>`;
   });
   document.getElementById('hermanos-content').innerHTML=html;
 }
@@ -2581,7 +2611,7 @@ function renderItemsHno(){
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:#78716c;margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItemHno(${i},'qty',this.value)"></div>
-        <div style="flex:1.5"><div style="font-size:9px;color:#78716c;margin-bottom:2px">PRECIO</div><input type="number" value="${it.precio}" onchange="updItemHno(${i},'precio',this.value)"></div>
+        <div style="flex:1.5"><div style="font-size:9px;color:#78716c;margin-bottom:2px">PRECIO MAYORISTA</div><input type="number" value="${it.precio}" onchange="updItemHno(${i},'precio',this.value)"></div>
         <button class="btn btn-danger btn-sm" onclick="rmItemHno(${i})" style="padding:8px 10px;margin-top:14px">×</button>
       </div>
     </div>`).join('');
@@ -2601,7 +2631,7 @@ function autocompleteProductoHno(i){
     const stock=parseInt(p.stock)||0;
     const stockTxt=p.combo?'':(stock<=0?'<span style="color:#dc2626">Sin stock</span>':`${stock} u`);
     return`<div onclick="selProdAutoHno(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong></span><span style="color:#a87f3e;white-space:nowrap">${fmt(p.min)}</span></div>
+      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong></span><span style="color:#a87f3e;white-space:nowrap">${fmt(p.may)}</span></div>
       <div style="color:#78716c;font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
     </div>`;
   }).join('');
@@ -2614,7 +2644,7 @@ function selProdAutoHno(i,id,e){
   if(p){
     hnoItems[i].prodId=p.id;
     hnoItems[i].desc=p.nombre;
-    hnoItems[i].precio=p.min;
+    hnoItems[i].precio=p.may;
   }
   document.getElementById('hno-prod-ac-'+i).style.display='none';
   renderItemsHno();
@@ -2936,8 +2966,11 @@ function liquidacionEmpleado(e,mesStr){
     else if(ev.tipo==='bono')bonos+=(ev.monto||0);
   });
   const comision=Math.round(comisionEmpleadoMes(e.nombre,mesStr));
-  const total=(e.sueldoBase||0)-Math.round(descAusencias)+comision+bonos-adelantos;
-  return{base:e.sueldoBase||0,descAusencias:Math.round(descAusencias),diasPerdidos,horasPerdidas,comision,bonos,adelantos,total,eventos:evs};
+  // Asistencia del mes: descuento por horas de menos y pago de horas extra (50% recargo, fórmula DT)
+  const asis=resumenAsistMes(e,mesStr);
+  const total=(e.sueldoBase||0)-Math.round(descAusencias)-asis.descuento+asis.pagoExtra+comision+bonos-adelantos;
+  return{base:e.sueldoBase||0,descAusencias:Math.round(descAusencias),diasPerdidos,horasPerdidas,comision,bonos,adelantos,total,eventos:evs,
+    descAsist:asis.descuento,pagoExtras:asis.pagoExtra,extraMin:asis.extraMin,faltanteMin:asis.faltanteMin};
 }
 function renderSueldosSection(mesStr,mesNombre){
   const activos=empleados.filter(e=>e.activo!==false);
@@ -2967,6 +3000,8 @@ function renderSueldosSection(mesStr,mesNombre){
         </div>
         <div class="item-row"><span class="muted">Sueldo base</span><strong>${fmt(liq.base)}</strong></div>
         ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Ausencias (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
+        ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos según asistencia (${minToHM(liq.faltanteMin)})</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
+        ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra 50% recargo (${minToHM(liq.extraMin)})</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
         <div class="item-row"><span class="muted">+ Comisión 1% ventas</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
         ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
         ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos entregados</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
@@ -3016,6 +3051,154 @@ async function eliminarEmpleado(id){
   empleados=empleados.filter(e=>String(e.id)!==String(id));
   await delEmpleadoDB(id);
   renderFinanzas();
+}
+
+// =========== ASISTENCIA (marcaje entrada/salida) ===========
+// Normativa aplicada:
+// - Registro de asistencia: obligación del empleador (Art. 33 Código del Trabajo).
+// - Jornada: 42 h semanales desde el 26.04.2026 (Ley 21.561, gradualidad 44→42→40).
+// - Horas extraordinarias: máx. 2 por día, recargo 50% (Art. 32 CdT). Fórmula oficial DT
+//   para sueldo mensual: hora ordinaria = sueldo ÷ 30 × 28 ÷ (4 × horas semanales); extra = ×1,5.
+// - Atrasos / horas de menos: descuento proporcional al valor hora ordinaria
+//   (Dictamen DT 5308/230: sueldo ÷ 30 ÷ jornada diaria).
+const ASIST_ENTRADA='10:00';   // hora de entrada esperada
+const ASIST_COLACION_MIN=60;   // colación en minutos (no cuenta como tiempo trabajado)
+
+const hmToMin=hm=>{const[h,m]=String(hm||'').split(':').map(Number);return(h||0)*60+(m||0);};
+const minToHM=min=>{const s=min<0?'−':'';min=Math.abs(Math.round(min));return s+Math.floor(min/60)+'h '+String(min%60).padStart(2,'0')+'m';};
+
+function jornadaDiariaMin(e){return Math.round((e.horasSemana||42)/(e.diasSemana||6)*60);}
+function valorHoraExtraEmpleado(e){
+  return (e.sueldoBase||0)/30*28/(4*(e.horasSemana||42))*1.5;
+}
+
+// Cálculo de un día marcado: minutos trabajados, atraso, extra (tope legal 2h) y faltante
+function calcDiaAsist(r,e){
+  const out={trabajado:0,atraso:0,extra:0,faltante:0,completo:!!(r.entrada&&r.salida)};
+  if(r.entrada)out.atraso=Math.max(0,hmToMin(r.entrada)-hmToMin(ASIST_ENTRADA));
+  if(!out.completo)return out;
+  let presencia=hmToMin(r.salida)-hmToMin(r.entrada);
+  if(presencia<0)presencia=0;
+  // La colación se descuenta solo cuando la presencia la supera con holgura (más de media jornada)
+  out.trabajado=presencia>(ASIST_COLACION_MIN+240)?presencia-ASIST_COLACION_MIN:presencia;
+  const dif=out.trabajado-jornadaDiariaMin(e);
+  if(dif>0)out.extra=Math.min(dif,120); // tope legal: 2 horas extra por día
+  else out.faltante=-dif;
+  return out;
+}
+
+// Resumen del mes de un empleado: horas acumuladas y montos según normativa
+function resumenAsistMes(e,mesStr){
+  const regs=asistencia.filter(r=>String(r.empleadoId)===String(e.id)&&r.fecha&&r.fecha.startsWith(mesStr));
+  const res={dias:0,atrasoMin:0,extraMin:0,faltanteMin:0,descuento:0,pagoExtra:0,regs};
+  regs.forEach(r=>{
+    const c=calcDiaAsist(r,e);
+    if(c.completo)res.dias++;
+    res.atrasoMin+=c.atraso;res.extraMin+=c.extra;res.faltanteMin+=c.faltante;
+  });
+  res.descuento=Math.round(res.faltanteMin/60*valorHoraEmpleado(e));
+  res.pagoExtra=Math.round(res.extraMin/60*valorHoraExtraEmpleado(e));
+  return res;
+}
+
+async function marcarAsistencia(empId){
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const hoy=today(),hora=horaActual();
+  let r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
+  if(!r){
+    if(!confirm(`¿Marcar LLEGADA de ${e.nombre} a las ${hora}?`))return;
+    r={id:uid(),empleadoId:e.id,fecha:hoy,entrada:hora,salida:''};
+    asistencia.push(r);
+  }else if(!r.salida){
+    if(!confirm(`¿Marcar SALIDA de ${e.nombre} a las ${hora}?`))return;
+    if(hmToMin(hora)<=hmToMin(r.entrada)){alert('La salida no puede ser antes de la llegada.');return;}
+    r.salida=hora;
+  }else{
+    toast('Ya marcó llegada y salida hoy. Para corregir usa ✏️ (pide clave admin).');
+    return;
+  }
+  renderAsistencia();
+  saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+}
+
+async function corregirAsistencia(id){
+  if(!(await requiereAdmin()))return;
+  const r=asistencia.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  const ent=prompt('Hora de llegada (HH:MM):',r.entrada||'');
+  if(ent===null)return;
+  const sal=prompt('Hora de salida (HH:MM, deja vacío si aún no sale):',r.salida||'');
+  if(sal===null)return;
+  const ok=v=>!v||/^\d{1,2}:\d{2}$/.test(v.trim());
+  if(!ok(ent)||!ok(sal)){alert('Formato inválido. Usa HH:MM, ej: 10:05');return;}
+  r.entrada=ent.trim();r.salida=sal.trim();
+  renderAsistencia();
+  saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+}
+
+async function eliminarAsistencia(id){
+  if(!(await requiereAdmin()))return;
+  if(!confirm('¿Eliminar este registro de asistencia?'))return;
+  asistencia=asistencia.filter(x=>String(x.id)!==String(id));
+  await delAsistDB(id);
+  renderAsistencia();
+}
+
+function renderAsistencia(){
+  const activos=empleados.filter(e=>e.activo!==false);
+  const hoy=today();
+  const mesStr=hoy.slice(0,7);
+  let html=`<div class="section-title">⏰ Asistencia</div>
+    <div class="help">Marca la llegada al empezar y la salida al terminar. Jornada legal: 42 h semanales (Ley 21.561) · entrada ${ASIST_ENTRADA} · colación ${ASIST_COLACION_MIN} min (no cuenta como trabajo). Horas extra: máx. 2 al día, con 50% de recargo. Los montos se aplican solos en la liquidación de Finanzas.</div>`;
+  if(!activos.length)html+='<div class="empty">Sin empleados registrados. Agrégalos en Finanzas → Sueldos.</div>';
+  activos.forEach(e=>{
+    const r=asistencia.find(x=>String(x.empleadoId)===String(e.id)&&x.fecha===hoy);
+    const res=resumenAsistMes(e,mesStr);
+    const c=r?calcDiaAsist(r,e):null;
+    let estadoHoy,btn='';
+    if(!r){
+      estadoHoy='Sin marcar hoy';
+      btn=`<button class="btn" onclick="marcarAsistencia('${e.id}')">🟢 Marcar llegada</button>`;
+    }else if(!r.salida){
+      estadoHoy=`Llegó a las <strong>${r.entrada}</strong>${c.atraso>0?` <span class="warn">(${c.atraso} min tarde)</span>`:''}`;
+      btn=`<button class="btn" style="background:#dc2626" onclick="marcarAsistencia('${e.id}')">🔴 Marcar salida</button>`;
+    }else{
+      estadoHoy=`Llegó <strong>${r.entrada}</strong> · salió <strong>${r.salida}</strong> · trabajó ${minToHM(c.trabajado)}`;
+    }
+    const balanceMin=res.extraMin-res.faltanteMin;
+    html+=`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <h4 style="margin:0 0 4px">${e.nombre}</h4>
+          <div style="font-size:12px">${estadoHoy}</div>
+        </div>
+        ${btn}
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px" class="muted">
+        <span>Mes: <strong>${res.dias}</strong> día${res.dias!==1?'s':''}</span>
+        <span>Atrasos llegada: <strong class="${res.atrasoMin>0?'warn':'ok'}">${res.atrasoMin} min</strong></span>
+        <span>Horas extra: <strong class="ok">${minToHM(res.extraMin)}</strong></span>
+        <span>Horas de menos: <strong class="${res.faltanteMin>0?'danger':'ok'}">${minToHM(res.faltanteMin)}</strong></span>
+        <span>Balance: <strong class="${balanceMin>=0?'ok':'danger'}">${minToHM(balanceMin)}</strong></span>
+      </div>
+      ${res.regs.length?`<details style="margin-top:8px"><summary style="font-size:11px;color:#a87f3e;cursor:pointer">Ver registros del mes (${res.regs.length})</summary>
+        ${res.regs.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(reg=>{
+          const cc=calcDiaAsist(reg,e);
+          return `<div class="item-row" style="font-size:11px">
+            <span>${reg.fecha.split('-').reverse().join('/')} · ${reg.entrada||'—'} → ${reg.salida||'…'}</span>
+            <span style="display:flex;gap:8px;align-items:center">
+              ${cc.completo?minToHM(cc.trabajado):''}
+              ${cc.extra>0?`<span class="ok">+${minToHM(cc.extra)}</span>`:''}
+              ${cc.faltante>0&&cc.completo?`<span class="danger">−${minToHM(cc.faltante)}</span>`:''}
+              <button onclick="corregirAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">✏️</button>
+              <button onclick="eliminarAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">🗑️</button>
+            </span>
+          </div>`;}).join('')}
+      </details>`:''}
+    </div>`;
+  });
+  document.getElementById('asistencia-content').innerHTML=html;
 }
 async function registrarEventoRRHH(empleadoId,tipo){
   const e=empleados.find(x=>String(x.id)===String(empleadoId));
@@ -3916,9 +4099,10 @@ async function initFirebase(){
     const pAdm=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','admin')).catch(()=>null);
     const pCalc=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','calculadora')).catch(()=>null);
     const pHer=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'hermanos'));
+    const pAsi=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'asistencia'));
 
-    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap]=
-      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer]);
+    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap]=
+      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi]);
 
     if(invSnap.empty){
       const batch=writeBatch(db);
@@ -4035,6 +4219,12 @@ async function initFirebase(){
         if(document.getElementById('tab-hermanos').classList.contains('active'))renderHermanos();
         actualizarBadges();
       });
+      // Cargar registros de asistencia (marcaje entrada/salida de empleados)
+      asistencia=asiSnap.docs.map(d=>d.data());
+      onSnapshot(collection(db,'asistencia'),snap=>{
+        asistencia=snap.docs.map(d=>d.data());
+        if(document.getElementById('tab-asistencia').classList.contains('active'))renderAsistencia();
+      });
     }
     pintarCandado();
   }catch(e){
@@ -4095,6 +4285,7 @@ function setTab(t){
   if(t==='caja')renderCaja();
   if(t==='costosfab')renderCalculadora();
   if(t==='hermanos')renderHermanos();
+  if(t==='asistencia')renderAsistencia();
 }
 
 // =========== MODALS ===========
@@ -4110,7 +4301,7 @@ function refrescarVistaActiva(){
     despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
     vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
     clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora,
-    hermanos:renderHermanos}[id];
+    hermanos:renderHermanos,asistencia:renderAsistencia}[id];
   if(typeof fn==='function'){try{fn();}catch(e){}}
 }
 
@@ -6188,7 +6379,8 @@ Object.assign(window,{
   autocompleteCliente,selCliente,solicitarNotificaciones,
   renderVentasDeb,renderClientesDeb,renderInvDeb,
   renderHermanos,openMovHno,editHermano,saveHermano,delHermano,toggleTipoHno,
-  addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno
+  addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno,
+  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia
 });
 </script>
 
