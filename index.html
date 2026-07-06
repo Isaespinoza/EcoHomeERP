@@ -274,6 +274,8 @@ tbody tr:hover{background:var(--gold-bg)}
 /* ===== ANIMATIONS ===== */
 .card{animation:cardIn .2s ease both}
 @keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.cliente-ac{opacity:0;transform:translateY(-6px);transition:opacity .18s ease,transform .18s ease}
+.cliente-ac.show{opacity:1;transform:translateY(0)}
 /* ===== SHADER BG ===== */
 #shader-bg{display:none}
 </style>
@@ -303,6 +305,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="label">Promociones</span></button>
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
+    <button class="sidebar-item" id="si-hermanos" onclick="setTab('hermanos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="label">Hermanos</span><span class="badge" id="badge-hermanos"></span></button>
     <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
     <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="label">Finanzas</span></button>
     <button class="sidebar-item" id="si-costosfab" onclick="setTab('costosfab')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="label">Costos Fábrica</span></button>
@@ -352,7 +355,7 @@ tbody tr:hover{background:var(--gold-bg)}
       <button class="btn btn-sec btn-sm" onclick="exportVentas()">📥 Exportar</button>
     </div>
     <div class="fil">
-      <input type="text" id="v-search" placeholder="Buscar cliente..." oninput="renderVentas()" style="flex:2;min-width:140px">
+      <input type="text" id="v-search" placeholder="Buscar cliente..." oninput="renderVentasDeb()" style="flex:2;min-width:140px">
       <select id="v-tipo" onchange="renderVentas()">
         <option value="">Todos</option>
         <option value="min">Minorista</option>
@@ -445,7 +448,7 @@ tbody tr:hover{background:var(--gold-bg)}
 
   <!-- INVENTARIO -->
   <div id="tab-inventario" class="section">
-    <div class="search"><input type="text" id="inv-search" placeholder="Buscar producto..." oninput="renderInv()"></div>
+    <div class="search"><input type="text" id="inv-search" placeholder="Buscar producto..." oninput="renderInvDeb()"></div>
     <div class="fil">
       <select id="inv-marca" onchange="renderInv()"><option value="">Todas las marcas</option></select>
       <select id="inv-cat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
@@ -472,8 +475,13 @@ tbody tr:hover{background:var(--gold-bg)}
 
   <!-- CLIENTES -->
   <div id="tab-clientes" class="section">
-    <div class="search"><input type="text" id="cli-search" placeholder="Buscar cliente..." oninput="renderClientes()"></div>
+    <div class="search"><input type="text" id="cli-search" placeholder="Buscar cliente..." oninput="renderClientesDeb()"></div>
     <div id="clientes-content"></div>
+  </div>
+
+  <!-- HERMANOS -->
+  <div id="tab-hermanos" class="section">
+    <div id="hermanos-content"></div>
   </div>
 
   <!-- FINANZAS -->
@@ -711,7 +719,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="vt-cliente" oninput="autocompleteCliente('vt-cliente','vt-ac')" autocomplete="off">
-      <div id="vt-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="vt-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row" id="vt-rut-row" style="display:none">
       <div class="field"><label>RUT</label><input type="text" id="vt-rut" placeholder="12.345.678-9"></div>
@@ -800,7 +808,7 @@ tbody tr:hover{background:var(--gold-bg)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="cot-cliente" autocomplete="off" oninput="autocompleteCliente('cot-cliente','cot-cli-ac')">
-      <div id="cot-cli-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="cot-cli-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row">
       <div class="field"><label>Teléfono</label>
@@ -857,6 +865,44 @@ tbody tr:hover{background:var(--gold-bg)}
     <div class="modal-actions">
       <button class="btn btn-sec btn-sm" onclick="closeModal('modal-compra')">Cancelar</button>
       <button class="btn btn-sm" style="background:#0369a1" onclick="guardarCompra()">💾 Guardar compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Movimiento con Hermano -->
+<div class="modal-bg" id="modal-hermano">
+  <div class="modal" style="max-width:560px">
+    <h3 id="hno-titulo">Nuevo movimiento</h3>
+    <div class="row">
+      <div class="field"><label>Hermano</label><select id="hno-hermano">
+        <option>Caia</option><option>Benjamín</option>
+      </select></div>
+      <div class="field"><label>Tipo</label><select id="hno-tipo" onchange="toggleTipoHno()">
+        <option value="retiro">📤 Se lleva (descuenta stock)</option>
+        <option value="aporte">📥 Trae / presta (suma stock)</option>
+        <option value="abono">💵 Abono / pago</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Fecha</label><input type="date" id="hno-fecha"></div>
+
+    <div id="hno-items-wrap">
+      <div style="margin:10px 0 6px"><strong style="font-size:13px">Productos</strong></div>
+      <div id="hno-items"></div>
+      <button class="btn btn-sec btn-sm" onclick="addItemHno()" style="margin-top:6px">+ Agregar producto</button>
+      <div style="background:#fef9f0;padding:10px 12px;border-radius:8px;margin-top:10px;display:flex;justify-content:space-between;font-size:14px">
+        <strong>Total</strong><strong id="hno-total">$0</strong>
+      </div>
+    </div>
+    <div class="field" id="hno-monto-wrap" style="display:none">
+      <label>Monto</label><input type="number" id="hno-monto-manual" placeholder="0">
+    </div>
+
+    <div class="field"><label>Notas</label><textarea id="hno-notas" rows="2" placeholder="Ej: se lo llevó para su feria del sábado"></textarea></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-hermano')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="del-hno-btn" onclick="delHermano()" style="display:none">Eliminar</button>
+      <button class="btn btn-sm" onclick="saveHermano()">Guardar</button>
     </div>
   </div>
 </div>
@@ -985,10 +1031,13 @@ async function saveRRHHDB(e){await setDoc(doc(db,'rrhh',String(e.id)),e);}
 async function delRRHHDB(id){await deleteDoc(doc(db,'rrhh',String(id)));}
 async function delPromoDB(id){await deleteDoc(doc(db,'promociones',String(id)));}
 async function delCotDB(id){await deleteDoc(doc(db,'cotizaciones',String(id)));}
+async function saveHermanoDB(m){await setDoc(doc(db,'hermanos',String(m.id)),m);}
+async function delHermanoDB(id){await deleteDoc(doc(db,'hermanos',String(id)));}
 
 // Exponemos al scope global para que los onclick del HTML puedan llamarlas
 window.saveProdDB=saveProdDB;window.delProdDB=delProdDB;
 window.saveVentaDB=saveVentaDB;window.delVentaDB=delVentaDB;
+window.saveHermanoDB=saveHermanoDB;window.delHermanoDB=delHermanoDB;
 window.db=db;window.fsCollection=collection;window.fsDoc=doc;
 
 // =========== DATOS DEFAULT ===========
@@ -1184,11 +1233,13 @@ let compras=[];
 let cajas=[];
 let empleados=[];
 let rrhhEventos=[];
+let ventasHermanos=[];
 
 // =========== HELPERS ===========
 const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const today=()=>new Date().toISOString().slice(0,10);
+const horaActual=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
 function uid(){return'id'+Date.now()+Math.floor(Math.random()*1000);}
 
 // =========== INICIO ===========
@@ -1470,7 +1521,7 @@ function renderNuevaVentaTab(){
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="nv-cliente" placeholder="Cliente mostrador" oninput="autocompleteCliente('nv-cliente','nv-ac')" autocomplete="off">
-      <div id="nv-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto"></div>
+      <div id="nv-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div id="nv-rut-row" style="display:none">
       <div class="row">
@@ -1934,6 +1985,7 @@ async function saveVentaNV(){
   }
   const v={
     id:uid(),
+    horaCreacion:horaActual(),
     fecha:document.getElementById('nv-fecha').value||today(),
     fechaDesp:document.getElementById('nv-fecha-desp').value||today(),
     estado:document.getElementById('nv-estado').value||'pendiente',
@@ -2007,16 +2059,19 @@ async function agregarProductosManuales(items,tipo,batch){
 function autocompleteCliente(inputId,acId){
   const val=document.getElementById(inputId).value.toLowerCase().trim();
   const ac=document.getElementById(acId);
-  if(!val||val.length<2){ac.style.display='none';return;}
+  if(!val||val.length<2){ac.classList.remove('show');ac.style.display='none';return;}
   const clientes=[...new Set(ventas.map(v=>v.cliente))].filter(c=>c.toLowerCase().includes(val)).slice(0,6);
-  if(!clientes.length){ac.style.display='none';return;}
+  if(!clientes.length){ac.classList.remove('show');ac.style.display='none';return;}
   ac.innerHTML=clientes.map(c=>`<div onclick="selCliente('${inputId}','${acId}','${c.replace(/'/g,"\\'")}',event)" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">${c}</div>`).join('');
   ac.style.display='block';
+  requestAnimationFrame(()=>ac.classList.add('show'));
 }
 function selCliente(inputId,acId,nombre,e){
   e.preventDefault();e.stopPropagation();
   document.getElementById(inputId).value=nombre;
-  document.getElementById(acId).style.display='none';
+  const acEl=document.getElementById(acId);
+  acEl.classList.remove('show');
+  acEl.style.display='none';
   // Buscar la venta más reciente de ese cliente para reusar sus datos
   const prev=ventas.filter(v=>v.cliente===nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
   if(!prev)return;
@@ -2034,8 +2089,12 @@ function selCliente(inputId,acId,nombre,e){
   set('tel',prev.tel);
   set('rut',prev.rut);
   set('empresa',prev.empresa);
+  set('dir',prev.dir);
+  set('calle',prev.despCalle);
+  set('numero',prev.despNumero);
+  set('comuna',prev.despComuna);
 }
-document.addEventListener('click',()=>{document.querySelectorAll('[id$="-ac"]').forEach(el=>el.style.display='none');});
+document.addEventListener('click',()=>{document.querySelectorAll('[id$="-ac"]').forEach(el=>{el.style.display='none';el.classList.remove('show');});});
 
 // =========== NOTIFICACIONES ===========
 async function solicitarNotificaciones(){
@@ -2445,6 +2504,220 @@ function renderClientes(){
     </div>`).join('');
   }
   document.getElementById('clientes-content').innerHTML=html;
+}
+
+// =========== HERMANOS (Caia / Benjamín) ===========
+// Movimientos aparte de las ventas normales: no cuentan en Resumen/Vendedores/Finanzas,
+// pero sí mueven el inventario real. tipo 'retiro' = se llevan algo (descuenta stock, suma a lo que deben);
+// tipo 'aporte' = traen o prestan algo (suma stock, resta de lo que deben); tipo 'abono' = pago (resta lo que deben).
+const HERMANOS_LISTA=['Caia','Benjamín'];
+let editHnoId=null;
+let hnoItems=[];
+
+function saldoHermano(nombre){
+  return ventasHermanos.filter(m=>m.hermano===nombre).reduce((acc,m)=>{
+    if(m.tipo==='retiro')return acc+(m.monto||0);
+    return acc-(m.monto||0); // aporte y abono restan lo que deben
+  },0);
+}
+
+function renderHermanos(){
+  let html=`<div class="section-title">🤝 Hermanos</div>
+    <div class="help">Lo que se llevan Caia y Benjamín descuenta stock pero no cuenta como venta del mes. Queda aparte, con su propio saldo pendiente.</div>`;
+
+  HERMANOS_LISTA.forEach(nombre=>{
+    const movs=ventasHermanos.filter(m=>m.hermano===nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const saldo=saldoHermano(nombre);
+    const saldoTxt=saldo>0?`Te debe ${fmt(saldo)}`:(saldo<0?`Le debes ${fmt(-saldo)}`:'Sin saldo pendiente');
+    const saldoClass=saldo>0?'warn':(saldo<0?'danger':'ok');
+
+    html+=`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <h4 style="margin:0">${nombre}</h4>
+        <button class="btn btn-sm" onclick="openMovHno('${nombre}')">+ Movimiento</button>
+      </div>
+      <div class="${saldoClass}" style="font-size:13px;font-weight:600;margin-bottom:10px">${saldoTxt}</div>`;
+
+    if(!movs.length){
+      html+='<div class="empty" style="padding:16px">Sin movimientos registrados.</div>';
+    }else{
+      const TIPO_LBL={retiro:'📤 Se llevó',aporte:'📥 Trajo/prestó',abono:'💵 Abonó'};
+      html+=movs.map(m=>{
+        const detalle=m.tipo==='abono'?(m.notas||'Abono'):(m.items||[]).map(it=>`${it.qty}x ${it.desc}`).join(', ');
+        return `<div class="item-row" style="cursor:pointer;align-items:flex-start" onclick="editHermano('${m.id}')">
+          <div style="flex:1;min-width:0">
+            <div><strong>${TIPO_LBL[m.tipo]||m.tipo}</strong> · ${m.fecha.split('-').reverse().join('/')}</div>
+            <div class="muted" style="font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detalle}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;font-weight:600">${fmt(m.monto||0)}</div>
+        </div>`;
+      }).join('');
+    }
+    html+='</div>';
+  });
+  document.getElementById('hermanos-content').innerHTML=html;
+}
+
+function toggleTipoHno(){
+  const tipo=document.getElementById('hno-tipo').value;
+  document.getElementById('hno-items-wrap').style.display=tipo==='abono'?'none':'block';
+  document.getElementById('hno-monto-wrap').style.display=tipo==='abono'?'block':'none';
+}
+
+function addItemHno(prodId,qty,precio){
+  hnoItems.push({prodId:prodId||null,desc:'',qty:qty||1,precio:precio||0});
+  renderItemsHno();
+}
+function rmItemHno(i){hnoItems.splice(i,1);renderItemsHno();}
+
+function renderItemsHno(){
+  const cont=document.getElementById('hno-items');
+  if(!hnoItems.length){cont.innerHTML='<div class="muted" style="font-size:12px;padding:6px 0">Sin productos. Toca "+ Agregar producto"</div>';recalcTotalHno();return;}
+  cont.innerHTML=hnoItems.map((it,i)=>`<div style="background:#f9f6f0;border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
+      <div style="position:relative;margin-bottom:6px">
+        <input type="text" id="hno-prod-input-${i}" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
+          oninput="autocompleteProductoHno(${i})" style="width:100%">
+        <div id="hno-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="flex:1"><div style="font-size:9px;color:#78716c;margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItemHno(${i},'qty',this.value)"></div>
+        <div style="flex:1.5"><div style="font-size:9px;color:#78716c;margin-bottom:2px">PRECIO</div><input type="number" value="${it.precio}" onchange="updItemHno(${i},'precio',this.value)"></div>
+        <button class="btn btn-danger btn-sm" onclick="rmItemHno(${i})" style="padding:8px 10px;margin-top:14px">×</button>
+      </div>
+    </div>`).join('');
+  recalcTotalHno();
+}
+
+function autocompleteProductoHno(i){
+  const input=document.getElementById('hno-prod-input-'+i);
+  const ac=document.getElementById('hno-prod-ac-'+i);
+  const val=input.value.toLowerCase().trim();
+  hnoItems[i].desc=input.value;
+  hnoItems[i].prodId=null;
+  if(!val||val.length<2){ac.style.display='none';return;}
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  if(!matches.length){ac.style.display='none';return;}
+  ac.innerHTML=matches.map(p=>{
+    const stock=parseInt(p.stock)||0;
+    const stockTxt=p.combo?'':(stock<=0?'<span style="color:#dc2626">Sin stock</span>':`${stock} u`);
+    return`<div onclick="selProdAutoHno(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
+      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong></span><span style="color:#a87f3e;white-space:nowrap">${fmt(p.min)}</span></div>
+      <div style="color:#78716c;font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
+    </div>`;
+  }).join('');
+  ac.style.display='block';
+}
+
+function selProdAutoHno(i,id,e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  const p=inventario.find(x=>String(x.id)===String(id));
+  if(p){
+    hnoItems[i].prodId=p.id;
+    hnoItems[i].desc=p.nombre;
+    hnoItems[i].precio=p.min;
+  }
+  document.getElementById('hno-prod-ac-'+i).style.display='none';
+  renderItemsHno();
+}
+
+function updItemHno(i,k,v){
+  hnoItems[i][k]=k==='qty'||k==='precio'?parseInt(v)||0:v;
+  recalcTotalHno();
+}
+
+function recalcTotalHno(){
+  const sub=hnoItems.reduce((a,it)=>a+it.qty*it.precio,0);
+  document.getElementById('hno-total').textContent=fmt(sub);
+}
+
+function openMovHno(nombre){
+  editHnoId=null;
+  hnoItems=[];
+  document.getElementById('hno-titulo').textContent='Nuevo movimiento';
+  document.getElementById('hno-hermano').value=nombre||'Caia';
+  document.getElementById('hno-tipo').value='retiro';
+  document.getElementById('hno-fecha').value=today();
+  document.getElementById('hno-monto-manual').value='';
+  document.getElementById('hno-notas').value='';
+  document.getElementById('del-hno-btn').style.display='none';
+  toggleTipoHno();
+  renderItemsHno();
+  openModal('modal-hermano');
+}
+
+function editHermano(id){
+  const m=ventasHermanos.find(x=>String(x.id)===String(id));
+  if(!m)return;
+  editHnoId=id;
+  hnoItems=(m.items||[]).map(it=>({...it}));
+  document.getElementById('hno-titulo').textContent='Editar movimiento';
+  document.getElementById('hno-hermano').value=m.hermano;
+  document.getElementById('hno-tipo').value=m.tipo;
+  document.getElementById('hno-fecha').value=m.fecha;
+  document.getElementById('hno-monto-manual').value=m.tipo==='abono'?(m.monto||''):'';
+  document.getElementById('hno-notas').value=m.notas||'';
+  document.getElementById('del-hno-btn').style.display='inline-block';
+  toggleTipoHno();
+  renderItemsHno();
+  openModal('modal-hermano');
+}
+
+async function saveHermano(){
+  const tipo=document.getElementById('hno-tipo').value;
+  if(tipo!=='abono'&&!hnoItems.length){alert('Agrega al menos un producto');return;}
+  const monto=tipo==='abono'
+    ?(parseInt(document.getElementById('hno-monto-manual').value)||0)
+    :hnoItems.reduce((a,it)=>a+it.qty*it.precio,0);
+  if(tipo==='abono'&&monto<=0){alert('Ingresa el monto del abono');return;}
+
+  const m={
+    id:editHnoId||uid(),
+    hermano:document.getElementById('hno-hermano').value,
+    tipo,
+    fecha:document.getElementById('hno-fecha').value||today(),
+    items:tipo==='abono'?[]:hnoItems.map(it=>({...it})),
+    monto,
+    notas:document.getElementById('hno-notas').value.trim(),
+  };
+
+  const batch=writeBatch(db);
+  if(editHnoId){
+    const orig=ventasHermanos.find(x=>String(x.id)===String(editHnoId));
+    // Deshacer el efecto de stock anterior antes de aplicar el nuevo
+    if(orig&&orig.tipo==='retiro')await restaurarStockItems(orig.items||[],batch);
+    if(orig&&orig.tipo==='aporte')await descontarStockItems(orig.items||[],batch);
+  }
+  if(m.tipo==='retiro')await descontarStockItems(m.items,batch);
+  if(m.tipo==='aporte')await restaurarStockItems(m.items,batch);
+
+  if(editHnoId){
+    const i=ventasHermanos.findIndex(x=>String(x.id)===String(editHnoId));
+    if(i>=0)ventasHermanos[i]=m;
+  }else{
+    ventasHermanos.push(m);
+  }
+  batch.set(doc(db,'hermanos',String(m.id)),m);
+  closeModal('modal-hermano');
+  renderHermanos();
+  renderInv();
+  actualizarBadges();
+  batch.commit().catch(e=>toast('⚠️ Error al sincronizar: '+e.message));
+  toast('✅ Movimiento guardado');
+}
+
+async function delHermano(){
+  if(!confirm('¿Eliminar este movimiento? El stock afectado se revertirá. Esta acción no se puede deshacer.'))return;
+  const m=ventasHermanos.find(x=>String(x.id)===String(editHnoId));
+  if(m){
+    if(m.tipo==='retiro')await restaurarStockItems(m.items||[]);
+    if(m.tipo==='aporte')await descontarStockItems(m.items||[]);
+  }
+  ventasHermanos=ventasHermanos.filter(x=>String(x.id)!==String(editHnoId));
+  await delHermanoDB(editHnoId);
+  closeModal('modal-hermano');
+  renderHermanos();
+  renderInv();
+  actualizarBadges();
 }
 
 // =========== PROMOCIONES ===========
@@ -3642,9 +3915,10 @@ async function initFirebase(){
     const pRh=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'rrhh'));
     const pAdm=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','admin')).catch(()=>null);
     const pCalc=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','calculadora')).catch(()=>null);
+    const pHer=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'hermanos'));
 
-    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap]=
-      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc]);
+    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap]=
+      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer]);
 
     if(invSnap.empty){
       const batch=writeBatch(db);
@@ -3754,6 +4028,13 @@ async function initFirebase(){
       // Cargar clave de administrador y config de calculadora
       if(admSnap&&admSnap.exists())_adminHash=admSnap.data().hash;
       if(calcSnap&&calcSnap.exists())aplicarConfigCalculadora(calcSnap.data());
+      // Cargar movimientos con hermanos (venta a familia, aparte de las ventas normales)
+      ventasHermanos=herSnap.docs.map(d=>d.data());
+      onSnapshot(collection(db,'hermanos'),snap=>{
+        ventasHermanos=snap.docs.map(d=>d.data());
+        if(document.getElementById('tab-hermanos').classList.contains('active'))renderHermanos();
+        actualizarBadges();
+      });
     }
     pintarCandado();
   }catch(e){
@@ -3787,7 +4068,7 @@ function initTheme(){
 
 function setTab(t){
   // El Inicio, Resumen y Finanzas (datos sensibles) requieren modo administrador
-  if((t==='inicio'||t==='resumen'||t==='finanzas'||t==='costosfab')&&!esAdmin()){
+  if((t==='inicio'||t==='resumen'||t==='finanzas'||t==='costosfab'||t==='hermanos')&&!esAdmin()){
     requiereAdmin().then(ok=>{if(ok)setTab(t);});
     closeSidebar();
     return;
@@ -3813,6 +4094,7 @@ function setTab(t){
   if(t==='finanzas')renderFinanzas();
   if(t==='caja')renderCaja();
   if(t==='costosfab')renderCalculadora();
+  if(t==='hermanos')renderHermanos();
 }
 
 // =========== MODALS ===========
@@ -3827,7 +4109,8 @@ function refrescarVistaActiva(){
   const fn={inicio:typeof renderInicio!=='undefined'&&renderInicio,ventas:renderVentas,saldos:renderSaldos,
     despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
     vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
-    clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora}[id];
+    clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora,
+    hermanos:renderHermanos}[id];
   if(typeof fn==='function'){try{fn();}catch(e){}}
 }
 
@@ -3848,6 +4131,8 @@ function actualizarBadges(){
     setBadge('badge-saldos',saldoPend,false);
     const bajos=(inventario||[]).filter(p=>p.stock!=null&&parseInt(p.stock)<=parseInt(p.minStock||0)).length;
     setBadge('badge-inventario',bajos,true);
+    const hermanosConSaldo=HERMANOS_LISTA.filter(n=>saldoHermano(n)>0).length;
+    setBadge('badge-hermanos',hermanosConSaldo,false);
   }catch(e){}
 }
 
@@ -4351,6 +4636,7 @@ async function saveVenta(){
 
   const v={
     id:editVentaId||uid(),
+    horaCreacion:editVentaId?(ventas.find(x=>String(x.id)===String(editVentaId))||{}).horaCreacion:horaActual(),
     fecha:document.getElementById('vt-fecha').value||today(),
     fechaDesp:document.getElementById('vt-fecha-desp').value||document.getElementById('vt-fecha').value||today(),
     estado:document.getElementById('vt-estado').value||'pendiente',
@@ -4846,7 +5132,7 @@ function imprimirVenta(id){
       +'<div class="page">'
       +'<div class="logo">Dream Rest</div>'
       +'<div class="ln"></div>'
-      +'<div class="meta">Fecha: <strong>'+fechaFmt+'</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Pago: <strong>'+(v.pago||'—')+'</strong></div>'
+      +'<div class="meta">Fecha: <strong>'+fechaFmt+'</strong>'+(v.horaCreacion?' <span style="font-size:9px;color:#aaa">'+v.horaCreacion+'</span>':'')+'&nbsp;&nbsp;·&nbsp;&nbsp;Pago: <strong>'+(v.pago||'—')+'</strong></div>'
       +'<table class="tabla"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>'
       +'<tbody>'+itemsHtml+descM
       +'<tr class="tr-tot"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
@@ -4956,7 +5242,7 @@ function imprimirVenta(id){
     +'<div class="client-info">'
     +'A la atención de: <strong>'+(v.vendedor||'Isaías')+'</strong><br>'
     +'DreamRest<br>Rivas 590<br>San Joaquín, Santiago<br>'
-    +'Fecha: <strong>'+fechaFmt+'</strong><br><br>'
+    +'Fecha: <strong>'+fechaFmt+'</strong>'+(v.horaCreacion?' <span style="font-size:9px;color:#999">'+v.horaCreacion+'</span>':'')+'<br><br>'
     +'Nombre: <strong>'+v.cliente+'</strong><br>'
     +mayInfo
     +'Dirección: '+dirCompleta+'<br>'
@@ -5862,6 +6148,11 @@ function downloadCSV(name,content){
 
 document.getElementById('vt-cancelado').addEventListener('input',recalcTotal);
 
+// Evita re-renderizar toda la lista en cada tecla al buscar (más fluido en PCs lentos)
+function debounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
+const renderVentasDeb=debounce(renderVentas,180);
+const renderClientesDeb=debounce(renderClientes,180);
+const renderInvDeb=debounce(renderInv,180);
 
 // Exponer todas las funciones al scope global (requerido por type="module")
 Object.assign(window,{
@@ -5894,7 +6185,10 @@ Object.assign(window,{
   renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,
   handleFotoCompra,calcSugerenciaCompra,verFotoCompra,
   imprimirVenta,descargarPedidoHTML,
-  autocompleteCliente,selCliente,solicitarNotificaciones
+  autocompleteCliente,selCliente,solicitarNotificaciones,
+  renderVentasDeb,renderClientesDeb,renderInvDeb,
+  renderHermanos,openMovHno,editHermano,saveHermano,delHermano,toggleTipoHno,
+  addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno
 });
 </script>
 
