@@ -3104,16 +3104,21 @@ function resumenAsistMes(e,mesStr){
 async function marcarAsistencia(empId){
   const e=empleados.find(x=>String(x.id)===String(empId));
   if(!e)return;
-  const hoy=today(),hora=horaActual();
+  const hoy=today();
+  const okHora=v=>/^\d{1,2}:\d{2}$/.test(String(v||'').trim());
   let r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
   if(!r){
-    if(!confirm(`¿Marcar LLEGADA de ${e.nombre} a las ${hora}?`))return;
-    r={id:uid(),empleadoId:e.id,fecha:hoy,entrada:hora,salida:''};
+    const hora=prompt(`LLEGADA de ${e.nombre} — cambia la hora si llegó antes:`,horaActual());
+    if(hora===null)return;
+    if(!okHora(hora)){alert('Formato inválido. Usa HH:MM, ej: 10:15');return;}
+    r={id:uid(),empleadoId:e.id,fecha:hoy,entrada:hora.trim(),salida:''};
     asistencia.push(r);
   }else if(!r.salida){
-    if(!confirm(`¿Marcar SALIDA de ${e.nombre} a las ${hora}?`))return;
+    const hora=prompt(`SALIDA de ${e.nombre} — cambia la hora si salió antes:`,horaActual());
+    if(hora===null)return;
+    if(!okHora(hora)){alert('Formato inválido. Usa HH:MM, ej: 20:30');return;}
     if(hmToMin(hora)<=hmToMin(r.entrada)){alert('La salida no puede ser antes de la llegada.');return;}
-    r.salida=hora;
+    r.salida=hora.trim();
   }else{
     toast('Ya marcó llegada y salida hoy. Para corregir usa ✏️ (pide clave admin).');
     return;
@@ -3133,6 +3138,31 @@ async function corregirAsistencia(id){
   const ok=v=>!v||/^\d{1,2}:\d{2}$/.test(v.trim());
   if(!ok(ent)||!ok(sal)){alert('Formato inválido. Usa HH:MM, ej: 10:05');return;}
   r.entrada=ent.trim();r.salida=sal.trim();
+  renderAsistencia();
+  saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+}
+
+// Registrar un día que quedó sin marcar (se olvidó o no estaba). Pide clave admin.
+async function registrarAsistenciaPasada(empId){
+  if(!(await requiereAdmin()))return;
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const fecha=prompt('Fecha del día olvidado (AAAA-MM-DD):',today());
+  if(fecha===null)return;
+  const f=fecha.trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert('Formato inválido. Usa AAAA-MM-DD, ej: 2026-07-05');return;}
+  if(f>today()){alert('No puedes registrar una fecha futura.');return;}
+  if(asistencia.some(x=>String(x.empleadoId)===String(empId)&&x.fecha===f)){alert('Ese día ya tiene registro. Corrígelo con ✏️ en la lista del mes.');return;}
+  const okHora=v=>/^\d{1,2}:\d{2}$/.test(String(v||'').trim());
+  const ent=prompt('Hora de llegada (HH:MM):',ASIST_ENTRADA);
+  if(ent===null)return;
+  if(!okHora(ent)){alert('Formato inválido. Usa HH:MM, ej: 10:15');return;}
+  const sal=prompt('Hora de salida (HH:MM, deja vacío si no corresponde):','');
+  if(sal===null)return;
+  if(sal.trim()&&!okHora(sal)){alert('Formato inválido. Usa HH:MM, ej: 20:30');return;}
+  if(sal.trim()&&hmToMin(sal)<=hmToMin(ent)){alert('La salida no puede ser antes de la llegada.');return;}
+  const r={id:uid(),empleadoId:e.id,fecha:f,entrada:ent.trim(),salida:sal.trim()};
+  asistencia.push(r);
   renderAsistencia();
   saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
 }
@@ -3196,6 +3226,7 @@ function renderAsistencia(){
             </span>
           </div>`;}).join('')}
       </details>`:''}
+      <div style="margin-top:6px"><button onclick="registrarAsistenciaPasada('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#a87f3e">📅 Registrar día olvidado</button></div>
     </div>`;
   });
   document.getElementById('asistencia-content').innerHTML=html;
@@ -6380,7 +6411,7 @@ Object.assign(window,{
   renderVentasDeb,renderClientesDeb,renderInvDeb,
   renderHermanos,openMovHno,editHermano,saveHermano,delHermano,toggleTipoHno,
   addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno,
-  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia
+  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada
 });
 </script>
 
