@@ -875,6 +875,24 @@ tbody tr:hover{background:var(--gold-bg)}
   </div>
 </div>
 
+<!-- Modal Asistencia: marcar llegada/salida, corregir y días olvidados -->
+<div class="modal-bg" id="modal-asist">
+  <div class="modal" style="max-width:420px">
+    <h3 id="asist-titulo">⏰ Asistencia</h3>
+    <div class="help" id="asist-ayuda"></div>
+    <div class="field" id="asist-f-fecha"><label>Fecha</label><input type="date" id="asist-fecha"></div>
+    <div class="row">
+      <div class="field" id="asist-f-entrada"><label>Hora de llegada</label><input type="time" id="asist-entrada"></div>
+      <div class="field" id="asist-f-salida"><label>Hora de salida</label><input type="time" id="asist-salida"></div>
+    </div>
+    <div id="asist-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-asist')">Cancelar</button>
+      <button class="btn btn-sm" id="asist-guardar" onclick="guardarAsistModal()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Movimiento con Hermano -->
 <div class="modal-bg" id="modal-hermano">
   <div class="modal" style="max-width:560px">
@@ -3101,70 +3119,105 @@ function resumenAsistMes(e,mesStr){
   return res;
 }
 
-async function marcarAsistencia(empId){
+// Modal de asistencia: un solo formulario para marcar, corregir y días olvidados.
+// modo: 'llegada' | 'salida' | 'dia' (día olvidado) | 'editar' (corregir registro)
+let asistModalCtx=null;
+
+function abrirModalAsist(empId,modo,regId){
   const e=empleados.find(x=>String(x.id)===String(empId));
   if(!e)return;
+  asistModalCtx={empId:String(empId),modo,regId:regId?String(regId):null};
+  const $=id=>document.getElementById(id);
+  const hoy=today(),ahora=horaActual();
+  const reg=regId?asistencia.find(x=>String(x.id)===String(regId)):null;
+  $('asist-f-fecha').style.display=modo==='dia'?'':'none';
+  $('asist-f-entrada').style.display=modo==='salida'?'none':'';
+  $('asist-f-salida').style.display=modo==='llegada'?'none':'';
+  $('asist-fecha').value=modo==='editar'&&reg?reg.fecha:hoy;
+  $('asist-fecha').max=hoy;
+  $('asist-entrada').value=modo==='editar'?(reg&&reg.entrada||''):(modo==='dia'?ASIST_ENTRADA:ahora);
+  $('asist-salida').value=modo==='editar'?(reg&&reg.salida||''):(modo==='salida'?ahora:'');
+  $('asist-titulo').textContent={
+    llegada:`🟢 Llegada de ${e.nombre}`,
+    salida:`🔴 Salida de ${e.nombre}`,
+    dia:`📅 Día olvidado — ${e.nombre}`,
+    editar:`✏️ Corregir registro — ${e.nombre}`
+  }[modo];
+  $('asist-ayuda').textContent={
+    llegada:'Viene con la hora de ahora. Si se te pasó marcar, cámbiala a la hora real (ej: 10:10).',
+    salida:'Viene con la hora de ahora. Cámbiala si salió antes.',
+    dia:'Registra un día que quedó sin marcar. Deja la salida vacía si no corresponde.',
+    editar:'Corrige las horas de este registro. Deja la salida vacía si aún no sale.'
+  }[modo];
+  let chips='';
+  if(modo!=='salida')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-entrada','${ASIST_ENTRADA}')">🕙 Llegó a la hora (${ASIST_ENTRADA})</button>`;
+  if(modo==='llegada')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-entrada','${ahora}')">Ahora (${ahora})</button>`;
+  if(modo==='salida')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-salida','${ahora}')">Ahora (${ahora})</button>`;
+  $('asist-chips').innerHTML=chips;
+  openModal('modal-asist');
+}
+function setAsistHora(campo,val){document.getElementById(campo).value=val;}
+
+async function guardarAsistModal(){
+  if(!asistModalCtx)return;
+  const {empId,modo,regId}=asistModalCtx;
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const $=id=>document.getElementById(id);
+  const fecha=$('asist-fecha').value,ent=$('asist-entrada').value,sal=$('asist-salida').value;
   const hoy=today();
-  const okHora=v=>/^\d{1,2}:\d{2}$/.test(String(v||'').trim());
-  let r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
-  if(!r){
-    const hora=prompt(`LLEGADA de ${e.nombre} — cambia la hora si llegó antes:`,horaActual());
-    if(hora===null)return;
-    if(!okHora(hora)){alert('Formato inválido. Usa HH:MM, ej: 10:15');return;}
-    r={id:uid(),empleadoId:e.id,fecha:hoy,entrada:hora.trim(),salida:''};
+  let r;
+  if(modo==='llegada'){
+    if(!ent){alert('Indica la hora de llegada.');return;}
+    r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
+    if(r){toast('Ya tiene llegada marcada hoy.');closeModal('modal-asist');return;}
+    r={id:uid(),empleadoId:e.id,fecha:hoy,entrada:ent,salida:''};
     asistencia.push(r);
-  }else if(!r.salida){
-    const hora=prompt(`SALIDA de ${e.nombre} — cambia la hora si salió antes:`,horaActual());
-    if(hora===null)return;
-    if(!okHora(hora)){alert('Formato inválido. Usa HH:MM, ej: 20:30');return;}
-    if(hmToMin(hora)<=hmToMin(r.entrada)){alert('La salida no puede ser antes de la llegada.');return;}
-    r.salida=hora.trim();
-  }else{
-    toast('Ya marcó llegada y salida hoy. Para corregir usa ✏️ (pide clave admin).');
-    return;
+  }else if(modo==='salida'){
+    if(!sal){alert('Indica la hora de salida.');return;}
+    r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
+    if(!r){toast('No hay llegada marcada hoy.');closeModal('modal-asist');return;}
+    if(hmToMin(sal)<=hmToMin(r.entrada)){alert('La salida no puede ser antes de la llegada.');return;}
+    r.salida=sal;
+  }else if(modo==='dia'){
+    if(!fecha){alert('Indica la fecha.');return;}
+    if(fecha>hoy){alert('No puedes registrar una fecha futura.');return;}
+    if(asistencia.some(x=>String(x.empleadoId)===String(empId)&&x.fecha===fecha)){alert('Ese día ya tiene registro. Corrígelo con ✏️ en la lista del mes.');return;}
+    if(!ent){alert('Indica la hora de llegada.');return;}
+    if(sal&&hmToMin(sal)<=hmToMin(ent)){alert('La salida no puede ser antes de la llegada.');return;}
+    r={id:uid(),empleadoId:e.id,fecha,entrada:ent,salida:sal};
+    asistencia.push(r);
+  }else{ // editar
+    r=asistencia.find(x=>String(x.id)===String(regId));
+    if(!r)return;
+    if(!ent){alert('Indica la hora de llegada.');return;}
+    if(sal&&hmToMin(sal)<=hmToMin(ent)){alert('La salida no puede ser antes de la llegada.');return;}
+    r.entrada=ent;r.salida=sal;
   }
+  closeModal('modal-asist');
   renderAsistencia();
   saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+}
+
+function marcarAsistencia(empId){
+  const hoy=today();
+  const r=asistencia.find(x=>String(x.empleadoId)===String(empId)&&x.fecha===hoy);
+  if(!r)abrirModalAsist(empId,'llegada');
+  else if(!r.salida)abrirModalAsist(empId,'salida');
+  else toast('Ya marcó llegada y salida hoy. Para corregir usa ✏️ (pide clave admin).');
 }
 
 async function corregirAsistencia(id){
   if(!(await requiereAdmin()))return;
   const r=asistencia.find(x=>String(x.id)===String(id));
   if(!r)return;
-  const ent=prompt('Hora de llegada (HH:MM):',r.entrada||'');
-  if(ent===null)return;
-  const sal=prompt('Hora de salida (HH:MM, deja vacío si aún no sale):',r.salida||'');
-  if(sal===null)return;
-  const ok=v=>!v||/^\d{1,2}:\d{2}$/.test(v.trim());
-  if(!ok(ent)||!ok(sal)){alert('Formato inválido. Usa HH:MM, ej: 10:05');return;}
-  r.entrada=ent.trim();r.salida=sal.trim();
-  renderAsistencia();
-  saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+  abrirModalAsist(r.empleadoId,'editar',id);
 }
 
 // Registrar un día que quedó sin marcar (se olvidó o no estaba). Pide clave admin.
 async function registrarAsistenciaPasada(empId){
   if(!(await requiereAdmin()))return;
-  const e=empleados.find(x=>String(x.id)===String(empId));
-  if(!e)return;
-  const fecha=prompt('Fecha del día olvidado (AAAA-MM-DD):',today());
-  if(fecha===null)return;
-  const f=fecha.trim();
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert('Formato inválido. Usa AAAA-MM-DD, ej: 2026-07-05');return;}
-  if(f>today()){alert('No puedes registrar una fecha futura.');return;}
-  if(asistencia.some(x=>String(x.empleadoId)===String(empId)&&x.fecha===f)){alert('Ese día ya tiene registro. Corrígelo con ✏️ en la lista del mes.');return;}
-  const okHora=v=>/^\d{1,2}:\d{2}$/.test(String(v||'').trim());
-  const ent=prompt('Hora de llegada (HH:MM):',ASIST_ENTRADA);
-  if(ent===null)return;
-  if(!okHora(ent)){alert('Formato inválido. Usa HH:MM, ej: 10:15');return;}
-  const sal=prompt('Hora de salida (HH:MM, deja vacío si no corresponde):','');
-  if(sal===null)return;
-  if(sal.trim()&&!okHora(sal)){alert('Formato inválido. Usa HH:MM, ej: 20:30');return;}
-  if(sal.trim()&&hmToMin(sal)<=hmToMin(ent)){alert('La salida no puede ser antes de la llegada.');return;}
-  const r={id:uid(),empleadoId:e.id,fecha:f,entrada:ent.trim(),salida:sal.trim()};
-  asistencia.push(r);
-  renderAsistencia();
-  saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
+  abrirModalAsist(empId,'dia');
 }
 
 async function eliminarAsistencia(id){
@@ -6411,7 +6464,8 @@ Object.assign(window,{
   renderVentasDeb,renderClientesDeb,renderInvDeb,
   renderHermanos,openMovHno,editHermano,saveHermano,delHermano,toggleTipoHno,
   addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno,
-  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada
+  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada,
+  abrirModalAsist,guardarAsistModal,setAsistHora
 });
 </script>
 
