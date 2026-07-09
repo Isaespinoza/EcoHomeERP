@@ -3,7 +3,7 @@
    Estrategia: network-first para la navegación (siempre trae la última versión
    cuando hay internet; si no hay, sirve el index cacheado). Los recursos de
    Firebase/Firestore/CDN son cross-origin y NO pasan por acá: quedan siempre online. */
-const CACHE = 'dreamrest-v2';
+const CACHE = 'dreamrest-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
