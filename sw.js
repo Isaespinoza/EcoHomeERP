@@ -1,9 +1,9 @@
-/* DreamRest ERP service worker
+/* EcoHome ERP service worker
    Objetivo: hacer la app instalable (PWA) y darle un fallback offline del shell.
    Estrategia: network-first para la navegación (siempre trae la última versión
    cuando hay internet; si no hay, sirve el index cacheado). Los recursos de
    Firebase/Firestore/CDN son cross-origin y NO pasan por acá: quedan siempre online. */
-const CACHE = 'dreamrest-v3';
+const CACHE = 'ecohome-v1';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
