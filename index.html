@@ -2268,22 +2268,22 @@ function renderCotizaciones(){
     return;
   }
 
-  html+=cots.map(c=>`<div class="card" style="border-left:3px solid #1e40af">
+  html+=cots.map(c=>`<div class="card" style="border-left:3px solid var(--blue)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
       <div style="flex:1;min-width:0">
         <h4>${c.cliente}</h4>
-        <div class="muted" style="font-size:11px;margin-top:3px">${c.fecha.split('-').reverse().join('/')} · ${c.vendedor||'—'} ${c.convertida?'· <span style="color:#166534">✓ Convertida en venta</span>':''}</div>
+        <div class="muted" style="font-size:11px;margin-top:3px">${c.fecha.split('-').reverse().join('/')} · ${c.vendedor||'—'} ${c.convertida?'· <span style="color:#8bf0b0">✓ Convertida en venta</span>':''}</div>
         <div class="muted" style="font-size:11px;margin-top:3px">${c.items.map(it=>it.qty+'× '+(it.desc||'?')).join(', ')}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-weight:600;color:#d6b85a">${fmt(c.total)}</div>
+        <div style="font-weight:600;color:var(--accent-text)">${fmt(c.total)}</div>
       </div>
     </div>
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn btn-sec btn-sm" onclick="imprimirCotizacion('${c.id}')">🖨️ Imprimir</button>
-      <button class="btn btn-sec btn-sm" onclick="editarCotizacion('${c.id}')">✏️ Editar</button>
-      ${!c.convertida?`<button class="btn btn-sm" style="background:#166534" onclick="convertirEnVenta('${c.id}')">✅ Convertir en venta</button>`:''}
-      <button class="btn btn-danger btn-sm" onclick="eliminarCotizacion('${c.id}')">🗑️</button>
+      <button class="btn btn-sec btn-sm" onclick="imprimirCotizacion('${c.id}')">Imprimir</button>
+      <button class="btn btn-sec btn-sm" onclick="editarCotizacion('${c.id}')">Editar</button>
+      ${!c.convertida?`<button class="btn btn-sm" style="background:var(--accent-grad)" onclick="convertirEnVenta('${c.id}')">Convertir en venta</button>`:''}
+      <button class="btn btn-danger btn-sm" onclick="eliminarCotizacion('${c.id}')">Eliminar</button>
     </div>
   </div>`).join('');
   document.getElementById('cot-content').innerHTML=html;
@@ -2345,7 +2345,7 @@ function autocompleteCot(i){
   const tipo=document.getElementById('cot-tipo').value;
   const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
-  ac.innerHTML=matches.map(p=>{const pc=precioConPromo(p,tipo);const precio=pc.precio;return`<div onclick="selCotProd(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><div style="display:flex;justify-content:space-between"><strong>${p.nombre}</strong><span style="color:#d6b85a">${fmt(precio)}</span></div><div style="color:var(--text3);font-size:10px">${p.marca||''}</div></div>`;}).join('');
+  ac.innerHTML=matches.map(p=>{const pc=precioConPromo(p,tipo);const precio=pc.precio;return`<div onclick="selCotProd(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><div style="display:flex;justify-content:space-between"><strong>${p.nombre}</strong><span style="color:var(--accent-text)">${fmt(precio)}</span></div><div style="color:var(--text3);font-size:10px">${p.marca||''}</div></div>`;}).join('');
   ac.style.display='block';
 }
 function selCotProd(i,id,e){
@@ -2483,7 +2483,7 @@ function renderClientes(){
           ${d.saldo>0?`<div class="warn" style="font-size:11px;margin-top:2px">⚠ Debe ${fmt(d.saldo)}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-weight:700;color:#d6b85a">${fmt(d.total)}</div>
+          <div style="font-weight:700;color:var(--accent-text)">${fmt(d.total)}</div>
         </div>
       </div>
     </div>`).join('');
@@ -3306,17 +3306,17 @@ function renderCaja(){
     const ingresos=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
     const retiros=movs.filter(m=>m.tipo==='retiro').reduce((a,m)=>a+m.monto,0);
     const esperado=(caja.montoInicial||0)+efectivoVentas+ingresos-retiros;
-    html+=`<div class="card" style="border-top:3px solid #166534">
+    html+=`<div class="card" style="border-top:3px solid #8bf0b0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h4>🟢 Caja abierta</h4>
+        <h4>Caja abierta</h4>
         <span class="muted" style="font-size:11px">desde ${caja.horaApertura||''} · ${caja.abiertaPor||''}</span>
       </div>
       <div class="item-row"><span class="muted">Efectivo inicial</span><strong>${fmt(caja.montoInicial)}</strong></div>
       <div class="item-row"><span class="muted">+ Ventas en efectivo de hoy</span><strong class="ok">+${fmt(efectivoVentas)}</strong></div>
       ${ingresos>0?`<div class="item-row"><span class="muted">+ Ingresos manuales</span><strong class="ok">+${fmt(ingresos)}</strong></div>`:''}
       ${retiros>0?`<div class="item-row"><span class="muted">− Retiros</span><strong class="danger">−${fmt(retiros)}</strong></div>`:''}
-      <div class="item-row" style="border-top:2px solid #e7e5e4;margin-top:4px">
-        <strong>💵 Debería haber en caja</strong><strong style="color:#166534;font-size:16px">${fmt(esperado)}</strong>
+      <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
+        <strong>Debería haber en caja</strong><strong style="color:#8bf0b0;font-size:16px">${fmt(esperado)}</strong>
       </div>
     </div>
 
@@ -3325,19 +3325,19 @@ function renderCaja(){
     </div>`:''}
 
     <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn btn-sec" style="flex:1" onclick="agregarMovimientoCaja('ingreso')">➕ Ingreso</button>
-      <button class="btn btn-sec" style="flex:1" onclick="agregarMovimientoCaja('retiro')">➖ Retiro</button>
-      <button class="btn" style="flex:1.5;background:#dc2626" onclick="cerrarCaja()">🔒 Cerrar caja</button>
+      <button class="btn btn-sec" style="flex:1" onclick="agregarMovimientoCaja('ingreso')">+ Ingreso</button>
+      <button class="btn btn-sec" style="flex:1" onclick="agregarMovimientoCaja('retiro')">− Retiro</button>
+      <button class="btn" style="flex:1.5;background:#f28a8a" onclick="cerrarCaja()">Cerrar caja</button>
     </div>`;
   }else{
     const dif=caja.diferencia||0;
-    html+=`<div class="card" style="border-top:3px solid ${dif===0?'#166534':dif>0?'#0369a1':'#dc2626'}">
-      <h4 style="margin-bottom:10px">🔒 Caja cerrada — ${caja.horaCierre||''}</h4>
+    html+=`<div class="card" style="border-top:3px solid ${dif===0?'#8bf0b0':dif>0?'#9fb8e8':'#f28a8a'}">
+      <h4 style="margin-bottom:10px">Caja cerrada — ${caja.horaCierre||''}</h4>
       <div class="item-row"><span class="muted">Debería haber</span><strong>${fmt(caja.esperado)}</strong></div>
       <div class="item-row"><span class="muted">Efectivo contado</span><strong>${fmt(caja.montoContado)}</strong></div>
-      <div class="item-row" style="border-top:2px solid #e7e5e4;margin-top:4px">
+      <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
         <strong>Cuadratura</strong>
-        <strong style="color:${dif===0?'#166534':dif>0?'#0369a1':'#dc2626'};font-size:16px">${dif===0?'✓ Cuadra perfecto':dif>0?'+'+fmt(dif)+' (sobra)':fmt(dif)+' (falta)'}</strong>
+        <strong style="color:${dif===0?'#8bf0b0':dif>0?'#9fb8e8':'#f28a8a'};font-size:16px">${dif===0?'✓ Cuadra perfecto':dif>0?'+'+fmt(dif)+' (sobra)':fmt(dif)+' (falta)'}</strong>
       </div>
       ${caja.notas?`<div class="help" style="margin-top:8px">${caja.notas}</div>`:''}
     </div>`;
@@ -3346,12 +3346,12 @@ function renderCaja(){
   // Historial de cierres anteriores
   const historial=cajas.filter(cj=>cj.cerrada&&cj.fecha!==hoy).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,10);
   if(historial.length){
-    html+=`<div class="card" style="margin-top:14px"><h4 style="margin-bottom:8px;font-size:13px">📋 Cierres anteriores</h4>
+    html+=`<div class="card" style="margin-top:14px"><h4 style="margin-bottom:8px;font-size:13px">Cierres anteriores</h4>
       ${historial.map(cj=>{
         const d=cj.diferencia||0;
         return`<div class="item-row">
           <span style="font-size:12px">${cj.fecha.split('-').reverse().join('/')} <span class="muted">· inicial ${fmt(cj.montoInicial)} · contado ${fmt(cj.montoContado)}</span></span>
-          <strong style="color:${d===0?'#166534':d>0?'#0369a1':'#dc2626'};font-size:12px">${d===0?'✓ Cuadró':d>0?'+'+fmt(d):fmt(d)}</strong>
+          <strong style="color:${d===0?'#8bf0b0':d>0?'#9fb8e8':'#f28a8a'};font-size:12px">${d===0?'✓ Cuadró':d>0?'+'+fmt(d):fmt(d)}</strong>
         </div>`;
       }).join('')}
     </div>`;
@@ -5052,12 +5052,12 @@ function autocompleteProductoVT(i){
   ac.innerHTML=matches.map(p=>{
     const pc=precioConPromo(p,tipo);
     const stock=parseInt(p.stock)||0;
-    const stockTxt=p.combo?'':(stock<=0?'<span style="color:#dc2626">Sin stock</span>':`${stock} u`);
+    const stockTxt=p.combo?'':(stock<=0?'<span style="color:#f28a8a">Sin stock</span>':`${stock} u`);
     const precioHtml=pc.promo
-      ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#166534">${fmt(pc.precio)}</strong></span>`
-      :`<span style="color:#d6b85a;white-space:nowrap">${fmt(pc.precio)}</span>`;
+      ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#8bf0b0">${fmt(pc.precio)}</strong></span>`
+      :`<span style="color:var(--accent-text);white-space:nowrap">${fmt(pc.precio)}</span>`;
     return`<div onclick="selProdAutoVT(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:#dcfce7;color:#166534">PROMO</span>':''}</span>${precioHtml}</div>
+      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
       <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
     </div>`;
   }).join('');
@@ -5341,7 +5341,7 @@ function verFichaCliente(nombre){
         return`<div class="card" style="cursor:pointer;padding:10px" onclick="closeModal('modal-cliente');viewVenta('${v.id}')">
           <div style="display:flex;justify-content:space-between">
             <div><strong style="font-size:12px">${v.fecha.split('-').reverse().join('/')}</strong> ${estadoTag(est)}</div>
-            <strong style="color:#d6b85a">${fmt(v.total)}</strong>
+            <strong style="color:var(--accent-text)">${fmt(v.total)}</strong>
           </div>
           <div class="muted" style="font-size:11px;margin-top:3px">${v.items.map(it=>it.qty+'× '+(it.desc||(inventario.find(p=>String(p.id)===String(it.prodId))||{}).nombre||'?')).join(', ')}</div>
         </div>`;
@@ -5357,35 +5357,35 @@ function viewVenta(id){
     <div class="card">
       <h4>${v.cliente} <span class="tag ${v.tipo==='may'?'tag-may':'tag-min'}">${v.tipo==='may'?'Mayorista':'Minorista'}</span> ${estadoTag(v.estado||'pendiente')}</h4>
       <div class="muted" style="font-size:11px;margin-top:3px">Venta: ${v.fecha.split('-').reverse().join('/')} · ${v.vendedor} · ${v.pago}</div>
-      ${v.desp>0&&v.fechaDesp?`<div style="font-size:11px;color:#d6b85a;margin-top:2px">🚚 Despacho: <strong>${v.fechaDesp.split('-').reverse().join('/')}</strong></div>`:''}
-      <button onclick="closeModal('modal-detalle');verFichaCliente('${v.cliente.replace(/'/g,"\\'")}')" style="margin-top:8px;font-size:11px;padding:5px 10px;background:#fff;color:#d6b85a;border:1px solid #d6b85a;border-radius:6px;cursor:pointer">👤 Ver ficha del cliente</button>
+      ${v.desp>0&&v.fechaDesp?`<div style="font-size:11px;color:var(--accent-text);margin-top:2px">Despacho: <strong>${v.fechaDesp.split('-').reverse().join('/')}</strong></div>`:''}
+      <button onclick="closeModal('modal-detalle');verFichaCliente('${v.cliente.replace(/'/g,"\\'")}')" style="margin-top:8px;font-size:11px;padding:5px 10px;background:transparent;color:var(--accent-text);border:1px solid var(--accent-border);border-radius:6px;cursor:pointer">Ver ficha del cliente</button>
     </div>
     ${v.tel?`<div class="item-row"><span class="muted">Teléfono</span><span>${v.tel}</span></div>`:''}
     ${v.rut?`<div class="item-row"><span class="muted">RUT</span><span>${v.rut}</span></div>`:''}
     ${v.empresa?`<div class="item-row"><span class="muted">Empresa</span><span>${v.empresa}</span></div>`:''}
     ${v.dir?`<div class="item-row"><span class="muted">Dirección</span><span style="text-align:right;font-size:11px">${v.dir}</span></div>`:''}
-    ${v.desp>0?`<div style="background:#fef9f0;padding:10px;border-radius:8px;margin-top:8px">
-      <div style="font-size:11px;color:#d6b85a;font-weight:600;margin-bottom:6px;text-transform:uppercase">📍 Datos de despacho</div>
+    ${v.desp>0?`<div style="background:var(--accent-bg);padding:10px;border-radius:8px;margin-top:8px">
+      <div style="font-size:11px;color:var(--accent-text);font-weight:600;margin-bottom:6px;text-transform:uppercase">Datos de despacho</div>
       ${v.despCalle?`<div class="item-row"><span class="muted">Calle</span><span style="text-align:right;font-size:11px">${v.despCalle}</span></div>`:''}
       ${v.despNumero?`<div class="item-row"><span class="muted">N° / Depto</span><span style="text-align:right;font-size:11px">${v.despNumero}</span></div>`:''}
       ${v.despComuna?`<div class="item-row"><span class="muted">Comuna</span><span style="text-align:right;font-size:11px">${v.despComuna}</span></div>`:''}
       ${v.despHora?`<div class="item-row"><span class="muted">Hora estimada</span><span style="text-align:right;font-size:11px">${v.despHora}</span></div>`:''}
     </div>`:''}
-    ${v.pagoDesglose?`<div style="background:#f0f9ff;padding:8px 10px;border-radius:8px;margin-top:8px;font-size:11px">
-      <strong style="color:#0369a1">💰 Pago mixto:</strong> ${Object.entries(v.pagoDesglose).filter(([k,val])=>val>0).map(([k,val])=>k.charAt(0).toUpperCase()+k.slice(1)+' '+fmt(val)).join(' · ')}
+    ${v.pagoDesglose?`<div style="background:var(--blue-bg);padding:8px 10px;border-radius:8px;margin-top:8px;font-size:11px">
+      <strong style="color:var(--blue)">Pago mixto:</strong> ${Object.entries(v.pagoDesglose).filter(([k,val])=>val>0).map(([k,val])=>k.charAt(0).toUpperCase()+k.slice(1)+' '+fmt(val)).join(' · ')}
     </div>`:''}
     <h4 style="margin:12px 0 6px;font-size:13px">Productos</h4>
     ${v.items.map(it=>`<div class="item-row">
       <span>${it.qty}× ${it.desc||(inventario.find(p=>p.id===it.prodId)||{}).nombre||'Producto'}</span>
       <span>${fmt(it.qty*it.precio)}</span>
     </div>`).join('')}
-    <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e7e5e4">
+    <div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border)">
       <div class="item-row"><span class="muted">Subtotal</span><strong>${fmt(v.subtotal)}</strong></div>
-      ${v.descuentoPromos>0?`<div class="item-row"><span style="color:#166534">🏷️ Desc. promociones (en precios)</span><strong style="color:#166534">−${fmt(v.descuentoPromos)}</strong></div>`:''}
-      ${v.descuento>0?`<div class="item-row"><span style="color:#166534">🏷️ Descuento extra</span><strong style="color:#166534">−${fmt(v.descuento)}</strong></div>`:''}
-      ${(v.descuentoCupon||0)>0?`<div class="item-row"><span style="color:#166534">🎟️ Cupón ${(v.cupon||{}).codigo||''}</span><strong style="color:#166534">−${fmt(v.descuentoCupon)}</strong></div>`:''}
+      ${v.descuentoPromos>0?`<div class="item-row"><span style="color:#8bf0b0">Desc. promociones (en precios)</span><strong style="color:#8bf0b0">−${fmt(v.descuentoPromos)}</strong></div>`:''}
+      ${v.descuento>0?`<div class="item-row"><span style="color:#8bf0b0">Descuento extra</span><strong style="color:#8bf0b0">−${fmt(v.descuento)}</strong></div>`:''}
+      ${(v.descuentoCupon||0)>0?`<div class="item-row"><span style="color:#8bf0b0">Cupón ${(v.cupon||{}).codigo||''}</span><strong style="color:#8bf0b0">−${fmt(v.descuentoCupon)}</strong></div>`:''}
       ${v.desp>0?`<div class="item-row"><span class="muted">Despacho (no suma a venta)</span><span>${fmt(v.desp)}</span></div>`:''}
-      <div class="item-row"><span style="color:#d6b85a"><strong>TOTAL VENTA</strong></span><strong style="color:#d6b85a">${fmt(v.total)}</strong></div>
+      <div class="item-row"><span style="color:var(--accent-text)"><strong>TOTAL VENTA</strong></span><strong style="color:var(--accent-text)">${fmt(v.total)}</strong></div>
       ${esAdmin()?(()=>{
         let costo=0,faltan=false;
         v.items.forEach(it=>{
@@ -5394,7 +5394,7 @@ function viewVenta(id){
           if(it.respaldoId){const r=inventario.find(x=>String(x.id)===String(it.respaldoId));if(r&&r.costo>0)costo+=r.costo*it.qty;}
         });
         const margen=v.total-costo;
-        return costo>0?`<div class="item-row" style="background:#f0fdf4;border-radius:6px;padding:6px 8px;margin-top:4px"><span style="color:#166534;font-size:11px">🔓 Margen real (costo ${fmt(costo)}${faltan?', incompleto':''})</span><strong style="color:#166534">${fmt(margen)}</strong></div>`:'';
+        return costo>0?`<div class="item-row" style="background:rgba(139,240,176,.1);border-radius:6px;padding:6px 8px;margin-top:4px"><span style="color:#8bf0b0;font-size:11px">Margen real (costo ${fmt(costo)}${faltan?', incompleto':''})</span><strong style="color:#8bf0b0">${fmt(margen)}</strong></div>`:'';
       })():''}
       ${v.cancelado<v.total?`<div class="item-row"><span class="muted">Pagado</span><span>${fmt(v.cancelado)}</span></div><div class="item-row"><span class="warn"><strong>Saldo pendiente</strong></span><strong class="warn">${fmt(v.saldo)}</strong></div>`:''}
     </div>
@@ -6204,7 +6204,7 @@ function renderSaldos(){
             ${v.tel?` · 📞 +56 9 ${v.tel}`:''}
           </div>
           <div style="margin-top:5px;font-size:12px;color:var(--text3)">Total ${fmt(v.total)} · Pagado ${fmt(v.cancelado||0)}</div>
-          ${dias>0?`<div style="margin-top:5px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${dias>=30?'#fee2e2':dias>=15?'#fef3c7':'var(--cream2)'};color:${dias>=30?'#991b1b':dias>=15?'#92400e':'var(--text3)'}">⏳ ${dias} día${dias!==1?'s':''} sin saldar</span></div>`:''}
+          ${dias>0?`<div style="margin-top:5px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${dias>=30?'var(--red-bg)':dias>=15?'var(--orange-bg)':'var(--cream2)'};color:${dias>=30?'var(--red)':dias>=15?'var(--orange)':'var(--text3)'}">${dias} día${dias!==1?'s':''} sin saldar</span></div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div class="warn" style="font-weight:700;font-size:16px">${fmt(v.saldo)}</div>
