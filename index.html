@@ -176,7 +176,7 @@ label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-wei
 /* ===== Tour guiado ===== */
 #tour{position:fixed;inset:0;z-index:3000}
 #tour-spot{position:absolute;display:none;border-radius:12px;box-shadow:0 0 0 9999px rgba(14,14,18,.68);border:2px solid var(--gold);pointer-events:none;transition:all .32s cubic-bezier(.4,0,.2,1)}
-#tour-tip{position:absolute;max-width:290px;width:calc(100vw - 28px);background:var(--white);color:var(--text);border-radius:16px;padding:18px 16px 14px;box-shadow:0 16px 46px rgba(0,0,0,.4);border:1px solid var(--gold);transition:top .32s cubic-bezier(.4,0,.2,1),left .32s cubic-bezier(.4,0,.2,1)}
+#tour-tip{position:absolute;max-width:290px;width:calc(100vw - 28px);background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--text);border-radius:16px;padding:18px 16px 14px;box-shadow:0 16px 46px rgba(0,0,0,.4);border:1px solid var(--gold);transition:top .32s cubic-bezier(.4,0,.2,1),left .32s cubic-bezier(.4,0,.2,1)}
 #tour-tip-text{font-size:14.5px;line-height:1.55;margin-bottom:14px}
 #tour-tip-text b{color:var(--gold)}
 #tour-tip-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -879,7 +879,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="vt-cliente" oninput="autocompleteCliente('vt-cliente','vt-ac')" autocomplete="off">
-      <div id="vt-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="vt-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row" id="vt-rut-row" style="display:none">
       <div class="field"><label>RUT</label><input type="text" id="vt-rut" placeholder="12.345.678-9"></div>
@@ -968,7 +968,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="cot-cliente" autocomplete="off" oninput="autocompleteCliente('cot-cliente','cot-cli-ac')">
-      <div id="cot-cli-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:1100;max-height:160px;overflow-y:auto"></div>
+      <div id="cot-cli-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:1100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="row">
       <div class="field"><label>Teléfono</label>
@@ -1468,7 +1468,7 @@ function renderNuevaVentaTab(){
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="nv-cliente" placeholder="Cliente mostrador" oninput="autocompleteCliente('nv-cliente','nv-ac')" autocomplete="off">
-      <div id="nv-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:160px;overflow-y:auto"></div>
+      <div id="nv-ac" class="cliente-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:100;max-height:160px;overflow-y:auto"></div>
     </div>
     <div id="nv-rut-row" style="display:none">
       <div class="row">
@@ -1713,7 +1713,7 @@ function renderItemsNV(){
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="nv-prod-input-${i}" value="${(nombreActual).replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoNV(${i})" style="width:100%">
-        <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>`;
 
     // Si es colchón, mostrar opciones de armado
@@ -2328,7 +2328,7 @@ function renderCotItems(){
     html+=`<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="cot-prod-${i}" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off" oninput="autocompleteCot(${i})" style="width:100%">
-        <div id="cot-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="cot-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updCotItem(${i},'qty',this.value)"></div>
@@ -2586,7 +2586,7 @@ function renderItemsHno(){
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="hno-prod-input-${i}" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoHno(${i})" style="width:100%">
-        <div id="hno-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="hno-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItemHno(${i},'qty',this.value)"></div>
@@ -2778,7 +2778,7 @@ function renderPromociones(){
       <div class="field" style="position:relative">
         <label>Producto</label>
         <input type="text" id="promo-prod-input" placeholder="Escribe el producto..." autocomplete="off" oninput="autocompletePromoProd()">
-        <div id="promo-prod-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:100;max-height:180px;overflow-y:auto"></div>
+        <div id="promo-prod-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:100;max-height:180px;overflow-y:auto"></div>
       </div>
       <div id="promo-form" style="display:none">
         <div style="font-size:12px;color:var(--text2);margin-bottom:8px" id="promo-prod-info"></div>
@@ -5030,7 +5030,7 @@ function renderItems(){
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="vt-prod-input-${i}" value="${nombreActual.replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoVT(${i})" style="width:100%">
-        <div id="vt-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <div id="vt-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItem(${i},'qty',this.value)"></div>
