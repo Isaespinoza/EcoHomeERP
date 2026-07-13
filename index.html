@@ -1255,6 +1255,10 @@ const isoLocal=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'
 const today=()=>isoLocal(new Date());
 const horaActual=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
 function uid(){return'id'+Date.now()+Math.floor(Math.random()*1000);}
+// Normaliza texto para búsquedas: minúsculas y sin tildes ("sofá"/"Sofa" -> "sofa").
+// El rango dentro de [] son los caracteres combinantes de acento (U+0300-U+036F) que
+// deja normalize('NFD') separados de la letra base; no borrar aunque no se vean en el editor.
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 
 // =========== INICIO ===========
 function renderInicio(){
@@ -1825,7 +1829,7 @@ function autocompleteProductoNV(i){
   window._nvItems[i].prodId=null;
   if(!val||val.length<2){ac.style.display='none';return;}
   const tipo=document.getElementById('nv-tipo').value;
-  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(val))).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
   ac.innerHTML=matches.map(p=>{
     const pc=precioConPromo(p,tipo);
@@ -2045,7 +2049,7 @@ function autocompleteCliente(inputId,acId){
   const val=document.getElementById(inputId).value.toLowerCase().trim();
   const ac=document.getElementById(acId);
   if(!val||val.length<2){ac.classList.remove('show');ac.style.display='none';return;}
-  const clientes=[...new Set(ventas.map(v=>v.cliente))].filter(c=>c.toLowerCase().includes(val)).slice(0,6);
+  const clientes=[...new Set(ventas.map(v=>v.cliente))].filter(c=>norm(c).includes(norm(val))).slice(0,6);
   if(!clientes.length){ac.classList.remove('show');ac.style.display='none';return;}
   ac.innerHTML=clientes.map(c=>`<div onclick="selCliente('${inputId}','${acId}','${c.replace(/'/g,"\\'")}',event)" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">${c}</div>`).join('');
   ac.style.display='block';
@@ -2343,7 +2347,7 @@ function autocompleteCot(i){
   window._cotItems[i].desc=input.value;window._cotItems[i].prodId=null;
   if(!val||val.length<2){ac.style.display='none';return;}
   const tipo=document.getElementById('cot-tipo').value;
-  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(val))).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
   ac.innerHTML=matches.map(p=>{const pc=precioConPromo(p,tipo);const precio=pc.precio;return`<div onclick="selCotProd(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><div style="display:flex;justify-content:space-between"><strong>${p.nombre}</strong><span style="color:var(--accent-text)">${fmt(precio)}</span></div><div style="color:var(--text3);font-size:10px">${p.marca||''}</div></div>`;}).join('');
   ac.style.display='block';
@@ -2460,7 +2464,7 @@ function renderClientes(){
     if(v.tel)cli[v.cliente].tel=v.tel;
   });
   let lista=Object.entries(cli);
-  if(q)lista=lista.filter(([n])=>n.toLowerCase().includes(q));
+  if(q)lista=lista.filter(([n])=>norm(n).includes(norm(q)));
   lista.sort((a,b)=>b[1].total-a[1].total);
 
   const totalClientes=Object.keys(cli).length;
@@ -2600,7 +2604,7 @@ function autocompleteProductoHno(i){
   hnoItems[i].desc=input.value;
   hnoItems[i].prodId=null;
   if(!val||val.length<2){ac.style.display='none';return;}
-  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(val))).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
   ac.innerHTML=matches.map(p=>{
     const stock=parseInt(p.stock)||0;
@@ -2843,7 +2847,7 @@ function autocompletePromoProd(){
   const ac=document.getElementById('promo-prod-ac');
   const val=input.value.toLowerCase().trim();
   if(!val||val.length<2){ac.style.display='none';return;}
-  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(val))).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
   ac.innerHTML=matches.map(p=>`<div onclick="selPromoProd('${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''"><strong>${p.nombre}</strong> <span class="muted">· Min ${fmt(p.min)} / May ${fmt(p.may)}</span></div>`).join('');
   ac.style.display='block';
@@ -4836,7 +4840,7 @@ function renderInv(){
   const fm=document.getElementById('inv-marca').value;
   const fc=document.getElementById('inv-cat').value;
   let items=inventario.filter(p=>{
-    if(q&&!(p.nombre+' '+p.marca).toLowerCase().includes(q))return false;
+    if(q&&!norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(q)))return false;
     if(fm&&p.marca!==fm)return false;
     if(fc&&p.cat!==fc)return false;
     return true;
@@ -5047,7 +5051,7 @@ function autocompleteProductoVT(i){
   ventaItems[i].prodId=null;
   if(!val||val.length<2){ac.style.display='none';return;}
   const tipo=document.getElementById('vt-tipo').value;
-  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&(p.nombre+' '+p.marca).toLowerCase().includes(val)).slice(0,8);
+  const matches=inventario.filter(p=>!(p.combo&&p.combo.colchonId)&&norm(p.nombre+' '+p.marca+' '+(p.cat||'')).includes(norm(val))).slice(0,8);
   if(!matches.length){ac.style.display='none';return;}
   ac.innerHTML=matches.map(p=>{
     const pc=precioConPromo(p,tipo);
@@ -5949,7 +5953,7 @@ function renderVentas(){
   const hayFiltros=q||ft||fDesde||fHasta||fVend||fPago||fEstado;
 
   let items=ventas.filter(v=>{
-    if(q&&!v.cliente.toLowerCase().includes(q))return false;
+    if(q&&!norm(v.cliente).includes(norm(q)))return false;
     if(ft&&v.tipo!==ft)return false;
     if(fDesde&&v.fecha<fDesde)return false;
     if(fHasta&&v.fecha>fHasta)return false;
@@ -6173,7 +6177,7 @@ function renderSaldos(){
   const orden=document.getElementById('sp-orden').value||'antiguas';
 
   let items=ventas.filter(v=>(v.saldo||0)>0&&(v.estado||'pendiente')!=='cancelado');
-  if(q)items=items.filter(v=>(v.cliente||'').toLowerCase().includes(q));
+  if(q)items=items.filter(v=>norm(v.cliente||'').includes(norm(q)));
 
   if(orden==='mayor')items.sort((a,b)=>(b.saldo||0)-(a.saldo||0));
   else if(orden==='cliente')items.sort((a,b)=>(a.cliente||'').localeCompare(b.cliente||''));
@@ -6304,7 +6308,7 @@ function renderRegistroAbonos(){
     });
   });
   let filt=rows;
-  if(q)filt=filt.filter(r=>r.cliente.toLowerCase().includes(q));
+  if(q)filt=filt.filter(r=>norm(r.cliente).includes(norm(q)));
   if(mes)filt=filt.filter(r=>(r.fecha||'').startsWith(mes));
   filt.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const totalAb=filt.reduce((a,r)=>a+r.monto,0);
