@@ -4783,15 +4783,17 @@ function renderInv(){
 
   // Stats
   const totalUnidades=items.reduce((a,p)=>a+(parseInt(p.stock)||0),0);
-  const valorMin=items.reduce((a,p)=>a+(parseInt(p.stock)||0)*(parseInt(p.min)||0),0);
+  const valorCosto=items.reduce((a,p)=>a+(parseInt(p.stock)||0)*(parseInt(p.costo)||0),0);
+  const sinCosto=items.filter(p=>(parseInt(p.stock)||0)>0&&!(parseInt(p.costo)>0)).length;
   const sinStock=items.filter(p=>(parseInt(p.stock)||0)<=0).length;
   const bajoStock=items.filter(p=>{const s=parseInt(p.stock)||0;const m=parseInt(p.minStock)||2;return s>0&&s<=m}).length;
 
   document.getElementById('inv-stats').innerHTML=`
     <div class="stat"><div class="stat-lbl">Productos</div><div class="stat-val">${items.length}</div></div>
     <div class="stat"><div class="stat-lbl">Unidades totales</div><div class="stat-val">${totalUnidades}</div></div>
-    <div class="stat"><div class="stat-lbl">Valor inventario</div><div class="stat-val" style="font-size:15px">${fmt(valorMin)}</div></div>
-    <div class="stat"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>`;
+    <div class="stat"><div class="stat-lbl">Valor inventario (costo)</div><div class="stat-val" style="font-size:15px">${fmt(valorCosto)}</div></div>
+    <div class="stat"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>
+    ${sinCosto>0?`<div class="help" style="grid-column:1/-1;margin:0">⚠ ${sinCosto} producto(s) con stock no tienen costo asignado y no suman al valor del inventario. Edítalos y agrégales el costo.</div>`:''}`;
 
   if(!items.length){
     document.getElementById('inv-list').innerHTML='<div class="empty">No hay productos. Toca "+ Agregar producto" para empezar.</div>';
