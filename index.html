@@ -11,7 +11,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>EcoHome ERP</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1677,13 +1678,6 @@ function respaldosPorTamano(tam){
     const t=tamanoRespaldo(p.nombre);
     return t===null||t===tam; // muestra los del tamaño + los sin tamaño claro
   }).sort((a,b)=>{
-    const sa=(parseInt(a.stock)||0)>0?0:1, sb=(parseInt(b.stock)||0)>0?0:1;
-    if(sa!==sb)return sa-sb;
-    return a.nombre.localeCompare(b.nombre);
-  });
-}
-function respaldosDisponibles(){
-  return inventario.filter(p=>p.cat==='Respaldo').sort((a,b)=>{
     const sa=(parseInt(a.stock)||0)>0?0:1, sb=(parseInt(b.stock)||0)>0?0:1;
     if(sa!==sb)return sa-sb;
     return a.nombre.localeCompare(b.nombre);
@@ -5310,8 +5304,6 @@ async function descontarStockItems(items,batch){
   return tocados;
 }
 
-function descontarStockItemsLegacy(){}
-
 function verFichaCliente(nombre){
   const compras=ventas.filter(v=>v.cliente===nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(!compras.length)return;
@@ -5459,199 +5451,6 @@ function viewVenta(id){
   openModal('modal-detalle');
 }
 
-function descargarPDFVenta(id){
-  const v=ventas.find(x=>String(x.id)===String(id));
-  if(!v)return;
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({unit:'mm',format:'a4'});
-  const W=210,M=20;
-  let y=M;
-
-  // Colores
-  const gold=[214,184,90];
-  const dark=[28,25,23];
-  const gray=[120,113,108];
-
-  // Línea superior dorada
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(0.8);
-  doc.line(M,y,W-M,y);
-  y+=8;
-
-  // Logo
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(26);
-  doc.setTextColor(...gold);
-  doc.text('EcoHome',M,y+6);
-  y+=14;
-
-  // PEDIDO
-  doc.setFontSize(16);
-  doc.setFont('helvetica','normal');
-  doc.setTextColor(...dark);
-  doc.setLetterSpacing(3);
-  doc.text('PEDIDO',M,y);
-  doc.setLetterSpacing(0);
-  y+=10;
-
-  // Separador
-  doc.setDrawColor(230,229,228);
-  doc.setLineWidth(0.3);
-  doc.line(M,y,W-M,y);
-  y+=6;
-
-  // Info contacto (izq) y cliente (der)
-  const col2=M+70;
-  doc.setFontSize(8);
-  doc.setTextColor(...gold);
-  doc.text('[Teléfono]',M,y);
-  doc.setTextColor(...gray);
-  doc.text('Rivas 737, San Miguel, Santiago',M,y+18);
-
-  // Info cliente
-  const fechaFmt=v.fecha.split('-').reverse().join('/');
-  const tel=v.tel?('+56 9 '+v.tel):'';
-  doc.setTextColor(...dark);
-  doc.setFontSize(9);
-  const clienteLines=[
-    ['A la atención de:',v.vendedor||'Isaías'],
-    ['Fecha:',fechaFmt],
-    ['',''],
-    ['Nombre:',v.cliente],
-    ...(v.rut?[['RUT:',v.rut]]:[]),
-    ...(v.empresa?[['Empresa:',v.empresa]]:[]),
-    ['Medio de Pago:',v.pago||''],
-    ...(tel?[['Teléfono:',tel]]:[]),
-  ];
-  let cy=y;
-  clienteLines.forEach(([lbl,val])=>{
-    if(!lbl&&!val){cy+=3;return;}
-    doc.setFont('helvetica','normal');
-    doc.setTextColor(...gray);
-    doc.text(lbl,col2,cy);
-    doc.setFont('helvetica','bold');
-    doc.setTextColor(...dark);
-    doc.text(val,col2+28,cy);
-    cy+=5;
-  });
-  y=Math.max(y+30,cy)+4;
-
-  // Dirección de despacho si aplica
-  if(v.desp>0){
-    const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'';
-    if(dir){
-      doc.setFontSize(8);
-      doc.setTextColor(...gray);
-      doc.text('Dirección de despacho: ',M,y);
-      doc.setTextColor(...dark);
-      doc.setFont('helvetica','bold');
-      doc.text(dir,M+38,y);
-      doc.setFont('helvetica','normal');
-      y+=5;
-    }
-    if(v.fechaDesp){
-      doc.setTextColor(...gray);
-      doc.text('Fecha despacho: ',M,y);
-      doc.setTextColor(...gold);
-      doc.setFont('helvetica','bold');
-      doc.text(v.fechaDesp.split('-').reverse().join('/'),M+29,y);
-      doc.setFont('helvetica','normal');
-      y+=5;
-    }
-  }
-  y+=3;
-
-  // Tabla encabezado
-  const colX=[M,M+90,M+115,M+145];
-  const colW=[90,25,30,25];
-  doc.setFillColor(...gold);
-  doc.rect(M,y,W-2*M,8,'F');
-  doc.setFontSize(8);
-  doc.setFont('helvetica','bold');
-  doc.setTextColor(255,255,255);
-  doc.text('Descripción',colX[0]+2,y+5.5);
-  doc.text('Cant.',colX[1]+2,y+5.5);
-  doc.text('P. Unitario',colX[2]+2,y+5.5);
-  doc.text('Total',colX[3]+2,y+5.5);
-  y+=8;
-
-  // Filas de productos
-  const rowH=8;
-  const fmtNum=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
-  v.items.forEach((it,i)=>{
-    const nom=it.desc||((inventario.find(p=>p.id===it.prodId)||{}).nombre)||'Producto';
-    doc.setFillColor(i%2===0?250:255,i%2===0?250:255,i%2===0?249:255);
-    doc.rect(M,y,W-2*M,rowH,'F');
-    doc.setFont('helvetica','normal');
-    doc.setTextColor(...dark);
-    doc.setFontSize(8);
-    // Texto largo del producto con wrap
-    const nomLines=doc.splitTextToSize(nom,86);
-    doc.text(nomLines,colX[0]+2,y+5);
-    doc.text(String(it.qty),colX[1]+2,y+5);
-    doc.text(fmtNum(it.precio),colX[2]+2,y+5);
-    doc.text(fmtNum(it.qty*it.precio),colX[3]+2,y+5);
-    y+=nomLines.length>1?nomLines.length*5:rowH;
-  });
-
-  // Línea separadora y total
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(0.5);
-  doc.line(M,y,W-M,y);
-  y+=6;
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...gold);
-  doc.text('TOTAL',colX[2],y);
-  doc.text(fmtNum(v.total),colX[3]+2,y);
-
-  if(v.desp>0){
-    y+=6;
-    doc.setFontSize(8);
-    doc.setTextColor(...gray);
-    doc.setFont('helvetica','normal');
-    doc.text('Despacho (cobro aparte):',colX[2],y);
-    doc.text(fmtNum(v.desp),colX[3]+2,y);
-  }
-
-  if(v.saldo>0){
-    y+=7;
-    doc.setFillColor(255,245,230);
-    doc.rect(M,y-4,W-2*M,8,'F');
-    doc.setFontSize(8);
-    doc.setTextColor(146,64,14);
-    doc.setFont('helvetica','bold');
-    doc.text('Saldo pendiente: '+fmtNum(v.saldo)+' (Pagado: '+fmtNum(v.cancelado)+')',M+2,y+1);
-    y+=8;
-  }
-
-  if(v.notas){
-    y+=6;
-    doc.setFontSize(8);
-    doc.setFont('helvetica','italic');
-    doc.setTextColor(...gray);
-    const notasLines=doc.splitTextToSize('Nota: '+v.notas,W-2*M);
-    doc.text(notasLines,M,y);
-    y+=notasLines.length*5;
-  }
-
-  // Pie de página
-  const pieY=277;
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(0.8);
-  doc.line(M,pieY,W-M,pieY);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica','normal');
-  doc.setTextColor(...gray);
-  doc.text('Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.',M,pieY+5);
-  doc.text('El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado con el vendedor.',M,pieY+9);
-  doc.text('Atentamente, EcoHome.',M,pieY+13);
-
-  // Guardar
-  const nombre=v.cliente.replace(/\s+/g,'_');
-  doc.save(`Pedido_EcoHome_${nombre}_${fechaFmt.replace(/\//g,'-')}.pdf`);
-}
-
 function imprimirVenta(id){
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v)return;
@@ -5774,8 +5573,6 @@ function imprimirVenta(id){
     +'.line-bottom{position:absolute;bottom:18mm;left:20mm;right:20mm;border-bottom:2px solid #d6b85a}'
     +'.btnprint{position:fixed;top:10px;right:10px;background:#d6b85a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
     +'@media print{body{padding:0;margin:0}.page{padding:18mm 20mm;margin:0;page-break-after:always}.btnprint{display:none}}';
-
-  let body=''; // legacy - no usado
 
   const autoPrint=!!window._autoPrint;
   window._autoPrint=false;
