@@ -1411,11 +1411,11 @@ function renderNuevaVentaTab(){
   let chipsHtml='';
   if(pausadas.length){
     chipsHtml=`<div style="margin-bottom:12px">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px">⏸️ Ventas en pausa</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px">Ventas en pausa</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${pausadas.map((p,i)=>`<div style="display:flex;align-items:center;gap:4px;background:#fef3c7;border:1px solid #d97706;border-radius:99px;padding:5px 6px 5px 12px;font-size:11px">
-          <span style="cursor:pointer;font-weight:600;color:#92400e" onclick="reanudarVentaPausada(${i})">${p.cliente||'Sin nombre'} · ${fmt(p.total||0)}</span>
-          <button onclick="eliminarVentaPausada(${i})" style="background:none;border:none;cursor:pointer;color:#92400e;font-size:13px;padding:0 4px">×</button>
+        ${pausadas.map((p,i)=>`<div style="display:flex;align-items:center;gap:4px;background:rgba(244,215,120,.14);border:1px solid #f4d778;border-radius:99px;padding:5px 6px 5px 12px;font-size:11px">
+          <span style="cursor:pointer;font-weight:600;color:#f4d778" onclick="reanudarVentaPausada(${i})">${p.cliente||'Sin nombre'} · ${fmt(p.total||0)}</span>
+          <button onclick="eliminarVentaPausada(${i})" style="background:none;border:none;cursor:pointer;color:#f4d778;font-size:13px;padding:0 4px">×</button>
         </div>`).join('')}
       </div>
     </div>`;
@@ -1437,15 +1437,15 @@ function renderNuevaVentaTab(){
 
     <!-- PRODUCTOS PRIMERO -->
     <div style="margin:6px 0 8px;display:flex;justify-content:space-between;align-items:center">
-      <strong style="font-size:14px">🛒 Productos</strong>
+      <strong style="font-size:14px">Productos</strong>
       <button class="btn btn-sm" onclick="addItemNV()">+ Agregar</button>
     </div>
     <div id="nv-items"><div class="muted" style="font-size:12px;padding:6px 0">Toca "+ Agregar" para añadir productos</div></div>
 
     <!-- DESCUENTO -->
-    <div style="background:#fef9f0;border-radius:10px;padding:10px;margin:12px 0">
-      <div style="font-size:10px;color:#d6b85a;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">🏷️ Descuento</div>
-      <div id="nv-desc-auto" style="display:none;font-size:12px;background:#dcfce7;border-radius:6px;padding:7px 10px;margin-bottom:8px"></div>
+    <div style="background:var(--accent-bg);border-radius:10px;padding:10px;margin:12px 0">
+      <div style="font-size:10px;color:var(--accent-text);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Descuento</div>
+      <div id="nv-desc-auto" style="display:none;font-size:12px;background:rgba(139,240,176,.14);color:#8bf0b0;border-radius:6px;padding:7px 10px;margin-bottom:8px"></div>
       <div style="display:flex;gap:6px;align-items:center">
         <select id="nv-desc-tipo" onchange="recalcTotalNV()" style="width:70px;flex-shrink:0">
           <option value="$">$</option><option value="%">%</option>
@@ -1454,14 +1454,13 @@ function renderNuevaVentaTab(){
         <span id="nv-desc-info" class="muted" style="font-size:11px;white-space:nowrap"></span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
-        <span style="font-size:16px;flex-shrink:0">🎟️</span>
         <input type="text" id="nv-cupon" placeholder="Código de cupón (ej: DR-A7X9)" autocomplete="off" oninput="this.value=this.value.toUpperCase();recalcTotalNV()" style="flex:1;text-transform:uppercase">
         <span id="nv-cupon-info" style="font-size:11px;white-space:nowrap;font-weight:600"></span>
       </div>
     </div>
 
     <!-- DATOS DEL CLIENTE -->
-    <div style="margin:14px 0 8px"><strong style="font-size:14px">👤 Datos del cliente</strong> <span class="muted" style="font-size:11px">(vacío = Cliente mostrador)</span></div>
+    <div style="margin:14px 0 8px"><strong style="font-size:14px">Datos del cliente</strong> <span class="muted" style="font-size:11px">(vacío = Cliente mostrador)</span></div>
     <div class="field" style="position:relative">
       <label>Cliente</label>
       <input type="text" id="nv-cliente" placeholder="Cliente mostrador" oninput="autocompleteCliente('nv-cliente','nv-ac')" autocomplete="off">
@@ -1476,7 +1475,7 @@ function renderNuevaVentaTab(){
     <div class="row">
       <div class="field"><label>Teléfono</label>
         <div style="display:flex;align-items:center;gap:6px">
-          <span style="background:#f5f5f4;padding:10px 11px;border:1.5px solid #d6d3d1;border-radius:8px;font-size:14px;color:#57534e;white-space:nowrap">+56 9</span>
+          <span style="background:rgba(255,255,255,.05);padding:10px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--text2);white-space:nowrap">+56 9</span>
           <input type="tel" id="nv-tel" placeholder="1234 5678" maxlength="10" style="flex:1">
         </div>
       </div>
@@ -1484,20 +1483,20 @@ function renderNuevaVentaTab(){
     </div>
 
     <!-- PAGO -->
-    <div style="margin:14px 0 8px"><strong style="font-size:14px">💳 Pago</strong></div>
+    <div style="margin:14px 0 8px"><strong style="font-size:14px">Pago</strong></div>
     <div class="row">
       <div class="field"><label>Forma de pago</label><select id="nv-pago" onchange="updPagoNV()">
         <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option>
         <option>Débito</option><option>Crédito</option><option>Mixto</option>
       </select></div>
       <div class="field"><label>Estado</label><select id="nv-estado">
-        <option value="pendiente">🟡 Pendiente</option>
-        <option value="pagado">🟠 Pagado</option>
-        <option value="despachado">🟢 Despachado</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagado">Pagado</option>
+        <option value="despachado">Despachado</option>
       </select></div>
     </div>
-    <div id="nv-pago-desglose" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;padding:10px;border-radius:8px;margin-bottom:10px">
-      <div style="font-size:10px;color:#0369a1;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💰 Desglose del pago mixto</div>
+    <div id="nv-pago-desglose" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);padding:10px;border-radius:8px;margin-bottom:10px">
+      <div style="font-size:10px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Desglose del pago mixto</div>
       <div class="row3">
         <div class="field"><label>Efectivo</label><input type="number" id="nv-mix-efectivo" value="0" oninput="recalcMixtoNV()"></div>
         <div class="field"><label>Tarjeta</label><input type="number" id="nv-mix-tarjeta" value="0" oninput="recalcMixtoNV()"></div>
@@ -1507,22 +1506,22 @@ function renderNuevaVentaTab(){
         <div class="field"><label>Débito</label><input type="number" id="nv-mix-debito" value="0" oninput="recalcMixtoNV()"></div>
         <div class="field"><label>Crédito</label><input type="number" id="nv-mix-credito" value="0" oninput="recalcMixtoNV()"></div>
       </div>
-      <div style="font-size:11px;color:#0369a1;text-align:right">Suma desglose: <strong id="nv-mix-suma">$0</strong></div>
+      <div style="font-size:11px;color:var(--blue);text-align:right">Suma desglose: <strong id="nv-mix-suma">$0</strong></div>
     </div>
     <div class="row">
       <div class="field"><label>Monto cancelado</label><input type="number" id="nv-cancelado" oninput="recalcTotalNV()"></div>
-      <div class="field"><label>Saldo pendiente</label><input type="number" id="nv-saldo" readonly style="background:#f5f5f4"></div>
+      <div class="field"><label>Saldo pendiente</label><input type="number" id="nv-saldo" readonly style="background:rgba(255,255,255,.04)"></div>
     </div>
 
     <!-- DESPACHO -->
-    <div style="margin:14px 0 8px"><strong style="font-size:14px">🚚 Despacho</strong> <span class="muted" style="font-size:11px">(0 = retira en tienda)</span></div>
+    <div style="margin:14px 0 8px"><strong style="font-size:14px">Despacho</strong> <span class="muted" style="font-size:11px">(0 = retira en tienda)</span></div>
     <div class="row">
       <div class="field"><label>Despacho ($)</label><input type="number" id="nv-desp" value="0" oninput="toggleDespNV()"></div>
-      <div class="field"><label>Fecha despacho <button type="button" onclick="document.getElementById('nv-fecha-desp').value=today()" style="font-size:10px;padding:2px 6px;background:#fef9f0;color:#d6b85a;border:1px solid #d6b85a;border-radius:4px;cursor:pointer;margin-left:4px">= hoy</button></label>
+      <div class="field"><label>Fecha despacho <button type="button" onclick="document.getElementById('nv-fecha-desp').value=today()" style="font-size:10px;padding:2px 6px;background:var(--accent-bg);color:var(--accent-text);border:1px solid var(--accent-border);border-radius:4px;cursor:pointer;margin-left:4px">= hoy</button></label>
         <input type="date" id="nv-fecha-desp" value="${today()}"></div>
     </div>
-    <div id="nv-desp-campos" style="display:none;background:#fef9f0;padding:10px;border-radius:8px;margin-bottom:12px">
-      <div style="font-size:11px;color:#d6b85a;font-weight:600;margin-bottom:8px;text-transform:uppercase">📍 Datos de despacho</div>
+    <div id="nv-desp-campos" style="display:none;background:var(--accent-bg);padding:10px;border-radius:8px;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--accent-text);font-weight:600;margin-bottom:8px;text-transform:uppercase">Datos de despacho</div>
       <div class="field"><label>Calle</label><input type="text" id="nv-calle"></div>
       <div class="row">
         <div class="field"><label>N° / Depto</label><input type="text" id="nv-numero"></div>
@@ -1542,14 +1541,14 @@ function renderNuevaVentaTab(){
     <div style="height:90px"></div>
 
     <!-- BARRA TOTAL FIJA -->
-    <div id="nv-barra-total" style="position:fixed;bottom:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#d6b85a,#c89958);box-shadow:0 -4px 16px rgba(0,0,0,.15);padding:10px 14px">
+    <div id="nv-barra-total" style="position:fixed;bottom:0;left:0;right:0;z-index:150;background:var(--accent-grad);box-shadow:0 -4px 16px rgba(0,0,0,.35);padding:10px 14px">
       <div style="max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px">
         <div style="flex:1;color:#fff">
           <div style="font-size:10px;opacity:.85"><span id="nv-bar-items">0 productos</span><span id="nv-bar-desc"></span></div>
           <div style="font-size:22px;font-weight:700" id="nv-bar-total">$0</div>
         </div>
-        <button onclick="pausarVentaNV()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px">⏸️</button>
-        <button onclick="saveVentaNV()" style="background:#fff;color:#d6b85a;border:none;padding:12px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">💾 Guardar</button>
+        <button onclick="pausarVentaNV()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px" title="Pausar venta" aria-label="Pausar venta">❚❚</button>
+        <button onclick="saveVentaNV()" style="background:#fff;color:var(--sage-dark);border:none;padding:12px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">Guardar</button>
       </div>
     </div>`;
   window._nvItems=window._nvItems&&window._nvRestaurando?window._nvItems:[{prodId:null,desc:'',qty:1,precio:0,armado:'solo',respaldoId:null}];
@@ -1706,7 +1705,7 @@ function renderItemsNV(){
     const esCamaCombo=prod&&prod.combo&&prod.combo.colchonId; // Cama Europea DreamRest
     const armado=it.armado||'solo';
 
-    html+=`<div style="background:#f9f6f0;border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
+    html+=`<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="nv-prod-input-${i}" value="${(nombreActual).replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoNV(${i})" style="width:100%">
@@ -1717,8 +1716,8 @@ function renderItemsNV(){
     if(esColchon){
       const tam=detectarTamano(prod.nombre);
       html+=`<div style="display:flex;gap:4px;margin-bottom:6px">
-        ${[['solo','🛏️ Solo colchón'],['base','+ Base'],['baseresp','+ Base y Respaldo']].map(([val,lbl])=>
-          `<button onclick="setArmadoNV(${i},'${val}')" style="flex:1;font-size:10px;padding:6px 4px;border-radius:6px;cursor:pointer;border:1px solid ${armado===val?'#d6b85a':'#d6d3d1'};background:${armado===val?'#d6b85a':'#fff'};color:${armado===val?'#fff':'#57534e'};font-weight:${armado===val?'600':'400'}">${lbl}</button>`
+        ${[['solo','Solo colchón'],['base','+ Base'],['baseresp','+ Base y Respaldo']].map(([val,lbl])=>
+          `<button onclick="setArmadoNV(${i},'${val}')" style="flex:1;font-size:10px;padding:6px 4px;border-radius:6px;cursor:pointer;border:1px solid ${armado===val?'var(--sage)':'var(--border)'};background:${armado===val?'var(--accent-grad)':'rgba(255,255,255,.04)'};color:${armado===val?'#fff':'var(--text2)'};font-weight:${armado===val?'600':'400'}">${lbl}</button>`
         ).join('')}
       </div>`;
       if(armado==='baseresp'){
@@ -1731,7 +1730,7 @@ function renderItemsNV(){
           </select>
         </div>`;
       }
-      html+=`<div style="font-size:10px;color:#d6b85a;margin-bottom:6px">${armado==='solo'?'Solo colchón':armado==='base'?'Colchón + base '+tam+' ('+fmt(precioBasePorTamano(tam,tipo))+')':'Colchón + base '+tam+' + respaldo'}</div>`;
+      html+=`<div style="font-size:10px;color:var(--accent-text);margin-bottom:6px">${armado==='solo'?'Solo colchón':armado==='base'?'Colchón + base '+tam+' ('+fmt(precioBasePorTamano(tam,tipo))+')':'Colchón + base '+tam+' + respaldo'}</div>`;
     }
     // Si es Cama Europea DreamRest (combo), pedir respaldo del tamaño
     else if(esCamaCombo){
@@ -1749,7 +1748,7 @@ function renderItemsNV(){
 
     if(it.precioNormal&&it.precioNormal>it.precio){
       const pct=Math.round((1-it.precio/it.precioNormal)*100);
-      html+=`<div style="font-size:11px;margin-bottom:6px"><span class="tag" style="background:#dcfce7;color:#166534">🏷️ PROMO -${pct}%</span> <span style="text-decoration:line-through;color:var(--text3)">${fmt(it.precioNormal)}</span> → <strong style="color:#166534">${fmt(it.precio)}</strong></div>`;
+      html+=`<div style="font-size:11px;margin-bottom:6px"><span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO -${pct}%</span> <span style="text-decoration:line-through;color:var(--text3)">${fmt(it.precioNormal)}</span> → <strong style="color:#8bf0b0">${fmt(it.precio)}</strong></div>`;
     }
     html+=`<div style="display:flex;gap:6px;align-items:center">
         <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">CANT</div><input type="number" min="1" value="${it.qty}" onchange="updItemNV(${i},'qty',this.value)"></div>
@@ -1831,12 +1830,12 @@ function autocompleteProductoNV(i){
   ac.innerHTML=matches.map(p=>{
     const pc=precioConPromo(p,tipo);
     const stock=parseInt(p.stock)||0;
-    const stockTxt=p.combo?'':(stock<=0?'<span style="color:#dc2626">Sin stock</span>':`${stock} u`);
+    const stockTxt=p.combo?'':(stock<=0?'<span style="color:#f28a8a">Sin stock</span>':`${stock} u`);
     const precioHtml=pc.promo
-      ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#166534">${fmt(pc.precio)}</strong></span>`
-      :`<span style="color:#d6b85a;white-space:nowrap">${fmt(pc.precio)}</span>`;
+      ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#8bf0b0">${fmt(pc.precio)}</strong></span>`
+      :`<span style="color:var(--accent-text);white-space:nowrap">${fmt(pc.precio)}</span>`;
     return`<div onclick="selProdAutoNV(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:#dcfce7;color:#166534">PROMO</span>':''}</span>${precioHtml}</div>
+      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
       <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
     </div>`;
   }).join('');
@@ -1892,10 +1891,10 @@ function calcCuponNV(sub){
   if(!code){if(infoEl)infoEl.textContent='';return 0;}
   const r=validarCupon(code,sub);
   if(r.ok){
-    if(infoEl){infoEl.textContent='✓ −'+fmt(r.desc);infoEl.style.color='#166534';}
+    if(infoEl){infoEl.textContent='✓ −'+fmt(r.desc);infoEl.style.color='#8bf0b0';}
     return r.desc;
   }
-  if(infoEl){infoEl.textContent='✕ '+r.msg;infoEl.style.color='#dc2626';}
+  if(infoEl){infoEl.textContent='✕ '+r.msg;infoEl.style.color='#f28a8a';}
   return 0;
 }
 function recalcTotalNV(){
@@ -1913,7 +1912,7 @@ function recalcTotalNV(){
   const autoEl=document.getElementById('nv-desc-auto');
   if(autoEl){
     autoEl.innerHTML=descPromos>0
-      ?`🏷️ Descuento por promociones: <strong style="color:#166534">−${fmt(descPromos)}</strong> <span class="muted">(ya aplicado en los precios)</span>`
+      ?`Descuento por promociones: <strong style="color:#8bf0b0">−${fmt(descPromos)}</strong> <span class="muted">(ya aplicado en los precios)</span>`
       :'';
     autoEl.style.display=descPromos>0?'block':'none';
   }
@@ -2322,7 +2321,7 @@ function renderCotItems(){
   const tipo=document.getElementById('cot-tipo').value;
   let html='';
   window._cotItems.forEach((it,i)=>{
-    html+=`<div style="background:#f9f6f0;border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
+    html+=`<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="cot-prod-${i}" value="${(it.desc||'').replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off" oninput="autocompleteCot(${i})" style="width:100%">
         <div id="cot-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:1200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
@@ -5023,7 +5022,7 @@ function renderItems(){
   let html='';
   ventaItems.forEach((it,i)=>{
     const nombreActual=it.desc||'';
-    html+=`<div style="background:#f9f6f0;border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
+    html+=`<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
       <div style="position:relative;margin-bottom:6px">
         <input type="text" id="vt-prod-input-${i}" value="${nombreActual.replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
           oninput="autocompleteProductoVT(${i})" style="width:100%">
