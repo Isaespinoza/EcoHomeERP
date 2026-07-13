@@ -234,6 +234,13 @@ body:has(.modal-bg.show){overflow:hidden}
 .search::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.4;z-index:1}
 .fil{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .fil select{flex:1;min-width:120px}
+/* ===== Chips de filtro (handoff 3a): segmentado + chips de estado con punto ===== */
+.chip-seg{display:flex;background:var(--glass,rgba(255,255,255,.05));border:1px solid var(--glass-border,rgba(255,255,255,.1));border-radius:10px;padding:3px;gap:2px}
+.chip-seg button{border:none;background:none;padding:6px 12px;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;transition:background .15s ease,color .15s ease}
+.chip-seg button.active{background:var(--accent-bg2);color:var(--accent-text);font-weight:600}
+.chip-status{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:9px;font-size:11.5px;font-weight:600;border:1px solid transparent;background:rgba(255,255,255,.05);color:var(--text2);cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s ease,border-color .15s ease}
+.chip-status .dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.chip-status.active{border-color:currentColor}
 .item-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
 .item-row:last-child{border:none}
 .danger{color:var(--red)}
@@ -466,11 +473,16 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     </div>
     <div class="fil">
       <input type="text" id="v-search" placeholder="Buscar cliente..." oninput="renderVentasDeb()" style="flex:2;min-width:140px">
-      <select id="v-tipo" onchange="renderVentas()">
+      <select id="v-tipo" onchange="renderVentas()" style="display:none">
         <option value="">Todos</option>
         <option value="min">Minorista</option>
         <option value="may">Mayorista</option>
       </select>
+      <div class="chip-seg">
+        <button type="button" data-val="" onclick="chipTipoVenta('')">Todos</button>
+        <button type="button" data-val="min" onclick="chipTipoVenta('min')">Minorista</button>
+        <button type="button" data-val="may" onclick="chipTipoVenta('may')">Mayorista</button>
+      </div>
     </div>
     <div class="fil" style="align-items:center;gap:6px">
       <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:120px">
@@ -491,15 +503,16 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
         <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option>
         <option>Débito</option><option>Crédito</option><option>Mixto</option>
       </select>
-      <select id="v-estado" onchange="renderVentas()" style="flex:1;min-width:110px">
+      <select id="v-estado" onchange="renderVentas()" style="display:none">
         <option value="">Estado</option>
-        <option value="pendiente">🟡 Pendiente</option>
-        <option value="pagado">🟠 Pagado</option>
-        <option value="despachado">🟢 Despachado</option>
-        <option value="cancelado">🔴 Cancelado</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagado">Pagado</option>
+        <option value="despachado">Despachado</option>
+        <option value="cancelado">Cancelado</option>
       </select>
       <button class="btn btn-sec btn-sm" onclick="limpiarFiltrosVentas()" style="white-space:nowrap">✕ Limpiar</button>
     </div>
+    <div class="fil" id="v-estado-chips" style="margin-top:-4px"></div>
     <div id="v-stats" class="stat-grid"></div>
     <div id="v-list"></div>
   </div>
@@ -541,12 +554,13 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 
   <div id="tab-despachos" class="section">
     <div class="fil" style="align-items:center;gap:6px">
-      <select id="d-estado" onchange="renderDespachos()" style="flex:1;min-width:130px">
+      <select id="d-estado" onchange="renderDespachos()" style="display:none">
         <option value="">Todos los estados</option>
-        <option value="pendiente">🟡 Pendiente</option>
-        <option value="pagado">🟠 Pagado</option>
-        <option value="despachado">🟢 Despachado</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagado">Pagado</option>
+        <option value="despachado">Despachado</option>
       </select>
+      <div id="d-estado-chips" class="fil" style="margin:0;flex:2"></div>
       <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:120px">
         <label style="margin:0;white-space:nowrap;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Fecha</label>
         <input type="date" id="d-fecha" onchange="renderDespachos()" style="flex:1">
@@ -5888,8 +5902,27 @@ function limpiarFiltrosVentas(){
   document.getElementById('v-estado').value='';
   renderVentas();
 }
+function chipTipoVenta(val){
+  document.getElementById('v-tipo').value=val;
+  renderVentas();
+}
+function chipEstadoVenta(val){
+  const sel=document.getElementById('v-estado');
+  sel.value=(sel.value===val?'':val);
+  renderVentas();
+}
+function syncFiltroChips(){
+  const ft=document.getElementById('v-tipo').value;
+  document.querySelectorAll('#tab-ventas .chip-seg button').forEach(b=>b.classList.toggle('active',(b.dataset.val||'')===ft));
+  const fe=document.getElementById('v-estado').value;
+  document.getElementById('v-estado-chips').innerHTML=Object.keys(ESTADO_CFG).map(k=>{
+    const c=ESTADO_CFG[k],on=fe===k;
+    return`<button type="button" class="chip-status${on?' active':''}" style="color:${c.color};background:${on?c.bg:'rgba(255,255,255,.05)'}" onclick="chipEstadoVenta('${k}')"><span class="dot" style="background:${c.color}"></span>${c.label}</button>`;
+  }).join('');
+}
 
 function renderVentas(){
+  syncFiltroChips();
   // Mantener filtro de vendedores actualizado
   const vSel=document.getElementById('v-vendedor');
   if(vSel&&vSel.options.length<=1+listaVendedores().length){
@@ -5988,8 +6021,8 @@ function renderVentas(){
         </div>
       </div>
       <div class="venta-acciones" onclick="event.stopPropagation()">
-        ${est==='pendiente'?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','pagado')">🟠 Pagado</button>`:''}
-        ${(est==='pendiente'||est==='pagado')?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','despachado')">🟢 Despachado</button>`:''}
+        ${est==='pendiente'?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','pagado')">Marcar pagado</button>`:''}
+        ${(est==='pendiente'||est==='pagado')?`<button class="qa" onclick="cambiarEstadoRapido('${v.id}','despachado')">Marcar despachado</button>`:''}
         ${v.tel?`<button class="qa wa" onclick="waWhatsApp('${v.id}')">📱 WhatsApp</button>`:''}
         <button class="qa" onclick="imprimirVenta('${v.id}')">🖨️ Imprimir</button>
       </div>
@@ -5998,7 +6031,17 @@ function renderVentas(){
 }
 
 // =========== DESPACHOS ===========
+function chipEstadoDespacho(val){
+  const sel=document.getElementById('d-estado');
+  sel.value=(sel.value===val?'':val);
+  renderDespachos();
+}
 function renderDespachos(){
+  const fEstado0=document.getElementById('d-estado').value;
+  document.getElementById('d-estado-chips').innerHTML=['pendiente','pagado','despachado'].map(k=>{
+    const c=ESTADO_CFG[k],on=fEstado0===k;
+    return`<button type="button" class="chip-status${on?' active':''}" style="color:${c.color};background:${on?c.bg:'rgba(255,255,255,.05)'}" onclick="chipEstadoDespacho('${k}')"><span class="dot" style="background:${c.color}"></span>${c.label}</button>`;
+  }).join('');
   const fEstado=document.getElementById('d-estado').value;
   const fFecha=document.getElementById('d-fecha').value;
 
@@ -6705,6 +6748,7 @@ Object.assign(window,{
   setArmadoNV,setRespaldoNV,
   renderInv,renderVentas,renderDespachos,renderResumen,renderInicio,renderNuevaVentaTab,renderVendedores,
   limpiarFiltrosVentas,cambiarEstado,cambiarEstadoDetalle,registrarAbono,resetearInventario,
+  chipTipoVenta,chipEstadoVenta,chipEstadoDespacho,
   editarAbono,borrarAbono,abrirRegistroAbonos,renderRegistroAbonos,
   renderSaldos,abonarSaldo,pagarTotalSaldo,refrescarVistaActiva,actualizarBadges,
   cambiarEstadoRapido,waWhatsApp,waCobro,waDespacho,
