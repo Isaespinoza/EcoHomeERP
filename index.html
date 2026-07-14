@@ -5456,6 +5456,8 @@ function imprimirVenta(id){
   if(!v)return;
   const fechaFmt=v.fecha.split('-').reverse().join('/');
   const tel=v.tel?(v.tel.startsWith('+56')?v.tel:'+56 9 '+v.tel):'';
+  const logoSrc=(document.getElementById('dr-logo-src')||{}).src||'';
+  const TIMBRE_SVG='<svg width="86" height="86" viewBox="0 0 120 120" style="display:block;transform:rotate(-9deg);opacity:.85;mix-blend-mode:multiply"><defs><path id="stampTop" d="M 14,62 A 46,46 0 1,1 106,62" fill="none"/><path id="stampBot" d="M 106,64 A 46,46 0 1,1 14,64" fill="none"/></defs><circle cx="60" cy="60" r="52" fill="none" stroke="#3f6e56" stroke-width="2.5"/><circle cx="60" cy="60" r="44" fill="none" stroke="#3f6e56" stroke-width="1" stroke-dasharray="2,3"/><text font-family="Space Grotesk,sans-serif" font-size="9" font-weight="700" fill="#3f6e56" letter-spacing="2"><textPath href="#stampTop" startOffset="4">ECOHOME · MUEBLES</textPath></text><text font-family="Space Grotesk,sans-serif" font-size="8.5" font-weight="600" fill="#3f6e56" letter-spacing="1.5"><textPath href="#stampBot" startOffset="4">SAN MIGUEL · CHILE</textPath></text><text x="60" y="57" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="12.5" font-weight="700" fill="#3f6e56">CONFORME</text><text x="60" y="71" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#3f6e56">✓ Venta verificada</text></svg>';
 
   let itemsHtml='';
   v.items.forEach(it=>{
@@ -5476,24 +5478,32 @@ function imprimirVenta(id){
   if(v.cliente==='Cliente mostrador'){
     const autoPrintM=!!window._autoPrint;
     window._autoPrint=false;
-    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Helvetica,Arial,sans-serif;color:#333;background:#fff}.page{width:148mm;padding:12mm 14mm;margin:0 auto}.logo{font-family:Brush Script MT,Lucida Handwriting,cursive;font-size:28px;color:#d6b85a;margin-bottom:4px}.ln{border-top:2px solid #d6b85a;margin:8px 0 10px}.meta{font-size:11px;color:#666;margin-bottom:10px}.tabla{width:100%;border-collapse:collapse;font-size:12px}.tabla thead th{background:#d6b85a;color:#fff;padding:7px 8px;text-align:left;font-size:10px;font-weight:bold}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #ccc}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tr-tot td{border-top:2px solid #d6b85a;padding:9px 8px;font-weight:bold}.tr-tot td:first-child{text-align:right;color:#666;font-weight:normal}.tr-tot td:last-child{text-align:right;color:#d6b85a;font-size:14px}.footer{font-size:10px;color:#aaa;text-align:center;margin-top:20px}.btnprint{position:fixed;top:10px;right:10px;background:#d6b85a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media print{.btnprint{display:none}}';
-    const descM=v.descuento>0?'<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#166534">Descuento aplicado</td><td style="padding:6px 8px;text-align:right;color:#166534">-'+fmt(v.descuento)+'</td></tr>':'';
-    const cupM=(v.descuentoCupon||0)>0?'<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#166534">Cupón '+((v.cupon||{}).codigo||'')+'</td><td style="padding:6px 8px;text-align:right;color:#166534">-'+fmt(v.descuentoCupon)+'</td></tr>':'';
-    const sorpresaM=v.cuponSorpresa?'<div style="margin-top:10px;padding:10px;border:2px dashed #d6b85a;border-radius:6px;text-align:center"><div style="font-size:11px;color:#d6b85a;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:20px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:11px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'';
-    const saldoM=v.saldo>0?'<div style="margin-top:8px;padding:8px;background:#fff5e6;border:1px solid #f59e0b;border-radius:4px;font-size:11px;color:#92400e">⚠ <strong>Saldo pendiente:</strong> '+fmt(v.saldo)+' (Pagado: '+fmt(v.cancelado)+')</div>':'';
-    const notasM=v.notas?'<div style="margin-top:10px;padding:8px 10px;background:#f9f9f9;border-left:3px solid #d6b85a;font-size:11px;font-style:italic">'+v.notas+'</div>':'';
-    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante EcoHome</title><style>'+cssM+'</style></head><body>'
+    const fontsLink='<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">';
+    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}.page{width:148mm;padding:10mm 12mm;margin:0 auto;background:#fff}.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #151513}.hdr-co{display:flex;gap:8px;align-items:center}.logo-img{height:32px;width:auto;display:block}.co-name{font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.co-sub{font-size:9px;color:#6b6f6b}.hdr-doc{text-align:right}.doc-title{font-family:"Space Grotesk",sans-serif;font-size:11px;font-weight:700;color:#3f6e56;letter-spacing:.04em}.doc-meta{font-size:10px;color:#6b6f6b;margin-top:2px}.tabla{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}.tabla thead th{background:#3f6e56;color:#fff;padding:7px 8px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.03em}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #d8dcd8}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tot-row{display:flex;justify-content:space-between;padding:5px 6px;font-size:11.5px;color:#4a4d4a}.tot-final{border-top:1.5px solid #151513;margin-top:2px;padding:8px 6px;font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.saldo-ok{background:#eaf5ee;border-radius:6px;font-weight:600;color:#3f6e56}.saldo-pend{background:#fff5e6;border:1px solid #f59e0b;border-radius:6px;font-weight:600;color:#92400e}.firma{margin-top:24px;display:flex;gap:24px}.firma-col{flex:1;text-align:center}.stamp-wrap{display:flex;justify-content:center;height:70px;align-items:flex-end}.firma-line{border-top:1px solid #b9beb9;margin-top:6px}.firma-lbl{padding-top:6px;font-size:9.5px;color:#6b6f6b}.footer{font-size:9px;color:#8a8d8a;text-align:center;margin-top:16px;padding-top:10px;border-top:1px solid #e4e8e4}.btnprint{position:fixed;top:10px;right:10px;background:#3f6e56;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.35}}@media print{.btnprint{display:none}}';
+    const descM=v.descuento>0?'<div class="tot-row"><span>Descuento aplicado</span><span>-'+fmt(v.descuento)+'</span></div>':'';
+    const cupM=(v.descuentoCupon||0)>0?'<div class="tot-row"><span>Cupón '+((v.cupon||{}).codigo||'')+'</span><span>-'+fmt(v.descuentoCupon)+'</span></div>':'';
+    const sorpresaM=v.cuponSorpresa?'<div style="margin-top:10px;padding:10px;border:2px dashed #3f6e56;border-radius:6px;text-align:center"><div style="font-size:11px;color:#3f6e56;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:20px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:11px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'';
+    const garantiaM=v.garantiaMeses>0?(()=>{const venc=new Date(v.fecha+'T12:00:00');venc.setMonth(venc.getMonth()+v.garantiaMeses);const vig=new Date()<=venc;return'<div style="margin-top:10px;font-size:10.5px;color:#4a4d4a">🛡️ Garantía ('+v.garantiaMeses+' meses): <strong style="color:'+(vig?'#3f6e56':'#c0392b')+'">'+(vig?'Vigente':'Vencida')+'</strong> hasta '+venc.toLocaleDateString('es-CL')+'</div>';})():'';
+    const notasM=v.notas?'<div style="margin-top:10px;padding:8px 10px;background:#f4f6f4;border-left:3px solid #3f6e56;font-size:11px;font-style:italic">'+v.notas+'</div>':'';
+    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante EcoHome</title>'+fontsLink+'<style>'+cssM+'</style></head><body>'
       +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
       +'<div class="page">'
-      +'<div class="logo">EcoHome</div>'
-      +'<div class="ln"></div>'
-      +'<div class="meta">Fecha: <strong>'+fechaFmt+'</strong>'+(v.horaCreacion?' <span style="font-size:9px;color:#aaa">'+v.horaCreacion+'</span>':'')+'&nbsp;&nbsp;·&nbsp;&nbsp;Pago: <strong>'+(v.pago||'—')+'</strong></div>'
+      +'<div class="hdr">'
+      +'<div class="hdr-co"><img class="logo-img" src="'+logoSrc+'" alt="EcoHome"><div><div class="co-name">EcoHome</div><div class="co-sub">Muebles y colchones · Rivas 737, San Miguel</div><div class="co-sub">RUT 78.284.233-1 · contacto@distribuidora-ecohome.cl · [Teléfono]</div></div></div>'
+      +'<div class="hdr-doc"><div class="doc-title">COMPROBANTE DE VENTA</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div><div class="doc-meta">Pago: <strong>'+(v.pago||'—')+'</strong></div></div>'
+      +'</div>'
       +'<table class="tabla"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>'
-      +'<tbody>'+itemsHtml+descM+cupM
-      +'<tr class="tr-tot"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
-      +'</tbody></table>'
-      +saldoM+notasM+sorpresaM
-      +'<div class="footer">EcoHome &nbsp;·&nbsp; Gracias por tu compra</div>'
+      +'<tbody>'+itemsHtml+'</tbody></table>'
+      +'<div style="display:flex;justify-content:flex-end;margin-top:8px"><div style="width:220px">'
+      +'<div class="tot-row"><span>Subtotal</span><span>'+fmt(v.subtotal)+'</span></div>'
+      +descM+cupM
+      +'<div class="tot-row tot-final"><span>Total</span><span>'+fmt(v.total)+'</span></div>'
+      +'<div class="tot-row"><span>Monto cancelado</span><span>'+fmt(v.cancelado)+'</span></div>'
+      +'<div class="tot-row '+(v.saldo>0?'saldo-pend':'saldo-ok')+'"><span>Saldo pendiente</span><span>'+fmt(v.saldo)+'</span></div>'
+      +'</div></div>'
+      +garantiaM+notasM+sorpresaM
+      +'<div class="firma"><div class="firma-col"><div class="stamp-wrap"></div><div class="firma-line"></div><div class="firma-lbl">Firma cliente</div></div><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
+      +'<div class="footer">Conserve este comprobante para hacer válida la garantía de cada producto · EcoHome</div>'
       +'</div></body></html>';
     window._lastPedidoHtml=htmlM;
     window._lastPedidoNombre='Comprobante_EcoHome_'+fechaFmt.replace(/\//g,'-')+'.html';
@@ -5523,8 +5533,8 @@ function imprimirVenta(id){
 
   let despachoBlock='';
   if(v.desp>0){
-    despachoBlock='<div style="margin-top:14px;padding:10px 14px;background:#fef9f0;border-left:3px solid #d6b85a;font-size:12px">'
-      +'<strong style="color:#d6b85a">📍 DATOS DE DESPACHO</strong><br>'
+    despachoBlock='<div class="despacho-box">'
+      +'<strong style="color:#3f6e56">📍 DATOS DE DESPACHO</strong><br>'
       +(v.despCalle||'')+' '+(v.despNumero||'')+'<br>'
       +(v.despComuna||'')+'<br>'
       +'<strong>Hora estimada:</strong> '+(v.despHora||'Sin preferencia')
@@ -5532,15 +5542,9 @@ function imprimirVenta(id){
       +'</div>';
   }
 
-  let saldoBlock='';
-  if(v.saldo>0){
-    saldoBlock='<div style="margin-top:8px;padding:10px;background:#fff5e6;border:1px solid #f59e0b;border-radius:4px;font-size:12px;color:#92400e">'
-      +'⚠ <strong>Saldo pendiente:</strong> '+fmt(v.saldo)+' (Pagado: '+fmt(v.cancelado)+')</div>';
-  }
-
   let notasBlock='';
   if(v.notas){
-    notasBlock='<div style="margin-top:14px;padding:10px 14px;background:#f9f9f9;border-left:3px solid #d6b85a;font-size:11px;font-style:italic">'+v.notas+'</div>';
+    notasBlock='<div style="margin-top:8px;padding:7px 14px;background:#f4f6f4;border-left:3px solid #3f6e56;font-size:11px;font-style:italic">'+v.notas+'</div>';
   }
 
   let mayInfo='';
@@ -5549,67 +5553,88 @@ function imprimirVenta(id){
     if(v.empresa)mayInfo+='Empresa: <strong>'+v.empresa+'</strong><br>';
   }
 
+  const fontsLinkP='<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">';
   const cssStr='@page{size:A4;margin:0}'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Helvetica,Arial,sans-serif;color:#333;background:#fff}'
-    +'.page{width:210mm;min-height:297mm;padding:18mm 20mm;margin:0 auto;background:#fff;position:relative}'
-    +'.line-top{border-top:2px solid #d6b85a;margin-bottom:18px}'
-    +'.logo{font-family:Brush Script MT,Lucida Handwriting,cursive;font-size:36px;color:#d6b85a;margin-bottom:14px}'
-    +'.title{font-size:24px;color:#d6b85a;letter-spacing:3px;margin-bottom:24px;font-weight:300}'
-    +'.header-grid{display:grid;grid-template-columns:1fr 2fr;gap:30px;margin-bottom:30px;font-size:11px;line-height:1.6}'
-    +'.contact-info{color:#d6b85a}'
-    +'.contact-info a{color:#d6b85a;text-decoration:underline}'
-    +'.address{margin-top:14px;color:#666;font-size:10px;line-height:1.4}'
-    +'.client-info{font-size:13px;line-height:1.7}'
-    +'.tabla{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px}'
-    +'.tabla thead th{background:#d6b85a;color:#fff;padding:10px;text-align:left;font-weight:bold;font-size:11px}'
+    +'body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}'
+    +'.page{width:210mm;min-height:297mm;padding:14mm 16mm;margin:0 auto;background:#fff;position:relative}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #151513;margin-bottom:16px}'
+    +'.hdr-co{display:flex;gap:12px;align-items:center}'
+    +'.logo-img{height:42px;width:auto;display:block}'
+    +'.co-name{font-family:"Space Grotesk",sans-serif;font-size:18px;font-weight:700;color:#151513}'
+    +'.co-sub{font-size:11px;color:#6b6f6b}'
+    +'.hdr-doc{text-align:right}'
+    +'.doc-title{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:700;color:#3f6e56;letter-spacing:.04em}'
+    +'.doc-meta{font-size:12px;color:#6b6f6b;margin-top:4px}'
+    +'.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}'
+    +'.info-card{border-radius:10px;background:#f4f6f4;border:1px solid #e4e8e4;padding:11px 16px}'
+    +'.info-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;color:#6b6f6b;margin-bottom:8px}'
+    +'.info-name{font-size:13.5px;font-weight:600;color:#151513}'
+    +'.info-sub{font-size:12px;color:#4a4d4a;margin-top:4px}'
+    +'.tabla{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}'
+    +'.tabla thead th{background:#3f6e56;color:#fff;padding:10px;text-align:left;font-weight:bold;font-size:11px}'
     +'.tabla thead th:nth-child(2){text-align:center}'
     +'.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}'
-    +'.total-row{font-weight:bold}'
-    +'.total-row td{border-top:2px solid #d6b85a;padding:10px}'
-    +'.total-row td:first-child{text-align:right;color:#666;font-weight:normal}'
-    +'.total-row td:last-child{text-align:right;color:#d6b85a;font-size:14px}'
-    +'.footer-text{font-size:11px;color:#666;line-height:1.6;position:absolute;bottom:30mm;left:20mm;right:20mm}'
-    +'.line-bottom{position:absolute;bottom:18mm;left:20mm;right:20mm;border-bottom:2px solid #d6b85a}'
-    +'.btnprint{position:fixed;top:10px;right:10px;background:#d6b85a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
-    +'@media print{body{padding:0;margin:0}.page{padding:18mm 20mm;margin:0;page-break-after:always}.btnprint{display:none}}';
+    +'.tabla td{padding:6px 10px;border-bottom:1px dotted #d8dcd8}'
+    +'.tabla td:nth-child(2){text-align:center}'
+    +'.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}'
+    +'.tot-row{display:flex;justify-content:space-between;padding:7px 6px;font-size:13px;color:#4a4d4a}'
+    +'.tot-final{border-top:1.5px solid #151513;margin-top:4px;padding:10px 6px;font-family:"Space Grotesk",sans-serif;font-size:17px;font-weight:700;color:#151513}'
+    +'.saldo-ok{background:#eaf5ee;border-radius:8px;font-weight:600;color:#3f6e56}'
+    +'.saldo-pend{background:#fff5e6;border:1px solid #f59e0b;border-radius:8px;font-weight:600;color:#92400e}'
+    +'.despacho-box{margin-top:8px;padding:7px 14px;background:#f4f6f4;border-left:3px solid #3f6e56;font-size:12px}'
+    +'.firma{margin-top:20px;display:flex;gap:40px}'
+    +'.firma-col{flex:1;text-align:center}'
+    +'.stamp-wrap{display:flex;justify-content:center;height:64px;align-items:flex-end}'
+    +'.firma-line{border-top:1px solid #b9beb9;margin-top:6px}'
+    +'.firma-lbl{padding-top:6px;font-size:11.5px;color:#6b6f6b}'
+    +'.footer-text{font-size:11px;color:#666;line-height:1.5;margin-top:14px}'
+    +'.line-bottom{border-bottom:2px solid #3f6e56;margin-top:14px}'
+    +'.btnprint{position:fixed;top:10px;right:10px;background:#3f6e56;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
+    +'@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.15}}'
+    +'@media print{body{padding:0;margin:0}.page{padding:14mm 16mm;margin:0}.btnprint{display:none}}';
 
   const autoPrint=!!window._autoPrint;
   window._autoPrint=false;
 
   const nombre=v.cliente.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_áéíóúÁÉÍÓÚñÑ]/g,'');
 
-  const htmlCompleto='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido '+v.cliente+'</title>'
+  const garantiaP=v.garantiaMeses>0?(()=>{const venc=new Date(v.fecha+'T12:00:00');venc.setMonth(venc.getMonth()+v.garantiaMeses);const vig=new Date()<=venc;return'<div style="margin-top:6px;font-size:11px;color:#4a4d4a">🛡️ Garantía ('+v.garantiaMeses+' meses): <strong style="color:'+(vig?'#3f6e56':'#c0392b')+'">'+(vig?'Vigente':'Vencida')+'</strong> hasta '+venc.toLocaleDateString('es-CL')+'</div>';})():'';
+
+  const htmlCompleto='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido '+v.cliente+'</title>'+fontsLinkP
     +'<style>'+cssStr+'</style></head><body>'
     +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
     +'<div class="page">'
-    +'<div class="line-top"></div>'
-    +'<div class="logo">EcoHome</div>'
-    +'<div class="title">PEDIDO</div>'
-    +'<div class="header-grid">'
-    +'<div class="contact-info">'
-    +'<strong>[Teléfono]</strong><br>'
-    +'<div class="address"><strong>Rivas 737</strong><br>San Miguel,<br>Santiago</div>'
+    +'<div class="hdr">'
+    +'<div class="hdr-co"><img class="logo-img" src="'+logoSrc+'" alt="EcoHome"><div><div class="co-name">EcoHome</div><div class="co-sub">Muebles y colchones · Rivas 737, San Miguel</div><div class="co-sub">RUT 78.284.233-1 · contacto@distribuidora-ecohome.cl · [Teléfono]</div></div></div>'
+    +'<div class="hdr-doc"><div class="doc-title">PEDIDO</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div></div>'
     +'</div>'
-    +'<div class="client-info">'
-    +'A la atención de: <strong>'+(v.vendedor||'Isaías')+'</strong><br>'
-    +'EcoHome<br>Rivas 737<br>San Miguel, Santiago<br>'
-    +'Fecha: <strong>'+fechaFmt+'</strong>'+(v.horaCreacion?' <span style="font-size:9px;color:#999">'+v.horaCreacion+'</span>':'')+'<br><br>'
-    +'Nombre: <strong>'+v.cliente+'</strong><br>'
-    +mayInfo
-    +'Dirección: '+dirCompleta+'<br>'
-    +'Medio de Pago: <strong>'+(v.pago||'')+'</strong><br>'
-    +'Número de Teléfono: '+tel
-    +'</div></div>'
+    +'<div class="info-grid">'
+    +'<div class="info-card"><div class="info-lbl">CLIENTE</div><div class="info-name">'+v.cliente+'</div>'
+    +(mayInfo?'<div class="info-sub">'+mayInfo+'</div>':'')
+    +(tel?'<div class="info-sub">'+tel+'</div>':'')
+    +'<div class="info-sub">Medio de pago: <strong>'+(v.pago||'—')+'</strong></div>'
+    +'</div>'
+    +'<div class="info-card"><div class="info-lbl">ENTREGA / DESPACHO</div><div class="info-name">'+(dirCompleta||'Retiro en tienda')+'</div>'
+    +'<div class="info-sub">Vendedor: '+(v.vendedor||'Isaías')+'</div>'
+    +(v.desp>0?'<div class="info-sub">Hora estimada: '+(v.despHora||'Sin preferencia')+'</div>':'')
+    +'</div>'
+    +'</div>'
     +'<table class="tabla">'
     +'<thead><tr><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th></tr></thead>'
-    +'<tbody>'+itemsHtml
-    +(v.descuento>0?'<tr><td colspan="3" style="padding:8px 10px;text-align:right;color:#166534">Descuento aplicado</td><td style="padding:8px 10px;text-align:right;color:#166534">-'+fmt(v.descuento)+'</td></tr>':'')
-    +((v.descuentoCupon||0)>0?'<tr><td colspan="3" style="padding:8px 10px;text-align:right;color:#166534">Cupón '+((v.cupon||{}).codigo||'')+'</td><td style="padding:8px 10px;text-align:right;color:#166534">-'+fmt(v.descuentoCupon)+'</td></tr>':'')
-    +'<tr class="total-row"><td colspan="3">Total</td><td>'+fmt(v.total)+'</td></tr>'
-    +'</tbody></table>'
-    +despachoBlock+saldoBlock+notasBlock
-    +(v.cuponSorpresa?'<div style="margin-top:14px;padding:12px;border:2px dashed #d6b85a;border-radius:6px;text-align:center"><div style="font-size:12px;color:#d6b85a;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:22px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:12px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'')
+    +'<tbody>'+itemsHtml+'</tbody></table>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:10px"><div style="width:260px">'
+    +'<div class="tot-row"><span>Subtotal</span><span>'+fmt(v.subtotal)+'</span></div>'
+    +(v.descuento>0?'<div class="tot-row"><span>Descuento aplicado</span><span>-'+fmt(v.descuento)+'</span></div>':'')
+    +((v.descuentoCupon||0)>0?'<div class="tot-row"><span>Cupón '+((v.cupon||{}).codigo||'')+'</span><span>-'+fmt(v.descuentoCupon)+'</span></div>':'')
+    +'<div class="tot-row tot-final"><span>Total</span><span>'+fmt(v.total)+'</span></div>'
+    +'<div class="tot-row"><span>Monto cancelado</span><span>'+fmt(v.cancelado)+'</span></div>'
+    +'<div class="tot-row '+(v.saldo>0?'saldo-pend':'saldo-ok')+'"><span>Saldo pendiente</span><span>'+fmt(v.saldo)+'</span></div>'
+    +'</div></div>'
+    +garantiaP
+    +despachoBlock+notasBlock
+    +(v.cuponSorpresa?'<div style="margin-top:14px;padding:12px;border:2px dashed #3f6e56;border-radius:6px;text-align:center"><div style="font-size:12px;color:#3f6e56;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:22px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:12px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'')
+    +'<div class="firma"><div class="firma-col"><div class="stamp-wrap"></div><div class="firma-line"></div><div class="firma-lbl">Firma cliente</div></div><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
     +'<div class="footer-text">'
     +'Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.<br>'
     +'El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado<br>'
