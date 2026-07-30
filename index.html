@@ -102,6 +102,8 @@ body{font-family:'Inter',system-ui,sans-serif;font-size:14px;color:var(--text);p
 .hdr-right{display:flex;align-items:center;gap:8px}
 .hdr-sync{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .hdr-sync:hover{background:rgba(255,255,255,.25)}
+.hdr-sync.active{background:var(--sage,#8fbfa2);color:#151513}
+.personalizar-item.dragging{opacity:.4}
 
 /* ===== MODO VENDEDORA (link de solo Nueva Venta) ===== */
 .modo-vendedora-badge{display:none;font-size:11px;font-weight:600;background:rgba(255,255,255,.18);padding:5px 12px;border-radius:99px;color:#fff;white-space:nowrap}
@@ -216,6 +218,9 @@ label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-wei
 
 /* ===== MODAL ===== */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;padding:20px;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;backdrop-filter:blur(4px)}
+/* Los diálogos genéricos (confirm/prompt) pueden invocarse desde dentro de otro modal ya abierto:
+   necesitan quedar siempre por encima, sin depender del orden en el DOM. */
+#modal-confirm,#modal-formdialog{z-index:1001}
 .modal-bg.show{display:flex}
 body:has(.modal-bg.show){overflow:hidden}
 .modal{background:var(--white);border-radius:16px;padding:18px;width:100%;max-width:550px;margin-top:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);border:1px solid color-mix(in srgb, var(--gold) 15%, var(--border))}
@@ -461,6 +466,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     </div>
     <div class="hdr-right">
       <button class="hdr-sync" id="admin-btn" onclick="toggleAdmin()" title="Modo administrador"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+      <button class="hdr-sync" id="privacy-btn" onclick="togglePrivacidad()" title="Ocultar montos"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="hdr-sync" id="btn-venta-rapida" onclick="openVenta()" title="Nueva venta rápida"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
       <button class="hdr-sync" id="notif-btn" onclick="solicitarNotificaciones()" title="Notificaciones"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
     </div>
@@ -590,6 +596,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="toolbar">
       <button class="btn btn-sm" onclick="openProd()">+ Agregar producto</button>
       <button class="btn btn-sm" style="background:var(--accent-grad)" onclick="abrirImportar()">Importar Excel</button>
+      <button class="btn btn-sec btn-sm" onclick="abrirReposicion()" style="border-color:var(--sage);color:var(--accent-text)">Reposición</button>
       <button class="btn btn-sec btn-sm" onclick="exportInv()">Exportar</button>
       <button class="btn btn-sec btn-sm" onclick="resetearInventario()" style="border-color:#f28a8a;color:#f28a8a">Resetear</button>
     </div>
@@ -712,6 +719,69 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 <div class="modal-bg" id="modal-cupon-sorpresa">
   <div class="modal" style="max-width:420px">
     <div id="cupon-sorpresa-content"></div>
+  </div>
+</div>
+
+<!-- Modal Reposición de stock -->
+<div class="modal-bg" id="modal-reposicion">
+  <div class="modal" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="margin:0">Reposición de stock</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-reposicion')">Cerrar</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">Productos por debajo del mínimo, o que a tu ritmo de venta actual se quedarían sin stock pronto. La cantidad sugerida cubre la cobertura elegida según tus ventas de los últimos 60 días.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+      <label style="margin:0;font-size:11px">Cubrir</label>
+      <select id="repo-cobertura" onchange="renderReposicion()" style="width:auto">
+        <option value="15">15 días</option>
+        <option value="30" selected>30 días</option>
+        <option value="45">45 días</option>
+        <option value="60">60 días</option>
+      </select>
+      <button class="btn btn-sec btn-sm" onclick="copiarListaReposicion()">Copiar lista</button>
+      <button class="btn btn-sec btn-sm" onclick="exportReposicion()">Descargar CSV</button>
+    </div>
+    <div id="reposicion-list"></div>
+  </div>
+</div>
+
+<!-- Modal Personalizar Inicio -->
+<div class="modal-bg" id="modal-personalizar-inicio">
+  <div class="modal" style="max-width:460px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="margin:0">Personalizar Inicio</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-personalizar-inicio')">Cerrar</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:12px">Activa, desactiva y arrastra ⠿ para ordenar las tarjetas de "Más de tu negocio".</div>
+    <div id="personalizar-inicio-list"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-sec" style="flex:1" onclick="restaurarLayoutInicio()">Restaurar orden</button>
+      <button class="btn" style="flex:1" onclick="guardarPersonalizarInicio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación genérico (reemplaza confirm() nativo) -->
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal" style="max-width:380px">
+    <div id="confirm-msg" style="font-size:14px;line-height:1.5;white-space:pre-line;margin-bottom:18px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sec" style="flex:1" onclick="_resolveConfirm(false)">Cancelar</button>
+      <button class="btn" style="flex:1" id="confirm-ok-btn" onclick="_resolveConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de formulario genérico (reemplaza prompt() nativo) -->
+<div class="modal-bg" id="modal-formdialog">
+  <div class="modal" style="max-width:420px">
+    <h3 id="formdlg-title" style="margin-bottom:14px"></h3>
+    <div id="formdlg-fields"></div>
+    <div id="formdlg-error" class="danger" style="font-size:12px;margin-bottom:8px;display:none"></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-sec" style="flex:1" onclick="_resolveFormDialog(null)">Cancelar</button>
+      <button class="btn" style="flex:1" onclick="_submitFormDialog()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1245,11 +1315,44 @@ let rrhhEventos=[];
 let ventasHermanos=[];
 let asistencia=[];
 let cupones=[];
+let puntosCliente=[];
 // Config del cupón sorpresa (Sistema 2). Se pisa con lo guardado en config/cupones.
 let cuponesConfig={activo:false,monto:150000,tipoDesc:'$',valor:10000,dias:30};
 
 // =========== HELPERS ===========
-const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
+let montosOcultos=false;
+const fmt=n=>montosOcultos?'$••••••':'$'+Math.round(n||0).toLocaleString('es-CL');
+
+// Gráfico de línea/área en SVG puro (sin dependencias). puntos: [{label,val}]
+let _svgTrendSeq=0;
+function svgTrend(puntos,opts={}){
+  const w=opts.width||640,h=opts.height||110,pad=6;
+  const id='trendGrad'+(_svgTrendSeq++);
+  const vals=puntos.map(p=>p.val);
+  const max=Math.max(...vals,0),min=Math.min(...vals,0);
+  const rango=(max-min)||1;
+  const n=puntos.length;
+  const stepX=n>1?(w-2*pad)/(n-1):0;
+  const xy=puntos.map((p,i)=>[pad+i*stepX, h-pad-(p.val-min)/rango*(h-2*pad)]);
+  const path=xy.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area=path+` L${xy[xy.length-1][0].toFixed(1)},${h-pad} L${xy[0][0].toFixed(1)},${h-pad} Z`;
+  const color=opts.color||'#8fbfa2';
+  const puntosSvg=xy.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="${color}"><title>${puntos[i].label}: ${montosOcultos?'••••••':fmt(puntos[i].val).replace('$','')}</title></circle>`).join('');
+  return`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${id})" stroke="none"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    ${puntosSvg}
+  </svg>`;
+}
+function svgTrendLeyenda(puntos){
+  if(!puntos.length)return'';
+  const primero=puntos[0],ultimo=puntos[puntos.length-1];
+  return`<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px"><span>${primero.label}</span><span>${ultimo.label}</span></div>`;
+}
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 // Fecha local (Chile), NO UTC: toISOString() adelanta el día después de las ~20:00 hora local
 const isoLocal=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1262,6 +1365,86 @@ function uid(){return'id'+Date.now()+Math.floor(Math.random()*1000);}
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 
 // =========== INICIO ===========
+// =========== INICIO: SECCIÓN EXTRA PERSONALIZABLE (debajo del bento) ===========
+const WIDGETS_INICIO_EXTRA=[
+  {id:'hogares',label:'🏡 Hogares equipados (especial)'},
+  {id:'mediosPago',label:'💳 Medios de pago'},
+  {id:'comparativaMes',label:'📊 Comparativa con mes anterior'},
+  {id:'ventasPorHora',label:'🕐 Ventas por hora del día'},
+  {id:'clientesNuevos',label:'🙋 Clientes nuevos vs recurrentes'},
+  {id:'proximosDespachos',label:'📅 Próximos despachos'},
+];
+function getLayoutInicioExtra(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('eh_inicio_extra_layout'));
+    if(Array.isArray(saved)&&saved.length){
+      const ids=new Set(saved.map(w=>w.id));
+      const faltantes=WIDGETS_INICIO_EXTRA.filter(w=>!ids.has(w.id)).map(w=>({id:w.id,visible:true}));
+      return[...saved,...faltantes];
+    }
+  }catch(e){}
+  return WIDGETS_INICIO_EXTRA.map(w=>({id:w.id,visible:true}));
+}
+function guardarLayoutInicioExtra(layout){
+  try{localStorage.setItem('eh_inicio_extra_layout',JSON.stringify(layout));}catch(e){}
+}
+function abrirPersonalizarInicio(){
+  openModal('modal-personalizar-inicio');
+  renderPersonalizarInicioList();
+}
+function renderPersonalizarInicioList(){
+  const layout=getLayoutInicioExtra();
+  const cont=document.getElementById('personalizar-inicio-list');
+  cont.innerHTML=layout.map(w=>{
+    const meta=WIDGETS_INICIO_EXTRA.find(x=>x.id===w.id);
+    if(!meta)return'';
+    return`<div class="personalizar-item" draggable="true" data-id="${w.id}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--white);cursor:grab">
+      <span style="color:var(--text3)">⠿</span>
+      <label style="flex:1;display:flex;align-items:center;gap:8px;margin:0;text-transform:none;font-size:13px;font-weight:500;color:var(--text)">
+        <input type="checkbox" style="width:auto" ${w.visible!==false?'checked':''}> ${meta.label}
+      </label>
+    </div>`;
+  }).join('');
+  wireDragInicio();
+}
+function wireDragInicio(){
+  const cont=document.getElementById('personalizar-inicio-list');
+  let dragEl=null;
+  cont.querySelectorAll('.personalizar-item').forEach(el=>{
+    el.addEventListener('dragstart',()=>{dragEl=el;el.classList.add('dragging');});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');});
+    el.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(!dragEl)return;
+      const after=_dragAfterElementInicio(cont,e.clientY);
+      if(after==null)cont.appendChild(dragEl);
+      else cont.insertBefore(dragEl,after);
+    });
+  });
+}
+function _dragAfterElementInicio(cont,y){
+  const els=[...cont.querySelectorAll('.personalizar-item:not(.dragging)')];
+  return els.reduce((closest,child)=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-box.top-box.height/2;
+    if(offset<0&&offset>closest.offset)return{offset,element:child};
+    return closest;
+  },{offset:-Infinity}).element;
+}
+function guardarPersonalizarInicio(){
+  const cont=document.getElementById('personalizar-inicio-list');
+  const items=[...cont.querySelectorAll('.personalizar-item')];
+  const layout=items.map(el=>({id:el.dataset.id,visible:el.querySelector('input[type=checkbox]').checked}));
+  guardarLayoutInicioExtra(layout);
+  closeModal('modal-personalizar-inicio');
+  renderInicio();
+  toast('✅ Inicio personalizado');
+}
+function restaurarLayoutInicio(){
+  guardarLayoutInicioExtra(WIDGETS_INICIO_EXTRA.map(w=>({id:w.id,visible:true})));
+  renderPersonalizarInicioList();
+}
+
 function renderInicio(){
   // Panel general del equipo: sin montos de venta ni datos del dueño.
   // Las cifras privadas viven en Resumen y Finanzas (protegidas con clave).
@@ -1322,8 +1505,112 @@ function renderInicio(){
   if(despAtr>0)_alertas.push(`<div class="alerta rojo" onclick="setTab('despachos')"><span class="ico">🚚</span><div class="txt"><b>${despAtr} despacho${despAtr!==1?'s':''} atrasado${despAtr!==1?'s':''}</b><div>Su fecha de entrega ya pasó</div></div><span class="cta">Ver →</span></div>`);
   if(despHoy.length>0)_alertas.push(`<div class="alerta ambar" onclick="setTab('despachos')"><span class="ico">📦</span><div class="txt"><b>${despHoy.length} entrega${despHoy.length!==1?'s':''} para hoy</b><div>Coordina y marca como despachado</div></div><span class="cta">Ver →</span></div>`);
   if(nSaldos>0)_alertas.push(`<div class="alerta ambar" onclick="setTab('saldos')"><span class="ico">💵</span><div class="txt"><b>${nSaldos} venta${nSaldos!==1?'s':''} por cobrar</b><div>Revisa el detalle en Saldos</div></div><span class="cta">Cobrar →</span></div>`);
-  if(sinStock>0||bajoStock>0)_alertas.push(`<div class="alerta rojo" onclick="setTab('inventario')"><span class="ico">📉</span><div class="txt"><b>${[sinStock>0?sinStock+' sin stock':'',bajoStock>0?bajoStock+' con stock bajo':''].filter(Boolean).join(' · ')}</b><div>Conviene reponer</div></div><span class="cta">Ver →</span></div>`);
+  if(sinStock>0||bajoStock>0)_alertas.push(`<div class="alerta rojo" onclick="abrirReposicion()"><span class="ico">📉</span><div class="txt"><b>${[sinStock>0?sinStock+' sin stock':'',bajoStock>0?bajoStock+' con stock bajo':''].filter(Boolean).join(' · ')}</b><div>Conviene reponer</div></div><span class="cta">Ver →</span></div>`);
   const panelAlertas=_alertas.length?`<div class="alertas">${_alertas.join('')}</div>`:'';
+
+  // ---- Datos para la sección extra personalizable (sin montos) ----
+  // Hogares equipados: unidades totales vendidas este mes (todo cuenta como equipar un hogar)
+  const unidadesHogares=vtasMes.reduce((a,v)=>a+(v.items||[]).reduce((s,it)=>s+(parseInt(it.qty)||0),0),0);
+
+  // Medios de pago del mes (conteo de ventas, sin montos)
+  const pagosCount={};
+  vtasMes.forEach(v=>{
+    if(v.pago==='Mixto'&&v.pagoDesglose){
+      Object.entries(v.pagoDesglose).forEach(([k,val])=>{if(val>0){const nom=k.charAt(0).toUpperCase()+k.slice(1);pagosCount[nom]=(pagosCount[nom]||0)+1;}});
+    }else{
+      pagosCount[v.pago||'—']=(pagosCount[v.pago||'—']||0)+1;
+    }
+  });
+  const pagosOrd=Object.entries(pagosCount).sort((a,b)=>b[1]-a[1]);
+  const totalPagosCount=pagosOrd.reduce((a,[,v])=>a+v,0)||1;
+  const PAGO_COLORES={'Efectivo':'#8bf0b0','Tarjeta':'#a78bfa','Transferencia':'#38bdf8','Débito':'#f2c14b','Debito':'#f2c14b','Crédito':'#f28a8a','Credito':'#f28a8a','Mixto':'#8fbfa2'};
+
+  // Comparativa con mes anterior (conteo de ventas, sin montos)
+  const fechaHoy=new Date(hoy+'T12:00:00');
+  const diaActual=fechaHoy.getDate();
+  const mesAntDate=new Date(fechaHoy.getFullYear(),fechaHoy.getMonth()-1,1);
+  const mesAnt=isoLocal(mesAntDate).slice(0,7);
+  const vtasMesAntTotal=ventas.filter(v=>v.fecha.startsWith(mesAnt)&&activa(v)).length;
+  const vtasMesAntAlaFecha=ventas.filter(v=>v.fecha.startsWith(mesAnt)&&activa(v)&&new Date(v.fecha+'T12:00:00').getDate()<=diaActual).length;
+  const difPctCount=vtasMesAntAlaFecha>0?Math.round((vtasMes.length-vtasMesAntAlaFecha)/vtasMesAntAlaFecha*100):null;
+
+  // Ventas por hora del día (mes actual, según hora de creación)
+  const porHora={};
+  vtasMes.forEach(v=>{if(v.horaCreacion){const h=parseInt(v.horaCreacion.split(':')[0]);if(!isNaN(h))porHora[h]=(porHora[h]||0)+1;}});
+  const horasOrd=Object.keys(porHora).map(Number).sort((a,b)=>a-b);
+  const maxHora=Math.max(...horasOrd.map(h=>porHora[h]),1);
+
+  // Clientes nuevos vs recurrentes del mes
+  const clientesMes=new Set(vtasMes.map(v=>v.cliente).filter(c=>c&&c!=='Cliente mostrador'));
+  let clientesNuevosN=0,clientesRecurrentesN=0;
+  clientesMes.forEach(c=>{
+    const teniaAntes=ventas.some(v=>v.cliente===c&&v.fecha<mes+'-01');
+    if(teniaAntes)clientesRecurrentesN++;else clientesNuevosN++;
+  });
+
+  // Próximos despachos (siguientes 6 días, sin contar hoy)
+  const limiteDespDate=new Date(fechaHoy);limiteDespDate.setDate(limiteDespDate.getDate()+6);
+  const limiteDesp=isoLocal(limiteDespDate);
+  const proximosDesp=ventas.filter(v=>v.desp>0&&v.fechaDesp&&v.fechaDesp>hoy&&v.fechaDesp<=limiteDesp&&pendiente(v)).sort((a,b)=>a.fechaDesp.localeCompare(b.fechaDesp));
+
+  const widgetsExtraHtml={
+    hogares:`<div class="card" style="background:linear-gradient(135deg,rgba(122,168,140,.25),rgba(63,110,86,.15));border-color:var(--accent-border);margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:34px;line-height:1">🏡</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Hogares equipados en ${mesNom}</div>
+          <div style="font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif">${unidadesHogares} producto${unidadesHogares!==1?'s':''}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Ayudaste a mejorar ${unidadesHogares} hogar${unidadesHogares!==1?'es':''} con productos EcoHome</div>
+        </div>
+      </div>
+    </div>`,
+    mediosPago:pagosOrd.length?`<div class="card" style="margin-bottom:12px">
+      <h4 style="margin-bottom:10px">💳 Cómo te pagan este mes</h4>
+      <div style="display:flex;height:14px;border-radius:99px;overflow:hidden;margin-bottom:10px">
+        ${pagosOrd.map(([k,v])=>`<div style="width:${Math.max(2,v/totalPagosCount*100)}%;background:${PAGO_COLORES[k]||'#78716c'}" title="${k}: ${v}"></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${pagosOrd.map(([k,v])=>`<div style="font-size:11px;display:flex;align-items:center;gap:5px">
+          <span style="width:9px;height:9px;border-radius:50%;background:${PAGO_COLORES[k]||'#78716c'};display:inline-block"></span>
+          ${k} <strong>${v}</strong> <span class="muted">(${Math.round(v/totalPagosCount*100)}%)</span>
+        </div>`).join('')}
+      </div>
+    </div>`:'',
+    comparativaMes:difPctCount!==null?`<div class="card" style="margin-bottom:12px">
+      <h4 style="margin-bottom:8px">📊 Comparativa con ${MESES[mesAntDate.getMonth()]}</h4>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1"><div style="font-size:11px;color:var(--text3)">Este mes (al día ${diaActual})</div><div style="font-size:18px;font-weight:700;color:var(--accent-text)">${vtasMes.length} venta${vtasMes.length!==1?'s':''}</div></div>
+        <div style="font-size:24px;font-weight:700;color:${difPctCount>=0?'#8bf0b0':'#f28a8a'}">${difPctCount>=0?'↑':'↓'} ${Math.abs(difPctCount)}%</div>
+        <div style="flex:1;text-align:right"><div style="font-size:11px;color:var(--text3)">${MESES[mesAntDate.getMonth()]} (al día ${diaActual})</div><div style="font-size:18px;font-weight:700;color:var(--text3)">${vtasMesAntAlaFecha} venta${vtasMesAntAlaFecha!==1?'s':''}</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">${MESES[mesAntDate.getMonth()]} cerró con ${vtasMesAntTotal} venta${vtasMesAntTotal!==1?'s':''} en total</div>
+    </div>`:'',
+    ventasPorHora:`<div class="card" style="margin-bottom:12px">
+      <h4 style="margin-bottom:12px">🕐 Ventas por hora del día — ${mesNom}</h4>
+      ${horasOrd.length?`<div style="display:flex;align-items:flex-end;gap:3px;height:70px">
+        ${horasOrd.map(h=>`<div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px" title="${h}:00 — ${porHora[h]} venta${porHora[h]!==1?'s':''}">
+          <div style="width:100%;background:linear-gradient(to top,var(--sage-dark),var(--sage));height:${Math.max(6,Math.round(porHora[h]/maxHora*100))}%;border-radius:3px;min-height:3px"></div>
+          <div style="font-size:8px;color:var(--text3)">${h}h</div>
+        </div>`).join('')}
+      </div>`:'<div class="empty">Sin datos suficientes todavía</div>'}
+    </div>`,
+    clientesNuevos:`<div class="card" style="margin-bottom:12px">
+      <h4 style="margin-bottom:10px">🙋 Clientes — ${mesNom}</h4>
+      <div style="display:flex;gap:16px">
+        <div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">${clientesNuevosN}</div><div style="font-size:11px;color:var(--text3)">Nuevos</div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700;color:#38bdf8">${clientesRecurrentesN}</div><div style="font-size:11px;color:var(--text3)">Recurrentes</div></div>
+      </div>
+    </div>`,
+    proximosDespachos:proximosDesp.length?`<div class="card" style="border-left:3px solid #38bdf8;margin-bottom:12px">
+      <h4 style="color:#38bdf8;margin-bottom:8px">📅 Próximos despachos (${proximosDesp.length})</h4>
+      ${proximosDesp.slice(0,6).map(v=>`<div class="item-row">
+        <span><strong>${v.fechaDesp.split('-').reverse().join('/')}</strong>${v.despHora&&v.despHora!=='Sin preferencia'?' · '+v.despHora:''} — ${v.cliente}</span>
+        <span class="muted" style="font-size:11px">${[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||'Sin dirección'}</span>
+      </div>`).join('')}
+    </div>`:'',
+  };
+  const layoutExtra=getLayoutInicioExtra();
+  const cuerpoExtra=layoutExtra.filter(w=>w.visible!==false).map(w=>widgetsExtraHtml[w.id]||'').join('');
 
   document.getElementById('inicio-content').innerHTML=`
     <div class="section-title">${(()=>{const h=new Date().getHours();return h<12?'Buenos días':h<20?'Buenas tardes':'Buenas noches';})()} <span style="font-size:12px;font-weight:400;color:var(--text3);font-family:'Inter',sans-serif">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</span></div>
@@ -1406,7 +1693,13 @@ function renderInicio(){
           <button onclick="cambiarEstado('${v.id}','despachado')" style="font-size:10px;padding:3px 8px;background:var(--green-bg);color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer">✓ Listo</button>
         </div>`).join('')}
       </div>`:''}
-    </div>`;
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px">
+      <div class="w-head" style="margin:0">Más de tu negocio</div>
+      <button class="btn btn-sec btn-sm" onclick="abrirPersonalizarInicio()">Personalizar</button>
+    </div>
+    ${cuerpoExtra}`;
 }
 
 // =========== NUEVA VENTA TAB ===========
@@ -1609,8 +1902,8 @@ function reanudarVentaPausada(i){
   updTipoVentaNV();toggleDespNV();updPagoNV();
   recalcTotalNV();
 }
-function eliminarVentaPausada(i){
-  if(!confirm('¿Eliminar esta venta pausada?'))return;
+async function eliminarVentaPausada(i){
+  if(!(await confirmDialog('¿Eliminar esta venta pausada?')))return;
   const arr=getVentasPausadas();
   arr.splice(i,1);
   setVentasPausadas(arr);
@@ -1938,7 +2231,7 @@ async function saveVentaNV(){
   if(codeCupon){
     const r=validarCupon(codeCupon,sub);
     if(!r.ok){
-      if(!confirm('⚠️ '+r.msg+'\n\n¿Guardar la venta SIN el cupón?'))return;
+      if(!(await confirmDialog('⚠️ '+r.msg+'\n\n¿Guardar la venta SIN el cupón?')))return;
     }else{cuponAplicado=r.cupon;descCupon=r.desc;}
   }
   const totalFinal=Math.max(0,sub-desc-descCupon);
@@ -1988,6 +2281,7 @@ async function saveVentaNV(){
     const cs=generarCuponSorpresa(v,batch);
     v.cuponSorpresa={codigo:cs.codigo,tipoDesc:cs.tipoDesc,valor:cs.valor,vence:cs.vence};
   }
+  otorgarPuntos(v,batch);
   batch.set(doc(db,'ventas',String(v.id)),v);
   ventas.push(v);
   // UI optimista: refresca de inmediato; el guardado sincroniza en 2do plano (offline-first)
@@ -2230,8 +2524,8 @@ function renderVendedores(){
 
 async function resetearInventario(){
   if(!(await requiereAdmin()))return;
-  if(!confirm('⚠️ Esto borrará TODO el inventario actual y lo cargará de nuevo con la versión correcta (respaldos completos, almohadas y camas como combo). Las ventas NO se tocan. ¿Continuar?'))return;
-  if(!confirm('¿Seguro? Esta acción no se puede deshacer. Se perderán los ajustes manuales de stock que hayas hecho.'))return;
+  if(!(await confirmDialog('⚠️ Esto borrará TODO el inventario actual y lo cargará de nuevo con la versión correcta (respaldos completos, almohadas y camas como combo). Las ventas NO se tocan. ¿Continuar?')))return;
+  if(!(await confirmDialog('¿Seguro? Esta acción no se puede deshacer. Se perderán los ajustes manuales de stock que hayas hecho.',{danger:true})))return;
   document.getElementById('loading').style.display='flex';
   try{
     // Borrar todos los productos actuales
@@ -2381,7 +2675,7 @@ async function guardarCotizacion(){
   renderCotizaciones();
 }
 async function eliminarCotizacion(id){
-  if(!confirm('¿Eliminar esta cotización?'))return;
+  if(!(await confirmDialog('¿Eliminar esta cotización?',{danger:true})))return;
   cotizaciones=cotizaciones.filter(c=>String(c.id)!==String(id));
   await delCotDB(id);
   renderCotizaciones();
@@ -2389,7 +2683,7 @@ async function eliminarCotizacion(id){
 async function convertirEnVenta(id){
   const c=cotizaciones.find(x=>String(x.id)===String(id));
   if(!c)return;
-  if(!confirm('¿Convertir esta cotización en venta? Se descontará el stock.'))return;
+  if(!(await confirmDialog('¿Convertir esta cotización en venta? Se descontará el stock.')))return;
   const v={
     id:uid(),fecha:today(),fechaDesp:today(),estado:'pendiente',
     tipo:c.tipo,cliente:c.cliente,rut:'',empresa:'',tel:c.tel,vendedor:c.vendedor,
@@ -2473,18 +2767,21 @@ function renderClientes(){
   if(!lista.length){
     html+='<div class="empty">No hay clientes registrados.</div>';
   }else{
-    html+=lista.map(([nombre,d],i)=>`<div class="card" style="cursor:pointer" onclick="verFichaCliente('${nombre.replace(/'/g,"\\'")}')">
+    html+=lista.map(([nombre,d],i)=>{
+      const pts=saldoPuntos(nombre);
+      return`<div class="card" style="cursor:pointer" onclick="verFichaCliente('${nombre.replace(/'/g,"\\'")}')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="flex:1;min-width:0">
           <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i<3?['🥇','🥈','🥉'][i]+' ':''}${nombre}</h4>
-          <div class="muted" style="font-size:11px;margin-top:2px">${d.count} compra${d.count!==1?'s':''} · última ${d.ultima.split('-').reverse().join('/')}${d.tel?' · 📱 '+d.tel:''}</div>
+          <div class="muted" style="font-size:11px;margin-top:2px">${d.count} compra${d.count!==1?'s':''} · última ${d.ultima.split('-').reverse().join('/')}${d.tel?' · 📱 '+d.tel:''}${pts>0?' · '+pts+' pts':''}</div>
           ${d.saldo>0?`<div class="warn" style="font-size:11px;margin-top:2px">⚠ Debe ${fmt(d.saldo)}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-weight:700;color:var(--accent-text)">${fmt(d.total)}</div>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
   }
   document.getElementById('clientes-content').innerHTML=html;
 }
@@ -2709,7 +3006,7 @@ async function saveHermano(){
 }
 
 async function delHermano(){
-  if(!confirm('¿Eliminar este movimiento? El stock afectado se revertirá. Esta acción no se puede deshacer.'))return;
+  if(!(await confirmDialog('¿Eliminar este movimiento? El stock afectado se revertirá. Esta acción no se puede deshacer.',{danger:true})))return;
   const m=ventasHermanos.find(x=>String(x.id)===String(editHnoId));
   if(m){
     if(m.tipo==='retiro')await restaurarStockItems(m.items||[]);
@@ -2891,7 +3188,7 @@ async function guardarPromo(){
 }
 async function eliminarPromo(id){
   if(!(await requiereAdmin()))return;
-  if(!confirm('¿Quitar esta promoción?'))return;
+  if(!(await confirmDialog('¿Quitar esta promoción?',{danger:true})))return;
   promociones=promociones.filter(p=>String(p.id)!==String(id));
   await delPromoDB(id);
   renderPromociones();
@@ -3004,23 +3301,25 @@ function renderSueldosSection(mesStr,mesNombre){
 }
 async function abrirEmpleado(id){
   const e=id?empleados.find(x=>String(x.id)===String(id)):null;
-  const nombre=prompt('Nombre del empleado (debe coincidir con el nombre de vendedor para la comisión):',e?e.nombre:'');
-  if(nombre===null||!nombre.trim())return;
-  const sueldoStr=prompt('Sueldo base mensual ($):',e?e.sueldoBase:'');
-  if(sueldoStr===null)return;
-  const sueldoBase=parseInt(String(sueldoStr).replace(/\D/g,''))||0;
+  const vals=await formDialog(e?'Editar empleado':'Nuevo empleado',[
+    {name:'nombre',label:'Nombre (debe coincidir con el vendedor de las ventas)',default:e?e.nombre:'',required:true},
+    {name:'sueldoBase',label:'Sueldo base mensual ($)',type:'number',default:e?e.sueldoBase:'',required:true},
+    {name:'diasSemana',label:'Días a la semana que trabaja (jornada de 42h semanales)',type:'number',default:e?(e.diasSemana||6):6,required:true},
+  ]);
+  if(!vals)return;
+  const nombre=String(vals.nombre).trim();
+  if(!nombre)return;
+  const sueldoBase=parseInt(vals.sueldoBase)||0;
   if(sueldoBase<=0){alert('Sueldo inválido');return;}
-  const diasStr=prompt('¿Cuántos días a la semana trabaja? (jornada de 42 horas semanales)',e?(e.diasSemana||6):'6');
-  if(diasStr===null)return;
-  const diasSemana=parseInt(diasStr)||6;
-  const nuevo={id:e?e.id:uid(),nombre:nombre.trim(),sueldoBase,horasSemana:42,diasSemana,activo:true};
+  const diasSemana=parseInt(vals.diasSemana)||6;
+  const nuevo={id:e?e.id:uid(),nombre,sueldoBase,horasSemana:42,diasSemana,activo:true};
   if(e){const i=empleados.findIndex(x=>String(x.id)===String(id));empleados[i]=nuevo;}
   else empleados.push(nuevo);
   await saveEmpleadoDB(nuevo);
   renderFinanzas();
 }
 async function eliminarEmpleado(id){
-  if(!confirm('¿Eliminar este empleado? Sus registros históricos se conservan.'))return;
+  if(!(await confirmDialog('¿Eliminar este empleado? Sus registros históricos se conservan.',{danger:true})))return;
   empleados=empleados.filter(e=>String(e.id)!==String(id));
   await delEmpleadoDB(id);
   renderFinanzas();
@@ -3177,7 +3476,7 @@ async function registrarAsistenciaPasada(empId){
 
 async function eliminarAsistencia(id){
   if(!(await requiereAdmin()))return;
-  if(!confirm('¿Eliminar este registro de asistencia?'))return;
+  if(!(await confirmDialog('¿Eliminar este registro de asistencia?',{danger:true})))return;
   asistencia=asistencia.filter(x=>String(x.id)!==String(id));
   await delAsistDB(id);
   renderAsistencia();
@@ -3242,29 +3541,29 @@ function renderAsistencia(){
 async function registrarEventoRRHH(empleadoId,tipo){
   const e=empleados.find(x=>String(x.id)===String(empleadoId));
   if(!e)return;
-  const fecha=prompt('Fecha (AAAA-MM-DD):',today());
-  if(fecha===null||!/^\d{4}-\d{2}-\d{2}$/.test(fecha.trim())){if(fecha!==null)alert('Fecha inválida');return;}
-  const ev={id:uid(),empleadoId:e.id,tipo,fecha:fecha.trim(),nota:''};
+  const fields=[{name:'fecha',label:'Fecha',type:'date',default:today(),required:true}];
+  if(tipo==='atraso')fields.push({name:'horas',label:'Horas perdidas (ej: 2 o 1.5)',type:'number',step:'0.5',required:true});
+  if(tipo==='adelanto'||tipo==='bono')fields.push({name:'monto',label:'Monto ($)',type:'number',required:true});
+  fields.push({name:'nota',label:'Nota / motivo (opcional)',type:'text'});
+  const vals=await formDialog('Registrar '+tipo,fields);
+  if(!vals)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(vals.fecha).trim())){alert('Fecha inválida');return;}
+  const ev={id:uid(),empleadoId:e.id,tipo,fecha:String(vals.fecha).trim(),nota:''};
   if(tipo==='atraso'){
-    const h=prompt('¿Cuántas horas perdió? (ej: 2 o 1.5)');
-    if(h===null)return;
-    ev.horas=parseFloat(String(h).replace(',','.'))||0;
+    ev.horas=parseFloat(vals.horas)||0;
     if(ev.horas<=0){alert('Horas inválidas');return;}
   }
   if(tipo==='adelanto'||tipo==='bono'){
-    const m=prompt('Monto ($):');
-    if(m===null)return;
-    ev.monto=parseInt(String(m).replace(/\D/g,''))||0;
+    ev.monto=parseInt(vals.monto)||0;
     if(ev.monto<=0){alert('Monto inválido');return;}
   }
-  const nota=prompt('Nota / motivo (opcional):');
-  if(nota)ev.nota=nota.trim();
+  if(vals.nota)ev.nota=String(vals.nota).trim();
   rrhhEventos.push(ev);
   await saveRRHHDB(ev);
   renderFinanzas();
 }
 async function eliminarEventoRRHH(id){
-  if(!confirm('¿Eliminar este registro?'))return;
+  if(!(await confirmDialog('¿Eliminar este registro?',{danger:true})))return;
   rrhhEventos=rrhhEventos.filter(e=>String(e.id)!==String(id));
   await delRRHHDB(id);
   renderFinanzas();
@@ -3358,11 +3657,13 @@ function renderCaja(){
   cont.innerHTML=html;
 }
 async function abrirCaja(){
-  const montoStr=prompt('💵 ¿Con cuánto efectivo abre la caja hoy?');
-  if(montoStr===null)return;
-  const monto=parseInt(String(montoStr).replace(/\D/g,''))||0;
-  const vendedor=prompt('¿Quién abre la caja?','Isaías');
-  if(vendedor===null)return;
+  const vals=await formDialog('💵 Abrir caja',[
+    {name:'monto',label:'¿Con cuánto efectivo abre la caja hoy?',type:'number',required:true},
+    {name:'vendedor',label:'¿Quién abre la caja?',type:'select',options:listaVendedores(),default:'Isaías'},
+  ]);
+  if(!vals)return;
+  const monto=parseInt(vals.monto)||0;
+  const vendedor=vals.vendedor;
   const ahora=new Date();
   const cj={
     id:'caja_'+today(),
@@ -3381,11 +3682,14 @@ async function abrirCaja(){
 async function agregarMovimientoCaja(tipo){
   const caja=cajaDeHoy();
   if(!caja||caja.cerrada)return;
-  const motivo=prompt(tipo==='ingreso'?'Motivo del ingreso (ej: vuelto traído, abono cliente):':'Motivo del retiro (ej: pago flete, compra insumos):');
-  if(motivo===null||!motivo.trim())return;
-  const montoStr=prompt('Monto ($):');
-  if(montoStr===null)return;
-  const monto=parseInt(String(montoStr).replace(/\D/g,''))||0;
+  const vals=await formDialog(tipo==='ingreso'?'Ingreso de caja':'Retiro de caja',[
+    {name:'motivo',label:tipo==='ingreso'?'Motivo del ingreso (ej: vuelto traído, abono cliente)':'Motivo del retiro (ej: pago flete, compra insumos)',required:true},
+    {name:'monto',label:'Monto ($)',type:'number',required:true},
+  ]);
+  if(!vals)return;
+  const motivo=String(vals.motivo).trim();
+  if(!motivo)return;
+  const monto=parseInt(vals.monto)||0;
   if(monto<=0){alert('Monto inválido');return;}
   const ahora=new Date();
   if(!caja.movimientos)caja.movimientos=[];
@@ -3401,15 +3705,15 @@ async function cerrarCaja(){
   const ingresos=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
   const retiros=movs.filter(m=>m.tipo==='retiro').reduce((a,m)=>a+m.monto,0);
   const esperado=(caja.montoInicial||0)+efectivoVentas+ingresos-retiros;
-  const contadoStr=prompt(`🔒 Cierre de caja\n\nDebería haber: ${fmt(esperado)}\n\n¿Cuánto efectivo contaste?`);
-  if(contadoStr===null)return;
-  const contado=parseInt(String(contadoStr).replace(/\D/g,''))||0;
+  const vals=await formDialog('🔒 Cierre de caja',[
+    {name:'info',type:'info',label:`Debería haber: <strong>${fmt(esperado)}</strong>`},
+    {name:'contado',label:'¿Cuánto efectivo contaste?',type:'number',required:true},
+    {name:'notas',label:'Nota del cierre (opcional)'},
+  ]);
+  if(!vals)return;
+  const contado=parseInt(vals.contado)||0;
   const dif=contado-esperado;
-  let notas='';
-  if(dif!==0){
-    const n=prompt(`${dif>0?'Sobran':'Faltan'} ${fmt(Math.abs(dif))}. ¿Alguna nota del cierre? (opcional)`);
-    if(n)notas=n.trim();
-  }
+  const notas=vals.notas?String(vals.notas).trim():'';
   const ahora=new Date();
   caja.cerrada=true;
   caja.horaCierre=`${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -3424,6 +3728,26 @@ async function cerrarCaja(){
 }
 
 // =========== FINANZAS ===========
+function totalSueldosMes(mesStr){
+  return empleados.filter(e=>e.activo!==false).reduce((a,e)=>a+liquidacionEmpleado(e,mesStr).total,0);
+}
+function gananciaMes(anio,mes){
+  const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const ventasMes=ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado');
+  const totalVentas=ventasMes.reduce((a,v)=>a+v.total,0);
+  let costoVendido=0;
+  ventasMes.forEach(v=>v.items.forEach(it=>{
+    const p=it.prodId?inventario.find(x=>String(x.id)===String(it.prodId)):null;
+    if(p&&p.costo>0)costoVendido+=p.costo*it.qty;
+    if(it.respaldoId){
+      const r=inventario.find(x=>String(x.id)===String(it.respaldoId));
+      if(r&&r.costo>0)costoVendido+=r.costo*it.qty;
+    }
+  }));
+  const totalGastosFijos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
+  const sueldos=totalSueldosMes(mesStr);
+  return{ventas:totalVentas,ganancia:totalVentas-costoVendido-totalGastosFijos-sueldos};
+}
 function renderFinanzas(){
   const cont=document.getElementById('fin-content');
   if(!cont)return;
@@ -3482,6 +3806,17 @@ function renderFinanzas(){
     </div>
     ${itemsSinCosto>0?`<div class="help">Hay ${itemsSinCosto} ítem(s) vendido(s) sin costo asignado. Edita esos productos y agrégales el costo para que la ganancia sea exacta.</div>`:''}
     <div class="help" style="border-left-color:var(--blue);background:var(--blue-bg);color:var(--blue)">Las compras del mes (${fmt(totalCompras)}) son inversión en inventario: se convierten en costo cuando vendes el producto. Por eso no se restan directo de la ganancia.</div>
+
+    <!-- TENDENCIA GANANCIA -->
+    ${(()=>{
+      const meses6=[];
+      for(let i=5;i>=0;i--){
+        let m=mesSel-i,a=anioSel;
+        while(m<0){m+=12;a--;}
+        meses6.push({label:MESES[m].slice(0,3)+' '+String(a).slice(2),...gananciaMes(a,m)});
+      }
+      return`<div class="card"><h4 style="margin-bottom:4px">Ganancia — últimos 6 meses</h4>${svgTrend(meses6.map(m=>({label:m.label,val:m.ganancia})),{color:meses6[meses6.length-1].ganancia>=0?'#8bf0b0':'#f28a8a'})}${svgTrendLeyenda(meses6.map(m=>({label:m.label})))}</div>`;
+    })()}
 
     <!-- GASTOS FIJOS -->
     <div class="card" style="border-top:3px solid #f28a8a;margin-top:14px">
@@ -3576,20 +3911,23 @@ function renderFinanzas(){
 // --- Gastos fijos ---
 async function abrirGastoFijo(id){
   const g=id?gastosFijos.find(x=>String(x.id)===String(id)):null;
-  const nombre=prompt('Nombre del gasto fijo (ej: Arriendo, Luz, Sueldo Daniela):',g?g.nombre:'');
-  if(nombre===null||!nombre.trim())return;
-  const montoStr=prompt('Monto mensual ($):',g?g.monto:'');
-  if(montoStr===null)return;
-  const monto=parseInt(String(montoStr).replace(/\D/g,''))||0;
+  const vals=await formDialog(g?'Editar gasto fijo':'Nuevo gasto fijo',[
+    {name:'nombre',label:'Nombre (ej: Arriendo, Luz, Sueldo Daniela)',default:g?g.nombre:'',required:true},
+    {name:'monto',label:'Monto mensual ($)',type:'number',default:g?g.monto:'',required:true},
+  ]);
+  if(!vals)return;
+  const nombre=String(vals.nombre).trim();
+  if(!nombre)return;
+  const monto=parseInt(vals.monto)||0;
   if(monto<=0){alert('Monto inválido');return;}
-  const nuevo={id:g?g.id:uid(),nombre:nombre.trim(),monto};
+  const nuevo={id:g?g.id:uid(),nombre,monto};
   if(g){const i=gastosFijos.findIndex(x=>String(x.id)===String(id));gastosFijos[i]=nuevo;}
   else gastosFijos.push(nuevo);
   await saveGastoDB(nuevo);
   renderFinanzas();
 }
 async function eliminarGastoFijo(id){
-  if(!confirm('¿Eliminar este gasto fijo?'))return;
+  if(!(await confirmDialog('¿Eliminar este gasto fijo?',{danger:true})))return;
   gastosFijos=gastosFijos.filter(g=>String(g.id)!==String(id));
   await delGastoDB(id);
   renderFinanzas();
@@ -3680,7 +4018,7 @@ async function guardarCompra(){
   renderFinanzas();
 }
 async function eliminarCompra(id){
-  if(!confirm('¿Eliminar esta compra?'))return;
+  if(!(await confirmDialog('¿Eliminar esta compra?',{danger:true})))return;
   compras=compras.filter(g=>String(g.id)!==String(id));
   await delCompraDB(id);
   renderFinanzas();
@@ -4005,7 +4343,7 @@ function renderCalculadora(){
     html+=`<div class="card"><h4 style="margin-bottom:10px">🧵 Otros insumos</h4><div class="row3">
       ${otros.map(([k,l])=>`<div class="field"><label>${l}</label><input type="number" value="${insumos[k]}" onchange="updInsumoCalc('${k}',this.value)"></div>`).join('')}
     </div></div>`;
-    html+=`<button class="btn btn-sec" style="width:100%" onclick="if(confirm('¿Volver a los valores originales de todos los insumos?')){insumos=JSON.parse(JSON.stringify(INSUMOS_DEFAULT));guardarConfigCalculadora();renderCalculadora();}">↩️ Restaurar valores originales</button>`;
+    html+=`<button class="btn btn-sec" style="width:100%" onclick="restaurarInsumosDefault()">↩️ Restaurar valores originales</button>`;
   }else{
     // Tabla de costos
     html+=`<div class="help">Costo de fabricación con IVA según tus insumos actuales. Comparado con el costo guardado en el inventario y el precio minorista — si el margen está en rojo, estás vendiendo a pérdida.</div>`;
@@ -4034,8 +4372,14 @@ function renderCalculadora(){
   }
   cont.innerHTML=html;
 }
+async function restaurarInsumosDefault(){
+  if(!(await confirmDialog('¿Volver a los valores originales de todos los insumos?')))return;
+  insumos=JSON.parse(JSON.stringify(INSUMOS_DEFAULT));
+  guardarConfigCalculadora();
+  renderCalculadora();
+}
 async function aplicarCostosInventario(){
-  if(!confirm('¿Actualizar el costo de los colchones DreamRest en el inventario con los valores calculados?'))return;
+  if(!(await confirmDialog('¿Actualizar el costo de los colchones en el inventario con los valores calculados?')))return;
   let n=0;
   for(const[mKey,tams]of Object.entries(MAPA_COSTO_PROD)){
     for(const[tamKey,prodId]of Object.entries(tams)){
@@ -4050,6 +4394,48 @@ async function aplicarCostosInventario(){
   }
   alert('✅ Costo actualizado en '+n+' colchones');
   renderCalculadora();
+}
+
+// =========== FIDELIZACIÓN DE CLIENTES (PUNTOS) ===========
+// Se ganan puntos automáticamente al completar una venta (no en "Cliente mostrador").
+// El canje genera un cupón de descuento (reutiliza el sistema de cupones ya existente).
+const PUNTOS_POR_PESO=1/1000; // 1 punto por cada $1.000 en compras
+const VALOR_PESO_POR_PUNTO=10; // cada punto vale $10 al canjear (≈1% de vuelta)
+function calcularPuntos(monto){return Math.floor((monto||0)*PUNTOS_POR_PESO);}
+function saldoPuntos(cliente){
+  return puntosCliente.filter(p=>p.cliente===cliente).reduce((a,p)=>a+(p.puntos||0),0);
+}
+// Se llama al guardar una venta nueva (no en ediciones), agregando el registro al mismo batch atómico.
+function otorgarPuntos(v,batch){
+  if(!v.cliente||v.cliente==='Cliente mostrador')return;
+  const puntos=calcularPuntos(v.total);
+  if(puntos<=0)return;
+  const reg={id:uid()+'_pts',cliente:v.cliente,puntos,tipo:'ganado',fecha:v.fecha,motivo:'Compra',ventaId:v.id};
+  puntosCliente.push(reg);
+  batch.set(doc(db,'puntosCliente',String(reg.id)),reg);
+}
+async function canjearPuntos(cliente){
+  const saldo=saldoPuntos(cliente);
+  if(saldo<=0){alert('Este cliente no tiene puntos para canjear');return;}
+  const vals=await formDialog('Canjear puntos',[
+    {name:'info',type:'info',label:`<strong>${cliente}</strong> tiene <strong>${saldo} puntos</strong> (equivalen a ${fmt(saldo*VALOR_PESO_POR_PUNTO)}). Al canjear se genera un cupón de descuento válido por 60 días.`},
+    {name:'puntos',label:'Puntos a canjear',type:'number',default:saldo,required:true},
+  ]);
+  if(!vals)return;
+  const puntos=parseInt(vals.puntos)||0;
+  if(puntos<=0||puntos>saldo){alert('Cantidad de puntos inválida');return;}
+  const valorDescuento=Math.round(puntos*VALOR_PESO_POR_PUNTO);
+  const venceD=new Date();venceD.setDate(venceD.getDate()+60);
+  const cup={id:uid()+'_cup',codigo:genCodigoCupon(),origen:'fidelizacion',cliente:cliente,tipoDesc:'$',valor:valorDescuento,minCompra:0,creado:today(),vence:isoLocal(venceD),usado:false,usadoFecha:null,usadoVentaId:null};
+  const reg={id:uid()+'_pts',cliente,puntos:-puntos,tipo:'canjeado',fecha:today(),motivo:'Canje por cupón '+cup.codigo,ventaId:null};
+  const batch=writeBatch(db);
+  batch.set(doc(db,'cupones',String(cup.id)),cup);
+  batch.set(doc(db,'puntosCliente',String(reg.id)),reg);
+  cupones.push(cup);
+  puntosCliente.push(reg);
+  await batch.commit().catch(e=>toast('⚠️ Error al sincronizar: '+e.message));
+  toast('✅ Cupón '+cup.codigo+' generado ('+fmt(valorDescuento)+')');
+  verFichaCliente(cliente);
 }
 
 // =========== CUPONES DE DESCUENTO ===========
@@ -4139,7 +4525,7 @@ async function ofrecerReactivarCupon(v){
   if(!v||!v.cupon)return;
   const c=cupones.find(x=>String(x.id)===String(v.cupon.id));
   if(!c||!c.usado||String(c.usadoVentaId)!==String(v.id))return;
-  if(confirm('Esta venta usó el cupón '+c.codigo+'. ¿Reactivarlo para que pueda usarse de nuevo?')){
+  if(await confirmDialog('Esta venta usó el cupón '+c.codigo+'. ¿Reactivarlo para que pueda usarse de nuevo?')){
     c.usado=false;c.usadoFecha=null;c.usadoVentaId=null;
     await saveCuponDB(c);
     toast('🎟️ Cupón '+c.codigo+' reactivado');
@@ -4150,7 +4536,7 @@ async function ofrecerEliminarCuponGenerado(v){
   if(!v||!v.cuponSorpresa)return;
   const c=cupones.find(x=>String(x.ventaOrigenId)===String(v.id)&&!x.usado);
   if(!c)return;
-  if(confirm('Esta venta generó el cupón sorpresa '+c.codigo+' (aún sin usar). ¿Eliminarlo también?')){
+  if(await confirmDialog('Esta venta generó el cupón sorpresa '+c.codigo+' (aún sin usar). ¿Eliminarlo también?')){
     cupones=cupones.filter(x=>String(x.id)!==String(c.id));
     await delCuponDB(c.id);
   }
@@ -4196,7 +4582,7 @@ async function generarLoteCupones(){
   if(monto<=0){alert('Ingresa el monto de descuento del cupón');return;}
   if(!vence){alert('Ingresa la fecha de vencimiento');return;}
   if(vence<today()){alert('La fecha de vencimiento no puede ser pasada');return;}
-  if(!confirm('Se generarán '+cant+' cupones de '+fmt(monto)+' que vencen el '+vence.split('-').reverse().join('/')+(minC>0?' con compra mínima de '+fmt(minC):'')+'. ¿Continuar?'))return;
+  if(!(await confirmDialog('Se generarán '+cant+' cupones de '+fmt(monto)+' que vencen el '+vence.split('-').reverse().join('/')+(minC>0?' con compra mínima de '+fmt(minC):'')+'. ¿Continuar?')))return;
   const batch=writeBatch(db);
   for(let i=0;i<cant;i++){
     // uid() usa Date.now(): el sufijo evita ids repetidos dentro del mismo milisegundo
@@ -4227,7 +4613,7 @@ function exportCupones(){
   lista.forEach(c=>{
     const est=estadoCupon(c);
     const vUso=c.usadoVentaId?ventas.find(v=>String(v.id)===String(c.usadoVentaId)):null;
-    csv.push(`${c.codigo},${c.origen==='sorpresa'?'Sorpresa':'Flyer'},${c.tipoDesc==='%'?c.valor+'%':c.valor},${c.minCompra||0},${c.vence||''},${est},"${vUso?(c.usadoFecha+' · '+vUso.cliente).replace(/"/g,'""'):(c.usado?c.usadoFecha||'':'')}"`);
+    csv.push(`${c.codigo},${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelizacion':'Flyer'},${c.tipoDesc==='%'?c.valor+'%':c.valor},${c.minCompra||0},${c.vence||''},${est},"${vUso?(c.usadoFecha+' · '+vUso.cliente).replace(/"/g,'""'):(c.usado?c.usadoFecha||'':'')}"`);
   });
   downloadCSV('cupones_ecohome_'+today()+'.csv',csv.join('\n'));
 }
@@ -4299,6 +4685,7 @@ function renderCupones(){
         <option value="" ${!fOrigen?'selected':''}>Todos los orígenes</option>
         <option value="flyer" ${fOrigen==='flyer'?'selected':''}>Flyer</option>
         <option value="sorpresa" ${fOrigen==='sorpresa'?'selected':''}>Sorpresa</option>
+        <option value="fidelizacion" ${fOrigen==='fidelizacion'?'selected':''}>Fidelización</option>
       </select>
       <button class="btn btn-sec btn-sm" onclick="exportCupones()">Exportar CSV</button>
     </div>`;
@@ -4314,10 +4701,10 @@ function renderCupones(){
       const e=EST_CUP[est];
       const vUso=c.usadoVentaId?ventas.find(v=>String(v.id)===String(c.usadoVentaId)):null;
       const usoTxt=c.usado?`<div style="font-size:10px;color:var(--text3)">${(c.usadoFecha||'').split('-').reverse().join('/')}${vUso?' · '+vUso.cliente:''}</div>`:'';
-      const cliTxt=c.origen==='sorpresa'&&c.cliente?`<div style="font-size:10px;color:var(--text3)">para ${c.cliente}</div>`:'';
+      const cliTxt=(c.origen==='sorpresa'||c.origen==='fidelizacion')&&c.cliente?`<div style="font-size:10px;color:var(--text3)">para ${c.cliente}</div>`:'';
       html+=`<tr>
         <td><strong style="letter-spacing:1px">${c.codigo}</strong>${cliTxt}</td>
-        <td>${c.origen==='sorpresa'?'Sorpresa':'Flyer'}</td>
+        <td>${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelización':'Flyer'}</td>
         <td>${descCuponTxt(c)}</td>
         <td>${(c.minCompra||0)>0?fmt(c.minCompra):'—'}</td>
         <td>${c.vence?c.vence.split('-').reverse().join('/'):'—'}</td>
@@ -4349,11 +4736,14 @@ function pintarCandado(){
   if(b)b.title=esAdmin()?'Administrador activo (toca para bloquear)':'Modo administrador';
 }
 async function crearClaveAdmin(){
-  const c1=prompt('🔐 Aún no tienes clave de administrador.\n\nCrea una clave (mínimo 4 caracteres):');
-  if(c1===null)return false;
+  const vals=await formDialog('🔐 Crear clave de administrador',[
+    {name:'info',type:'info',label:'Aún no tienes clave de administrador. Crea una (mínimo 4 caracteres).'},
+    {name:'c1',label:'Clave',type:'password',required:true},
+    {name:'c2',label:'Repite la clave',type:'password',required:true},
+  ]);
+  if(!vals)return false;
+  const c1=vals.c1,c2=vals.c2;
   if(!c1||c1.length<4){alert('La clave debe tener al menos 4 caracteres');return false;}
-  const c2=prompt('Repite la clave para confirmar:');
-  if(c2===null)return false;
   if(c1!==c2){alert('Las claves no coinciden. Intenta de nuevo.');return false;}
   const h=await hashClave(c1);
   await setDoc(doc(db,'config','admin'),{hash:h});
@@ -4373,9 +4763,11 @@ async function requiereAdmin(){
     }catch(e){}
   }
   if(!_adminHash)return await crearClaveAdmin();
-  const clave=prompt('🔐 Esta acción requiere la clave de administrador:');
-  if(clave===null)return false;
-  const h=await hashClave(clave);
+  const vals=await formDialog('🔐 Clave de administrador',[
+    {name:'clave',label:'Esta acción requiere la clave de administrador',type:'password',required:true},
+  ]);
+  if(!vals)return false;
+  const h=await hashClave(vals.clave);
   if(h===_adminHash){
     sessionStorage.setItem('dr_admin','1');
     pintarCandado();
@@ -4386,7 +4778,7 @@ async function requiereAdmin(){
 }
 async function toggleAdmin(){
   if(esAdmin()){
-    if(confirm('¿Bloquear el modo administrador en este equipo?')){
+    if(await confirmDialog('¿Bloquear el modo administrador en este equipo?')){
       sessionStorage.removeItem('dr_admin');
       pintarCandado();
       // Si está en una pestaña protegida, volver a Ventas
@@ -4420,9 +4812,11 @@ async function initFirebase(){
     // Cupones: también en modo vendedora (se canjean y se generan al vender)
     const pCup=getDocs(collection(db,'cupones')).catch(()=>null);
     const pCupCfg=getDoc(doc(db,'config','cupones')).catch(()=>null);
+    // Puntos de fidelización: también en modo vendedora (se ganan al vender)
+    const pPts=getDocs(collection(db,'puntosCliente')).catch(()=>null);
 
-    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap]=
-      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg]);
+    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap]=
+      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts]);
 
     if(invSnap.empty){
       const batch=writeBatch(db);
@@ -4503,6 +4897,10 @@ async function initFirebase(){
       const tabCup=document.getElementById('tab-cupones');
       if(tabCup&&tabCup.classList.contains('active'))renderCupones();
     });
+    if(ptsSnap)puntosCliente=ptsSnap.docs.map(d=>d.data());
+    onSnapshot(collection(db,'puntosCliente'),snap=>{
+      puntosCliente=snap.docs.map(d=>d.data());
+    });
 
     if(!MODO_VENDEDORA){
       // Cargar gastos fijos y compras
@@ -4563,6 +4961,7 @@ async function initFirebase(){
   }
   document.getElementById('loading').style.display='none';
   initTheme();
+  initPrivacidad();
   renderInicio();
   renderVentas();
   actualizarBadges();
@@ -4577,6 +4976,26 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 // El rediseño grafito+salvia es solo oscuro: ya no hay tema claro que alternar
 function toggleTheme(){}
 function initTheme(){document.body.classList.remove('dark');}
+
+function togglePrivacidad(){
+  montosOcultos=!montosOcultos;
+  try{localStorage.setItem('eh_privacidad',montosOcultos?'1':'0');}catch(e){}
+  pintarBotonPrivacidad();
+  refrescarVistaActiva();
+}
+function pintarBotonPrivacidad(){
+  const b=document.getElementById('privacy-btn');
+  if(!b)return;
+  b.classList.toggle('active',montosOcultos);
+  b.title=montosOcultos?'Mostrar montos':'Ocultar montos';
+  b.innerHTML=montosOcultos
+    ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    :'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+function initPrivacidad(){
+  try{montosOcultos=localStorage.getItem('eh_privacidad')==='1';}catch(e){montosOcultos=false;}
+  pintarBotonPrivacidad();
+}
 
 function setTab(t){
   // El Inicio, Resumen y Finanzas (datos sensibles) requieren modo administrador
@@ -4615,6 +5034,72 @@ function setTab(t){
 // =========== MODALS ===========
 function openModal(id){document.getElementById(id).classList.add('show')}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+// =========== DIÁLOGOS GENÉRICOS (reemplazan confirm()/prompt() nativos) ===========
+let _confirmResolve=null;
+function confirmDialog(msg,opts={}){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;
+    document.getElementById('confirm-msg').textContent=msg;
+    const okBtn=document.getElementById('confirm-ok-btn');
+    okBtn.textContent=opts.okText||'Confirmar';
+    okBtn.style.background=opts.danger?'#dc2626':'';
+    openModal('modal-confirm');
+  });
+}
+function _resolveConfirm(val){
+  closeModal('modal-confirm');
+  if(_confirmResolve){const r=_confirmResolve;_confirmResolve=null;r(val);}
+}
+
+let _formDlgResolve=null,_formDlgFields=null;
+function formDialog(title,fields){
+  return new Promise(resolve=>{
+    _formDlgResolve=resolve;
+    _formDlgFields=fields;
+    document.getElementById('formdlg-title').textContent=title;
+    document.getElementById('formdlg-error').style.display='none';
+    document.getElementById('formdlg-fields').innerHTML=fields.map(f=>{
+      if(f.type==='select'){
+        return`<div class="field"><label>${f.label}</label><select id="fdlg-${f.name}">${(f.options||[]).map(o=>`<option value="${o}" ${o===f.default?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      }
+      if(f.type==='textarea'){
+        return`<div class="field"><label>${f.label}</label><textarea id="fdlg-${f.name}" placeholder="${f.placeholder||''}" rows="3">${f.default||''}</textarea></div>`;
+      }
+      if(f.type==='info'){
+        return`<div class="help" style="margin-bottom:12px">${f.label}</div>`;
+      }
+      return`<div class="field"><label>${f.label}</label><input type="${f.type||'text'}" id="fdlg-${f.name}" value="${f.default!=null?f.default:''}" placeholder="${f.placeholder||''}" ${f.step?`step="${f.step}"`:''}></div>`;
+    }).join('');
+    openModal('modal-formdialog');
+    setTimeout(()=>{const first=document.querySelector('#formdlg-fields input,#formdlg-fields select');if(first)first.focus();},50);
+  });
+}
+function _submitFormDialog(){
+  const vals={};
+  for(const f of _formDlgFields){
+    if(f.type==='info')continue;
+    const el=document.getElementById('fdlg-'+f.name);
+    let v=el.value;
+    if(f.type==='number')v=v===''?null:parseFloat(v);
+    if(f.required&&(v===''||v==null||Number.isNaN(v))){
+      const err=document.getElementById('formdlg-error');
+      err.textContent='⚠ Completa: '+f.label;
+      err.style.display='block';
+      el.focus();
+      return;
+    }
+    vals[f.name]=v;
+  }
+  closeModal('modal-formdialog');
+  const r=_formDlgResolve;_formDlgResolve=null;
+  if(r)r(vals);
+}
+function _resolveFormDialog(val){
+  closeModal('modal-formdialog');
+  const r=_formDlgResolve;_formDlgResolve=null;
+  if(r)r(val);
+}
 
 // Re-renderiza la pestaña que está abierta ahora mismo (usado por la sync en tiempo real)
 function refrescarVistaActiva(){
@@ -4814,6 +5299,72 @@ function waRecompra(cli,tel){
   abrirWa(tel,`Hola ${cli} 👋, le saludamos de EcoHome. Ha pasado un tiempo desde su última compra y queríamos contarle que tenemos nuevos productos y ofertas. ¿Le gustaría ver las novedades? 😊`);
 }
 
+// Unidades vendidas por producto en los últimos `dias` (ventas no canceladas; cuenta también respaldoId)
+function ventanaVentasUnidades(dias){
+  const desde=new Date();desde.setDate(desde.getDate()-dias);
+  const desdeStr=isoLocal(desde);
+  const mapa={};
+  ventas.forEach(v=>{
+    if(v.fecha<desdeStr)return;
+    if((v.estado||'pendiente')==='cancelado')return;
+    (v.items||[]).forEach(it=>{
+      const q=parseInt(it.qty)||0;
+      if(it.prodId)mapa[it.prodId]=(mapa[it.prodId]||0)+q;
+      if(it.respaldoId)mapa[it.respaldoId]=(mapa[it.respaldoId]||0)+q;
+    });
+  });
+  return mapa;
+}
+const REPOSICION_VENTANA_DIAS=60;
+function listaReposicion(coberturaDias){
+  coberturaDias=parseInt(coberturaDias)||30;
+  const unidadesVendidas=ventanaVentasUnidades(REPOSICION_VENTANA_DIAS);
+  return inventario.filter(p=>!p.combo).map(p=>{
+    const stock=parseInt(p.stock)||0;
+    const min=parseInt(p.minStock)||2;
+    const vendidas=unidadesVendidas[p.id]||unidadesVendidas[String(p.id)]||0;
+    const velocidadDia=vendidas/REPOSICION_VENTANA_DIAS;
+    const diasCobertura=velocidadDia>0?Math.max(stock,0)/velocidadDia:Infinity;
+    const sugeridoUmbral=stock<=min?Math.max(min*2-stock,min||1,1):0;
+    const sugeridoDemanda=velocidadDia>0?Math.max(Math.ceil(velocidadDia*coberturaDias)-stock,0):0;
+    const sugerido=Math.max(sugeridoUmbral,sugeridoDemanda);
+    return{...p,stock,min,vendidas,velocidadDia,diasCobertura,sugerido};
+  }).filter(p=>p.sugerido>0).sort((a,b)=>a.diasCobertura-b.diasCobertura||a.stock-b.stock);
+}
+function abrirReposicion(){openModal('modal-reposicion');renderReposicion();}
+function renderReposicion(){
+  const cont=document.getElementById('reposicion-list');
+  if(!cont)return;
+  const sel=document.getElementById('repo-cobertura');
+  const items=listaReposicion(sel?sel.value:30);
+  if(!items.length){cont.innerHTML='<div class="empty">No hay productos por reponer.</div>';return;}
+  cont.innerHTML=items.map(p=>{
+    const velTxt=p.velocidadDia>0?`${(p.velocidadDia*7).toFixed(1)} u/sem`:'sin ventas recientes';
+    const covTxt=p.velocidadDia>0&&isFinite(p.diasCobertura)?` · cobertura actual: ${Math.round(p.diasCobertura)} día${Math.round(p.diasCobertura)!==1?'s':''}`:'';
+    return`<div class="item-row" style="flex-direction:column;align-items:flex-start;gap:3px">
+      <div style="display:flex;justify-content:space-between;width:100%;gap:8px">
+        <span>${p.nombre}${p.marca?` <span class="muted">(${p.marca})</span>`:''}</span>
+        <span style="white-space:nowrap">${p.stock<=0?'<strong style="color:var(--red)">Sin stock</strong>':`<span style="color:var(--orange)">${p.stock} u</span>`} · mín ${p.min} · <strong>comprar ${p.sugerido}</strong></span>
+      </div>
+      <div class="muted" style="font-size:10px">${velTxt}${covTxt}</div>
+    </div>`;
+  }).join('');
+}
+function copiarListaReposicion(){
+  const sel=document.getElementById('repo-cobertura');
+  const items=listaReposicion(sel?sel.value:30);
+  if(!items.length){toast('No hay productos por reponer');return;}
+  const txt='Lista de reposición '+today()+'\n'+items.map(p=>`- ${p.nombre}${p.marca?' ('+p.marca+')':''}: comprar ${p.sugerido} (stock ${p.stock}, mínimo ${p.min}${p.velocidadDia>0?', vende '+(p.velocidadDia*7).toFixed(1)+' u/sem':''})`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Lista copiada al portapapeles')).catch(()=>toast('No se pudo copiar'));
+}
+function exportReposicion(){
+  const sel=document.getElementById('repo-cobertura');
+  const items=listaReposicion(sel?sel.value:30);
+  const csv=['Producto,Marca,Stock actual,Stock mínimo,Ventas/semana,Cobertura actual (días),Cantidad sugerida'];
+  items.forEach(p=>csv.push(`"${p.nombre.replace(/"/g,'""')}","${p.marca||''}",${p.stock},${p.min},${(p.velocidadDia*7).toFixed(1)},${isFinite(p.diasCobertura)?Math.round(p.diasCobertura):''},${p.sugerido}`));
+  downloadCSV('reposicion_'+today()+'.csv',csv.join('\n'));
+}
+
 // =========== INVENTARIO ===========
 let editProdId=null;
 
@@ -4851,7 +5402,7 @@ function renderInv(){
     <div class="stat"><div class="stat-lbl">Productos</div><div class="stat-val">${items.length}</div></div>
     <div class="stat"><div class="stat-lbl">Unidades totales</div><div class="stat-val">${totalUnidades}</div></div>
     <div class="stat"><div class="stat-lbl">Valor inventario (costo)</div><div class="stat-val" style="font-size:15px">${fmt(valorCosto)}</div></div>
-    <div class="stat"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>
+    <div class="stat" style="cursor:pointer" onclick="abrirReposicion()"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>
     ${sinCosto>0?`<div class="help" style="grid-column:1/-1;margin:0">⚠ ${sinCosto} producto(s) con stock no tienen costo asignado y no suman al valor del inventario. Edítalos y agrégales el costo.</div>`:''}`;
 
   if(!items.length){
@@ -4973,7 +5524,7 @@ async function saveProd(){
 }
 
 async function delProd(){
-  if(!confirm('¿Eliminar este producto del inventario?'))return;
+  if(!(await confirmDialog('¿Eliminar este producto del inventario?',{danger:true})))return;
   inventario=inventario.filter(p=>String(p.id)!==String(editProdId));
   await delProdDB(editProdId);
   closeModal('modal-prod');
@@ -4984,7 +5535,7 @@ async function delProdDirect(id){
   if(!(await requiereAdmin()))return;
   const p=inventario.find(x=>String(x.id)===String(id));
   if(!p)return;
-  if(!confirm('¿Eliminar "'+p.nombre+'" del inventario?'))return;
+  if(!(await confirmDialog('¿Eliminar "'+p.nombre+'" del inventario?',{danger:true})))return;
   inventario=inventario.filter(x=>String(x.id)!==String(id));
   await delProdDB(id);
   renderInv();
@@ -5224,6 +5775,7 @@ async function saveVenta(){
     const cs=generarCuponSorpresa(v,batch);
     v.cuponSorpresa={codigo:cs.codigo,tipoDesc:cs.tipoDesc,valor:cs.valor,vence:cs.vence};
   }
+  if(esNueva)otorgarPuntos(v,batch);
   if(editVentaId){
     const i=ventas.findIndex(x=>String(x.id)===String(editVentaId));
     if(i>=0)ventas[i]=v;
@@ -5319,16 +5871,28 @@ function verFichaCliente(nombre){
     prods[n]=(prods[n]||0)+it.qty;
   }));
   const topProds=Object.entries(prods).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const puntos=saldoPuntos(nombre);
+  const histPuntos=puntosCliente.filter(p=>p.cliente===nombre).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
 
   document.getElementById('cli-titulo').textContent=nombre;
   document.getElementById('cli-content').innerHTML=`
     <div class="stat-grid" style="margin-bottom:14px">
       <div class="stat"><div class="stat-lbl">Total comprado</div><div class="stat-val gold" style="font-size:16px">${fmt(totalGastado)}</div></div>
       <div class="stat"><div class="stat-lbl">N° compras</div><div class="stat-val">${compras.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Puntos</div><div class="stat-val" style="font-size:16px;color:var(--accent-text)">${puntos}</div></div>
       ${saldoPend>0?`<div class="stat"><div class="stat-lbl">Saldo pendiente</div><div class="stat-val warn" style="font-size:16px">${fmt(saldoPend)}</div></div>`:''}
     </div>
     ${tel?`<div class="item-row"><span class="muted">Teléfono</span><span>+56 9 ${tel}</span></div>`:''}
     <div class="item-row"><span class="muted">Última compra</span><span>${ultimaCompra.split('-').reverse().join('/')}</span></div>
+    <div style="margin-top:12px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><strong>${puntos} puntos</strong> <span class="muted" style="font-size:11px">(${fmt(puntos*VALOR_PESO_POR_PUNTO)} en descuentos)</span></div>
+        ${puntos>0?`<button class="btn btn-sm" style="flex-shrink:0" onclick="canjearPuntos('${nombre.replace(/'/g,"\\'")}')">Canjear</button>`:''}
+      </div>
+      ${histPuntos.length?`<div style="margin-top:8px">${histPuntos.map(p=>`<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);padding:2px 0">
+        <span>${p.fecha.split('-').reverse().join('/')} · ${p.motivo}</span><span style="font-weight:600;color:${p.puntos>=0?'var(--green)':'var(--red)'}">${p.puntos>=0?'+':''}${p.puntos}</span>
+      </div>`).join('')}</div>`:''}
+    </div>
     ${topProds.length?`<div style="margin-top:12px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px">Lo que más compra</div>
       ${topProds.map(([n,q])=>`<div class="item-row"><span>${n}</span><span><strong>${q}u</strong></span></div>`).join('')}</div>`:''}
     <div style="margin-top:14px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px">Historial de compras</div>
@@ -5713,7 +6277,7 @@ async function editVenta(id){
 
 async function delVenta(){
   if(!(await requiereAdmin()))return;
-  if(!confirm('¿Eliminar esta venta? Los productos volverán al stock. Esta acción no se puede deshacer.'))return;
+  if(!(await confirmDialog('¿Eliminar esta venta? Los productos volverán al stock. Esta acción no se puede deshacer.',{danger:true})))return;
   const v=ventas.find(x=>String(x.id)===String(editVentaId));
   if(v&&!v.stockDevuelto)await restaurarStockItems(v.items||[]);
   // Cupones: ofrecer reactivar el cupón usado y eliminar el sorpresa que generó (si sigue sin usar)
@@ -5955,7 +6519,7 @@ async function cambiarEstadoDetalle(id,nuevoEstado){
   const estadoPrev=v.estado||'pendiente';
   // Al cancelar: devolver productos al stock. Al revertir la cancelación: descontarlos de nuevo.
   if(nuevoEstado==='cancelado'&&estadoPrev!=='cancelado'&&!v.stockDevuelto){
-    if(confirm('¿Devolver los productos de esta venta al stock?')){
+    if(await confirmDialog('¿Devolver los productos de esta venta al stock?')){
       await restaurarStockItems(v.items||[]);
       v.stockDevuelto=true;
     }
@@ -6068,7 +6632,7 @@ async function abonarSaldo(id){
 async function pagarTotalSaldo(id){
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v)return;
-  if(!confirm(`¿Marcar como pagado el saldo de ${fmt(v.saldo)} de ${v.cliente}?`))return;
+  if(!(await confirmDialog(`¿Marcar como pagado el saldo de ${fmt(v.saldo)} de ${v.cliente}?`)))return;
   const pago=(document.getElementById('sp-pago-'+id)||{}).value||'Efectivo';
   const resto=Math.max(0,(parseInt(v.total)||0)-(parseInt(v.cancelado)||0));
   if(resto>0)_pushAbono(v,resto,pago);
@@ -6099,9 +6663,11 @@ async function editarAbono(id,idx){
   if(!v||!Array.isArray(v.abonos)||!v.abonos[idx])return;
   const ab=v.abonos[idx];
   const inicial=Math.max(0,(parseInt(v.cancelado)||0)-v.abonos.reduce((a,x)=>a+(parseInt(x.monto)||0),0));
-  const nuevo=prompt('Nuevo monto del abono ('+(ab.pago||'—')+' · '+(ab.fecha||'')+'):',ab.monto);
-  if(nuevo===null)return;
-  const monto=parseInt(nuevo)||0;
+  const vals=await formDialog('Editar abono',[
+    {name:'monto',label:'Nuevo monto del abono ('+(ab.pago||'—')+' · '+(ab.fecha||'')+')',type:'number',default:ab.monto,required:true},
+  ]);
+  if(!vals)return;
+  const monto=parseInt(vals.monto)||0;
   if(monto<=0){alert('Monto inválido. Para eliminarlo usá 🗑️');return;}
   ab.monto=monto;
   _recalcAbonos(v,inicial);
@@ -6112,7 +6678,7 @@ async function borrarAbono(id,idx){
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v||!Array.isArray(v.abonos)||!v.abonos[idx])return;
   const ab=v.abonos[idx];
-  if(!confirm('¿Borrar el abono de '+fmt(ab.monto)+' ('+(ab.pago||'—')+')?'))return;
+  if(!(await confirmDialog('¿Borrar el abono de '+fmt(ab.monto)+' ('+(ab.pago||'—')+')?',{danger:true})))return;
   const inicial=Math.max(0,(parseInt(v.cancelado)||0)-v.abonos.reduce((a,x)=>a+(parseInt(x.monto)||0),0));
   v.abonos.splice(idx,1);
   _recalcAbonos(v,inicial);
@@ -6232,6 +6798,7 @@ function renderResumen(){
       const mr=items.filter(v=>new Date(v.fecha).getMonth()===i);
       return{label:m,val:mr.reduce((a,v)=>a+v.total,0),count:mr.length};
     });
+    charts+=`<div class="card"><h4 style="margin-bottom:4px">Tendencia — ${anio}</h4>${svgTrend(porMes)}${svgTrendLeyenda(porMes)}</div>`;
     const max=Math.max(...porMes.map(m=>m.val),1);
     charts+=`<div class="card"><h4 style="margin-bottom:10px">Ventas por mes — ${anio}</h4>${porMes.map(m=>m.val>0?`
       <div class="bar-row">
@@ -6247,6 +6814,10 @@ function renderResumen(){
       porDia[d].val+=v.total;porDia[d].count++;
     });
     const dias=Object.entries(porDia).sort((a,b)=>a[0].localeCompare(b[0]));
+    if(dias.length>1){
+      const puntosDia=dias.map(([d,v])=>({label:d.split('-').reverse().join('/'),val:v.val}));
+      charts+=`<div class="card"><h4 style="margin-bottom:4px">Tendencia — ${MESES[mes]} ${anio}</h4>${svgTrend(puntosDia)}${svgTrendLeyenda(puntosDia)}</div>`;
+    }
     const max=Math.max(...dias.map(d=>d[1].val),1);
     charts+=`<div class="card"><h4 style="margin-bottom:10px">Ventas por día</h4>${dias.length?dias.map(([d,v])=>`
       <div class="bar-row">
@@ -6573,7 +7144,7 @@ const renderInvDeb=debounce(renderInv,180);
 
 // Exponer todas las funciones al scope global (requerido por type="module")
 Object.assign(window,{
-  setTab,openSidebar,closeSidebar,toggleTheme,
+  setTab,openSidebar,closeSidebar,toggleTheme,togglePrivacidad,
   openProd,editProd,saveProd,delProd,delProdDirect,
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
@@ -6581,6 +7152,7 @@ Object.assign(window,{
   autocompleteProductoNV,selProdAutoNV,autocompleteProductoVT,selProdAutoVT,
   setArmadoNV,setRespaldoNV,
   renderInv,renderVentas,renderDespachos,renderResumen,renderInicio,renderNuevaVentaTab,renderVendedores,
+  abrirPersonalizarInicio,guardarPersonalizarInicio,restaurarLayoutInicio,
   limpiarFiltrosVentas,cambiarEstado,cambiarEstadoDetalle,registrarAbono,resetearInventario,
   chipTipoVenta,chipEstadoVenta,chipEstadoDespacho,
   editarAbono,borrarAbono,abrirRegistroAbonos,renderRegistroAbonos,
@@ -6589,10 +7161,12 @@ Object.assign(window,{
   iniciarTour,tourSiguiente,tourAnterior,cerrarTour,exportarRespaldo,
   abrirRecompra,renderRecompra,marcarRecompraContactada,waRecompra,
   guardarMetaVendedor,
-  verFichaCliente,agregarProductosManuales,
+  verFichaCliente,agregarProductosManuales,canjearPuntos,
   renderCotizaciones,nuevaCotizacion,editarCotizacion,addCotItem,rmCotItem,updCotItem,renderCotItems,
   autocompleteCot,selCotProd,guardarCotizacion,eliminarCotizacion,convertirEnVenta,imprimirCotizacion,
   exportInv,exportVentas,openModal,closeModal,
+  confirmDialog,formDialog,_resolveConfirm,_resolveFormDialog,_submitFormDialog,
+  abrirReposicion,renderReposicion,copiarListaReposicion,exportReposicion,
   abrirImportar,handleImportDrop,handleImportSelect,confirmarImport,descargarPlantilla,cargarHojaImport,
   pausarVentaNV,reanudarVentaPausada,eliminarVentaPausada,updPagoNV,recalcMixtoNV,calcDescuentoNV,
   renderPromociones,autocompletePromoProd,selPromoProd,guardarPromo,eliminarPromo,renderClientes,
@@ -6600,7 +7174,7 @@ Object.assign(window,{
   renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirCompra,guardarCompra,eliminarCompra,
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
   abrirEmpleado,eliminarEmpleado,registrarEventoRRHH,eliminarEventoRRHH,
-  renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,
+  renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,restaurarInsumosDefault,
   handleFotoCompra,calcSugerenciaCompra,verFotoCompra,
   imprimirVenta,descargarPedidoHTML,
   autocompleteCliente,selCliente,solicitarNotificaciones,
