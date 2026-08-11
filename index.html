@@ -897,6 +897,29 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   <div class="modal">
     <h3 id="prod-title">Agregar producto</h3>
     <div class="field"><label>Nombre</label><input type="text" id="p-nombre"></div>
+    <div class="field">
+      <label>Foto del producto (opcional)</label>
+      <!-- Dos inputs: uno abre la cámara (capture) y otro la galería o el explorador -->
+      <input type="file" accept="image/*" capture="environment" id="p-foto-camara" onchange="handleFotoProd(this)" style="display:none">
+      <input type="file" accept="image/*" id="p-foto-input" onchange="handleFotoProd(this)" style="display:none">
+      <div id="p-foto-zona"
+        style="border:2px dashed var(--border2);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s"
+        onclick="document.getElementById('p-foto-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--gold)';this.style.background='var(--gold-bg)'"
+        ondragleave="this.style.borderColor='';this.style.background=''"
+        ondrop="soltarFotoProd(event,this)">
+        <div style="font-size:22px;line-height:1">🖼️</div>
+        <div style="font-size:12px;margin-top:4px">Toca para elegir una foto</div>
+        <div class="muted" style="font-size:11px;margin-top:2px">o arrástrala aquí, o pega con <strong>Ctrl+V</strong></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-sec btn-sm" style="flex:1" onclick="document.getElementById('p-foto-camara').click()">📷 Cámara</button>
+        <button type="button" class="btn btn-sec btn-sm" style="flex:1" onclick="document.getElementById('p-foto-input').click()">🖼️ Galería</button>
+        <button type="button" class="btn btn-sec btn-sm" style="flex:1" onclick="pegarFotoProd()">📋 Pegar</button>
+      </div>
+      <div id="p-foto-estado" class="muted" style="font-size:11px;margin-top:6px"></div>
+      <div id="p-foto-preview" style="margin-top:8px"></div>
+    </div>
     <div class="row">
       <div class="field"><label>Marca</label><input type="text" id="p-marca" list="marca-list"></div>
       <div class="field"><label>Categoría</label><select id="p-cat">
@@ -1997,10 +2020,13 @@ function renderItemsNV(){
     const armado=it.armado||'solo';
 
     html+=`<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;position:relative">
-      <div style="position:relative;margin-bottom:6px">
-        <input type="text" id="nv-prod-input-${i}" value="${(nombreActual).replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
-          oninput="autocompleteProductoNV(${i})" style="width:100%">
-        <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px">
+        ${prod?`<div onclick="verFotoProdVenta('${prod.id}')" style="cursor:${prod.foto?'zoom-in':'default'}">${miniFotoProd(prod,44)}</div>`:''}
+        <div style="position:relative;flex:1;min-width:0">
+          <input type="text" id="nv-prod-input-${i}" value="${(nombreActual).replace(/"/g,'&quot;')}" placeholder="Escribe el producto..." autocomplete="off"
+            oninput="autocompleteProductoNV(${i})" style="width:100%">
+          <div id="nv-prod-ac-${i}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--glass-strong);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        </div>
       </div>`;
 
     // Si es colchón, mostrar opciones de armado
@@ -2125,9 +2151,12 @@ function autocompleteProductoNV(i){
     const precioHtml=pc.promo
       ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#8bf0b0">${fmt(pc.precio)}</strong></span>`
       :`<span style="color:var(--accent-text);white-space:nowrap">${fmt(pc.precio)}</span>`;
-    return`<div onclick="selProdAutoNV(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
-      <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
+    return`<div onclick="selProdAutoNV(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s;display:flex;gap:9px;align-items:center" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
+      ${miniFotoProd(p)}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
+      </div>
     </div>`;
   }).join('');
   ac.style.display='block';
@@ -4010,6 +4039,119 @@ function abrirCompra(){
   document.getElementById('comp-sugerencia').innerHTML='';
   openModal('modal-compra');
 }
+// =========== FOTOS DE PRODUCTO ===========
+// Baja el tamaño hasta que la imagen quepa en el límite: prueba anchos y calidades
+// decrecientes en vez de rechazar de entrada las fotos pesadas del teléfono.
+function comprimirImagen(img,maxW,limiteBytes){
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  const anchos=[maxW,Math.round(maxW*0.7),Math.round(maxW*0.5),Math.round(maxW*0.3)];
+  for(const w of anchos){
+    const scale=Math.min(1,w/img.width);
+    canvas.width=Math.round(img.width*scale)||1;
+    canvas.height=Math.round(img.height*scale)||1;
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    for(const q of [0.7,0.5,0.35,0.2]){
+      const dataUrl=canvas.toDataURL('image/jpeg',q);
+      if(dataUrl.length<=limiteBytes)return dataUrl;
+    }
+  }
+  return null;
+}
+function estadoFotoProd(txt,color){
+  const el=document.getElementById('p-foto-estado');
+  if(el){el.textContent=txt||'';el.style.color=color||'';}
+}
+// Punto único de entrada: cámara, galería, arrastrar y pegar terminan todos aquí.
+function cargarArchivoFotoProd(file){
+  if(!file){estadoFotoProd('No llegó ninguna imagen.','#f28a8a');return;}
+  if(!/^image\//.test(file.type)){estadoFotoProd('Ese archivo no es una imagen.','#f28a8a');return;}
+  estadoFotoProd('Procesando foto…');
+  const reader=new FileReader();
+  reader.onerror=()=>estadoFotoProd('No se pudo leer la foto. Intenta con otra.','#f28a8a');
+  reader.onload=e=>{
+    const img=new Image();
+    img.onerror=()=>estadoFotoProd('No se pudo procesar esa foto. Intenta con otra.','#f28a8a');
+    img.onload=()=>{
+      const dataUrl=comprimirImagen(img,500,600000);
+      if(!dataUrl){estadoFotoProd('La foto pesa demasiado incluso comprimida. Recórtala e inténtalo de nuevo.','#f28a8a');return;}
+      window._prodFotoData=dataUrl;
+      estadoFotoProd('✅ Foto lista','#8bf0b0');
+      renderFotoProdPreview();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function handleFotoProd(input){cargarArchivoFotoProd(input.files&&input.files[0]);}
+function soltarFotoProd(ev,zona){
+  ev.preventDefault();
+  if(zona){zona.style.borderColor='';zona.style.background='';}
+  cargarArchivoFotoProd(ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0]);
+}
+async function pegarFotoProd(){
+  if(!navigator.clipboard||!navigator.clipboard.read){
+    estadoFotoProd('Este navegador no permite pegar desde el botón. Usa Ctrl+V con el formulario abierto.','#f4d778');
+    return;
+  }
+  try{
+    const items=await navigator.clipboard.read();
+    for(const it of items){
+      const tipo=it.types.find(t=>t.startsWith('image/'));
+      if(tipo){
+        const blob=await it.getType(tipo);
+        cargarArchivoFotoProd(new File([blob],'pegada.png',{type:tipo}));
+        return;
+      }
+    }
+    estadoFotoProd('No hay ninguna imagen copiada en el portapapeles.','#f4d778');
+  }catch(e){
+    estadoFotoProd('No se pudo leer el portapapeles. Prueba con Ctrl+V.','#f4d778');
+  }
+}
+// Ctrl+V en cualquier parte mientras el formulario de producto está abierto.
+document.addEventListener('paste',ev=>{
+  const modal=document.getElementById('modal-prod');
+  if(!modal||!modal.classList.contains('show'))return;
+  const items=(ev.clipboardData&&ev.clipboardData.items)||[];
+  for(const it of items){
+    if(it.type&&it.type.startsWith('image/')){
+      ev.preventDefault();
+      cargarArchivoFotoProd(it.getAsFile());
+      return;
+    }
+  }
+});
+function renderFotoProdPreview(){
+  const el=document.getElementById('p-foto-preview');
+  if(!el)return;
+  el.innerHTML=window._prodFotoData
+    ?`<div style="position:relative;display:inline-block"><img src="${window._prodFotoData}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"><button type="button" onclick="quitarFotoProd()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;font-size:12px;cursor:pointer;line-height:1">✕</button></div>`
+    :'';
+}
+function quitarFotoProd(){
+  window._prodFotoData=null;
+  ['p-foto-input','p-foto-camara'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  estadoFotoProd('');
+  renderFotoProdPreview();
+}
+// Miniatura para los buscadores y las líneas de venta. Sin foto cae a un icono,
+// para que la fila no se descuadre.
+function miniFotoProd(p,size){
+  const s=size||34;
+  if(p&&p.foto)return `<img src="${p.foto}" alt="" style="width:${s}px;height:${s}px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--border)">`;
+  return `<div style="width:${s}px;height:${s}px;background:var(--gold-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*0.45)}px;flex-shrink:0;color:var(--gold)">🪑</div>`;
+}
+// Abre la foto en grande para mostrársela al cliente durante la venta.
+function verFotoProdVenta(id){
+  const p=inventario.find(x=>String(x.id)===String(id));
+  if(!p||!p.foto)return;
+  const w=window.open('','_blank');
+  if(!w)return;
+  w.document.write('<html><head><title>'+String(p.nombre||'').replace(/[<>&"]/g,'')+'</title></head><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+p.foto+'" style="max-width:100%;max-height:100vh"></body></html>');
+  w.document.close();
+}
+
 function handleFotoCompra(input){
   const file=input.files[0];
   if(!file)return;
@@ -5555,10 +5697,13 @@ function renderInv(){
       const stockTxt=stock<=0?'Sin stock':stock<=minStock?`${stock} u (bajo)`:`${stock} u`;
       html+=`<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div style="flex:1;cursor:pointer" onclick="editProd('${p.id}')">
-            <h4>${p.nombre}</h4>
-            <div style="margin-top:3px"><span class="pill">${p.marca||'—'}</span> <span class="tag ${stockTag}">${stockTxt}</span></div>
-            ${p.notas?`<div class="muted" style="font-size:11px;margin-top:4px;font-style:italic">${p.notas}</div>`:''}
+          <div style="flex:1;cursor:pointer;display:flex;gap:10px;align-items:flex-start" onclick="editProd('${p.id}')">
+            ${miniFotoProd(p,44)}
+            <div style="flex:1;min-width:0">
+              <h4>${p.nombre}</h4>
+              <div style="margin-top:3px"><span class="pill">${p.marca||'—'}</span> <span class="tag ${stockTag}">${stockTxt}</span></div>
+              ${p.notas?`<div class="muted" style="font-size:11px;margin-top:4px;font-style:italic">${p.notas}</div>`:''}
+            </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-size:11px;color:var(--accent-text)">May ${fmt(p.may||0)}</div>
@@ -5589,6 +5734,8 @@ async function openProd(){
   document.getElementById('p-stock').value='0';
   document.getElementById('p-min-stock').value='2';
   document.getElementById('p-notas').value='';
+  window._prodFotoData=null;
+  quitarFotoProd();
   document.getElementById('del-prod-btn').style.display='none';
   openModal('modal-prod');
 }
@@ -5609,6 +5756,10 @@ async function editProd(id){
   document.getElementById('p-stock').value=p.stock||0;
   document.getElementById('p-min-stock').value=p.minStock||2;
   document.getElementById('p-notas').value=p.notas||'';
+  window._prodFotoData=p.foto||null;
+  ['p-foto-input','p-foto-camara'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  estadoFotoProd('');
+  renderFotoProdPreview();
   document.getElementById('del-prod-btn').style.display='inline-block';
   openModal('modal-prod');
 }
@@ -5626,16 +5777,21 @@ async function saveProd(){
     costo:parseInt(document.getElementById('p-costo').value)||0,
     stock:parseInt(document.getElementById('p-stock').value)||0,
     minStock:parseInt(document.getElementById('p-min-stock').value)||2,
-    notas:document.getElementById('p-notas').value.trim()
+    notas:document.getElementById('p-notas').value.trim(),
+    foto:window._prodFotoData||null
   };
+  // Antes se guardaba en Firestore solo lo del formulario, asi que al editar se
+  // borraban los campos que el formulario no maneja. Ahora se guarda el fusionado.
+  let guardado;
   if(editProdId){
     const i=inventario.findIndex(p=>String(p.id)===String(editProdId));
-    if(i>=0)inventario[i]={...inventario[i],...data};
+    guardado={...(i>=0?inventario[i]:{}),...data,id:editProdId};
+    if(i>=0)inventario[i]=guardado;
   }else{
-    data.id=uid();
-    inventario.push(data);
+    guardado={...data,id:uid()};
+    inventario.push(guardado);
   }
-  await saveProdDB(data.id?data:{...data,id:editProdId||uid()});
+  await saveProdDB(guardado);
   closeModal('modal-prod');
   renderInv();
 }
@@ -5722,9 +5878,12 @@ function autocompleteProductoVT(i){
     const precioHtml=pc.promo
       ?`<span style="white-space:nowrap"><span style="text-decoration:line-through;color:var(--text3);font-size:10px">${fmt(pc.normal)}</span> <strong style="color:#8bf0b0">${fmt(pc.precio)}</strong></span>`
       :`<span style="color:var(--accent-text);white-space:nowrap">${fmt(pc.precio)}</span>`;
-    return`<div onclick="selProdAutoVT(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
-      <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
+    return`<div onclick="selProdAutoVT(${i},'${p.id}',event)" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;display:flex;gap:9px;align-items:center" onmouseover="this.style.background='var(--gold-bg)'" onmouseout="this.style.background=''">
+      ${miniFotoProd(p)}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:8px"><span><strong>${p.nombre}</strong>${pc.promo?' <span class="tag" style="background:rgba(139,240,176,.14);color:#8bf0b0">PROMO</span>':''}</span>${precioHtml}</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:1px">${p.marca||''} ${stockTxt?'· '+stockTxt:''}</div>
+      </div>
     </div>`;
   }).join('');
   ac.style.display='block';
@@ -7291,8 +7450,10 @@ Object.assign(window,{
   renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirCompra,guardarCompra,eliminarCompra,
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
   abrirEmpleado,eliminarEmpleado,registrarEventoRRHH,eliminarEventoRRHH,
+  renderPersonal,faltaRapida,atrasoRapido,toggleActivoEmpleado,
   renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,restaurarInsumosDefault,
   handleFotoCompra,calcSugerenciaCompra,verFotoCompra,
+  handleFotoProd,quitarFotoProd,soltarFotoProd,pegarFotoProd,verFotoProdVenta,
   imprimirVenta,descargarPedidoHTML,
   autocompleteCliente,selCliente,solicitarNotificaciones,
   renderVentasDeb,renderClientesDeb,renderInvDeb,
