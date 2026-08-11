@@ -1218,7 +1218,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocs,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocs,getDocFromCache,getDocsFromCache,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app=initializeApp({apiKey:"AIzaSyAWC_1RUqXFXWgY9duTHffq-kanGFKP9Mw",authDomain:"ecohome-a5d86.firebaseapp.com",projectId:"ecohome-a5d86",storageBucket:"ecohome-a5d86.firebasestorage.app",messagingSenderId:"245050896685",appId:"1:245050896685:web:71ebcfeb171258a9c623a4"});
 // Persistencia offline: las escrituras se confirman al instante en local y sincronizan en 2do plano.
@@ -4855,34 +4855,84 @@ async function toggleAdmin(){
 }
 
 
+// Cuando la conexión con Firestore queda a medias (bloqueador del navegador, antivirus,
+// firewall o red que acepta pero no responde), getDocs no falla: se queda esperando para
+// siempre y la pantalla "Conectando" no se va nunca. Estos helpers le ponen un límite y
+// caen a los datos guardados en el equipo, para que la app siempre abra.
+const TIMEOUT_CARGA_MS=15000;
+let HUBO_TIMEOUT_CARGA=false;
+const VACIO={docs:[],empty:true};
+
+function conTimeout(promesa,ms){
+  let t;
+  return Promise.race([
+    promesa.finally(()=>clearTimeout(t)),
+    new Promise((_,rechazar)=>{t=setTimeout(()=>rechazar(new Error('timeout')),ms);})
+  ]);
+}
+async function leerColeccion(nombre){
+  try{
+    return await conTimeout(getDocs(collection(db,nombre)),TIMEOUT_CARGA_MS);
+  }catch(e){
+    HUBO_TIMEOUT_CARGA=true;
+    try{return await getDocsFromCache(collection(db,nombre));}
+    catch(e2){return VACIO;}
+  }
+}
+async function leerDoc(...ruta){
+  try{
+    return await conTimeout(getDoc(doc(db,...ruta)),TIMEOUT_CARGA_MS);
+  }catch(e){
+    HUBO_TIMEOUT_CARGA=true;
+    try{return await getDocFromCache(doc(db,...ruta));}
+    catch(e2){return null;}
+  }
+}
+// Antes, una conexión a medias dejaba la app pegada en "Conectando" para siempre.
+// Ahora entra igual con lo último guardado en el equipo y lo dice claramente.
+function mostrarAvisoSinConexion(){
+  if(document.getElementById('aviso-sin-conexion'))return;
+  const d=document.createElement('div');
+  d.id='aviso-sin-conexion';
+  d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9998;background:#b45309;color:#fff;padding:9px 14px;font-size:12px;display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+  d.innerHTML=`<span>⚠️ No se pudo conectar con el servidor. Estás viendo los últimos datos guardados en este equipo y <strong>los cambios no se están sincronizando</strong>.</span>
+    <button onclick="location.reload()" style="background:#fff;color:#b45309;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px">Reintentar</button>
+    <button onclick="this.parentElement.remove()" style="background:none;border:1px solid rgba(255,255,255,.6);color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ocultar</button>`;
+  document.body.appendChild(d);
+}
+
 async function initFirebase(){
   document.getElementById('loading').style.display='flex';
   try{
     // Disparar todas las lecturas en paralelo: en móvil cada await secuencial sumaba
     // segundos de latencia. En modo vendedora solo se necesita inventario/promociones/empleados.
-    const pInv=getDocs(collection(db,'inventario'));
-    const pProm=getDocs(collection(db,'promociones'));
-    const pEmp=getDocs(collection(db,'empleados'));
-    const pVta=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'ventas'));
-    const pCot=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'cotizaciones'));
-    const pGas=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'gastos'));
-    const pCom=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'compras'));
-    const pCaj=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'cajas'));
-    const pRh=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'rrhh'));
-    const pAdm=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','admin')).catch(()=>null);
-    const pCalc=MODO_VENDEDORA?Promise.resolve(null):getDoc(doc(db,'config','calculadora')).catch(()=>null);
-    const pHer=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'hermanos'));
-    const pAsi=MODO_VENDEDORA?Promise.resolve(null):getDocs(collection(db,'asistencia'));
+    const pInv=leerColeccion('inventario');
+    const pProm=leerColeccion('promociones');
+    const pEmp=leerColeccion('empleados');
+    const pVta=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('ventas');
+    const pCot=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('cotizaciones');
+    const pGas=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('gastos');
+    const pCom=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('compras');
+    const pCaj=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('cajas');
+    const pRh=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('rrhh');
+    const pAdm=MODO_VENDEDORA?Promise.resolve(null):leerDoc('config','admin');
+    const pCalc=MODO_VENDEDORA?Promise.resolve(null):leerDoc('config','calculadora');
+    const pHer=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('hermanos');
+    const pAsi=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('asistencia');
     // Cupones: también en modo vendedora (se canjean y se generan al vender)
-    const pCup=getDocs(collection(db,'cupones')).catch(()=>null);
-    const pCupCfg=getDoc(doc(db,'config','cupones')).catch(()=>null);
+    const pCup=leerColeccion('cupones');
+    const pCupCfg=leerDoc('config','cupones');
     // Puntos de fidelización: también en modo vendedora (se ganan al vender)
-    const pPts=getDocs(collection(db,'puntosCliente')).catch(()=>null);
+    const pPts=leerColeccion('puntosCliente');
 
     const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap]=
       await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts]);
 
-    if(invSnap.empty){
+    // Si la lectura se cortó por falta de conexión, "vacío" no significa que la base esté
+    // vacía: sembrar los datos por defecto aquí pisaría el inventario real.
+    if(invSnap.empty&&HUBO_TIMEOUT_CARGA){
+      inventario=[];
+    }else if(invSnap.empty){
       const batch=writeBatch(db);
       INVENTARIO_DEFAULT.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));
       await batch.commit();
@@ -4917,7 +4967,9 @@ async function initFirebase(){
     });
 
     if(!MODO_VENDEDORA){
-      if(vtaSnap.empty){
+      if(vtaSnap.empty&&HUBO_TIMEOUT_CARGA){
+        ventas=[];
+      }else if(vtaSnap.empty){
         const batch=writeBatch(db);
         VENTAS_DEFAULT.forEach(v=>batch.set(doc(db,'ventas',String(v.id)),v));
         await batch.commit();
@@ -5030,6 +5082,7 @@ async function initFirebase(){
   renderVentas();
   actualizarBadges();
   if(MODO_VENDEDORA)setTab('nueva-venta');
+  if(HUBO_TIMEOUT_CARGA)mostrarAvisoSinConexion();
 }
 initFirebase();
 
