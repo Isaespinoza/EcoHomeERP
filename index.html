@@ -3748,6 +3748,59 @@ function gananciaMes(anio,mes){
   const sueldos=totalSueldosMes(mesStr);
   return{ventas:totalVentas,ganancia:totalVentas-costoVendido-totalGastosFijos-sueldos};
 }
+// =========== IVA CON ARRASTRE DE REMANENTE ===========
+// Antes cada mes se calculaba aislado: si el crédito superaba al débito, ese excedente
+// se mostraba como remanente y al mes siguiente se perdía. El remanente de crédito
+// fiscal se imputa al período siguiente y se acumula mientras siga sobrando
+// (Art. 27 del DL 825), así que hay que encadenar los meses desde el primero con
+// movimiento hasta el que se está mirando.
+const TASA_IVA=0.19;
+function netoDesdeBruto(monto){return (monto||0)/(1+TASA_IVA);}
+
+function primerMesConMovimiento(){
+  let min=null;
+  const considerar=f=>{if(f&&(!min||f<min))min=f;};
+  ventas.forEach(v=>{if((v.estado||'pendiente')!=='cancelado')considerar(v.fecha);});
+  compras.forEach(g=>considerar(g.fecha));
+  return min?min.slice(0,7):null;
+}
+function sumaMesSiguiente(mesStr){
+  const [a,m]=mesStr.split('-').map(Number);
+  return m===12?`${a+1}-01`:`${a}-${String(m+1).padStart(2,'0')}`;
+}
+// Débito y crédito propios del mes, sin considerar arrastres.
+function ivaBrutoDelMes(mesStr){
+  const vtas=ventas.filter(v=>v.fecha&&v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado');
+  const debito=vtas.reduce((a,v)=>a+netoDesdeBruto(v.total)*TASA_IVA,0);
+  const credito=compras.filter(g=>g.fecha&&g.fecha.startsWith(mesStr)&&g.conIVA)
+    .reduce((a,g)=>a+netoDesdeBruto(g.monto)*TASA_IVA,0);
+  return{debito,credito};
+}
+// Recorre mes a mes desde el primer movimiento, incluidos los meses sin actividad,
+// para que el remanente no se pierda al saltarlos.
+function ivaDelMes(mesStr){
+  const inicio=primerMesConMovimiento();
+  const vacio={debito:0,credito:0,remanenteAnterior:0,aPagar:0,remanenteNuevo:0,desde:null,meses:0};
+  if(!inicio||mesStr<inicio){
+    const b=ivaBrutoDelMes(mesStr);
+    return{...vacio,debito:b.debito,credito:b.credito,aPagar:Math.max(0,b.debito-b.credito),
+      remanenteNuevo:Math.max(0,b.credito-b.debito)};
+  }
+  let remanente=0,mes=inicio,meses=0,r=null;
+  while(mes<=mesStr){
+    const {debito,credito}=ivaBrutoDelMes(mes);
+    const saldo=debito-credito-remanente;
+    r={debito,credito,remanenteAnterior:remanente,
+       aPagar:Math.max(0,saldo),remanenteNuevo:saldo<0?-saldo:0,
+       desde:inicio,meses:meses+1};
+    remanente=r.remanenteNuevo;
+    mes=sumaMesSiguiente(mes);
+    meses++;
+    if(meses>600)break; // corte de seguridad
+  }
+  return r;
+}
+
 function renderFinanzas(){
   const cont=document.getElementById('fin-content');
   if(!cont)return;
@@ -3777,10 +3830,10 @@ function renderFinanzas(){
   const sueldosSec=renderSueldosSection(mesStr,MESES[mesSel]);
   const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos;
 
-  // IVA del mes (estimado): débito de ventas, crédito de compras con factura
-  const ivaDebito=totalVentas/1.19*0.19;
-  const ivaCredito=comprasMes.filter(g=>g.conIVA).reduce((a,g)=>a+(g.monto||0)/1.19*0.19,0);
-  const ivaAPagar=ivaDebito-ivaCredito;
+  // IVA del mes, arrastrando el remanente de crédito de los meses anteriores
+  const iva=ivaDelMes(mesStr);
+  const ivaDebito=iva.debito, ivaCredito=iva.credito;
+  const ivaAPagar=iva.aPagar>0?iva.aPagar:-iva.remanenteNuevo;
 
   // Ventas agrupadas por día (control de boletas)
   const ventasPorDia={};
@@ -3871,14 +3924,25 @@ function renderFinanzas(){
 
     <!-- IVA DEL MES -->
     <div class="card" style="border-top:3px solid #a78bfa;margin-top:14px">
-      <h4 style="margin-bottom:10px">IVA del mes (estimado)</h4>
-      <div class="item-row"><span>IVA débito (ventas)</span><strong>${fmt(ivaDebito)}</strong></div>
-      <div class="item-row"><span>IVA crédito (compras con factura)</span><strong style="color:#8bf0b0">−${fmt(ivaCredito)}</strong></div>
+      <h4 style="margin-bottom:10px">IVA de ${MESES[mesSel]} (estimado)</h4>
+      <div class="item-row"><span>IVA débito (ventas)</span><strong>${fmt(iva.debito)}</strong></div>
+      <div class="item-row"><span>IVA crédito (compras con factura)</span><strong style="color:#8bf0b0">−${fmt(iva.credito)}</strong></div>
+      ${iva.remanenteAnterior>0
+        ? `<div class="item-row"><span>Remanente arrastrado del mes anterior</span><strong style="color:#8bf0b0">−${fmt(iva.remanenteAnterior)}</strong></div>`
+        : `<div class="item-row"><span class="muted">Remanente del mes anterior</span><span class="muted">sin remanente</span></div>`}
       <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
-        <strong>${ivaAPagar>=0?'IVA a pagar (aprox.)':'Remanente de crédito (aprox.)'}</strong>
-        <strong style="color:${ivaAPagar>=0?'#f28a8a':'#8bf0b0'}">${fmt(Math.abs(ivaAPagar))}</strong>
+        <strong>${iva.aPagar>0?'IVA a pagar (aprox.)':'Remanente para el próximo mes'}</strong>
+        <strong style="color:${iva.aPagar>0?'#f28a8a':'#8bf0b0'}">${fmt(iva.aPagar>0?iva.aPagar:iva.remanenteNuevo)}</strong>
       </div>
-      <div class="help" style="margin-top:10px">Estimación basada en tus ventas y compras registradas. El F29 real puede incluir remanentes de meses anteriores, PPM u otros ajustes.</div>
+      ${iva.aPagar>0&&iva.remanenteAnterior>0
+        ? `<div class="muted" style="font-size:11px;margin-top:6px">El remanente que traías se consumió completo en este mes.</div>`:''}
+      <div class="help" style="margin-top:10px">
+        ${iva.desde
+          ? `El remanente se arrastra mes a mes desde <strong>${iva.desde.split('-').reverse().join('/')}</strong>, que es el primer movimiento cargado en el ERP (${iva.meses===1?'1 mes encadenado':iva.meses+' meses encadenados'}).
+             Si antes de esa fecha ya traías remanente del F29, este número queda corto: falta esa parte.`
+          : 'Aún no hay ventas ni compras cargadas para calcular el IVA.'}
+        Estimación sobre lo registrado aquí; el F29 real puede incluir PPM, notas de crédito, reajuste del remanente en UTM u otros ajustes.
+      </div>
     </div>
 
     <!-- CONTROL DE BOLETAS -->
