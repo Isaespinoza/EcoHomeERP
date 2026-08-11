@@ -1726,9 +1726,22 @@ function renderInicio(){
 }
 
 // =========== NUEVA VENTA TAB ===========
+// El formulario de Nueva Venta es también el de editar y el de cotizar: así los tres
+// muestran siempre todas las opciones (promociones, descuento, cupón, pago mixto) en
+// vez de tener tres formularios que se van separando con el tiempo.
+function modoNV(){return (window._nvModo&&window._nvModo.tipo)||'venta';}
+function idEdicionNV(){return (window._nvModo&&window._nvModo.id)||null;}
+function salirModoNV(){
+  window._nvModo=null;
+  window._nvItems=[];
+  renderNuevaVentaTab();
+}
+
 function renderNuevaVentaTab(){
-  // Chips de ventas pausadas
-  const pausadas=getVentasPausadas();
+  const modo=modoNV();
+  const editando=modo==='edicion',cotizando=modo==='cotizacion';
+  // Las ventas en pausa son solo del flujo de venta nueva
+  const pausadas=(editando||cotizando)?[]:getVentasPausadas();
   let chipsHtml='';
   if(pausadas.length){
     chipsHtml=`<div style="margin-bottom:12px">
@@ -1744,8 +1757,15 @@ function renderNuevaVentaTab(){
 
   let ultimoVendedor='';try{ultimoVendedor=localStorage.getItem('dr_ultimo_vendedor')||'';}catch(e){}
 
+  const titulo=editando?'Editar venta':cotizando?'Nueva cotización':'Nueva Venta';
+  const avisoModo=(editando||cotizando)?`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:${editando?'rgba(244,215,120,.14)':'var(--blue-bg)'};border:1px solid ${editando?'#f4d778':'var(--blue)'};border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <span style="font-size:12px;color:${editando?'#f4d778':'var(--blue)'}">${editando?'Estás editando una venta ya guardada. El stock se ajusta a la diferencia.':'Estás creando una cotización. No descuenta stock.'}</span>
+      <button class="btn btn-sec btn-sm" onclick="salirModoNV()">Cancelar</button>
+    </div>`:'';
+
   document.getElementById('nv-content').innerHTML=`
-    <div class="section-title">Nueva Venta</div>
+    <div class="section-title">${titulo}</div>
+    ${avisoModo}
     ${chipsHtml}
     <div class="row">
       <div class="field"><label>Tipo de venta</label><select id="nv-tipo" onchange="updTipoVentaNV();renderItemsNV()">
@@ -1857,6 +1877,10 @@ function renderNuevaVentaTab(){
       </div>
     </div>
 
+    <div class="row">
+      <div class="field"><label>Garantía (meses) <span style="text-transform:none;font-weight:400">— opcional</span></label><input type="number" id="nv-garantia" placeholder="Ej: 36" min="0"></div>
+      <div class="field"><label>Dirección (opcional)</label><input type="text" id="nv-dir"></div>
+    </div>
     <div class="field"><label>Notas</label><textarea id="nv-notas" rows="2"></textarea></div>
 
     <div style="height:90px"></div>
@@ -1868,13 +1892,50 @@ function renderNuevaVentaTab(){
           <div style="font-size:10px;opacity:.85"><span id="nv-bar-items">0 productos</span><span id="nv-bar-desc"></span></div>
           <div style="font-size:22px;font-weight:700" id="nv-bar-total">$0</div>
         </div>
-        <button onclick="pausarVentaNV()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px" title="Pausar venta" aria-label="Pausar venta">❚❚</button>
-        <button onclick="saveVentaNV()" style="background:#fff;color:var(--sage-dark);border:none;padding:12px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">Guardar</button>
+        ${(editando||cotizando)?'':`<button onclick="pausarVentaNV()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px" title="Pausar venta" aria-label="Pausar venta">❚❚</button>`}
+        <button onclick="saveVentaNV()" style="background:#fff;color:var(--sage-dark);border:none;padding:12px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">${editando?'Guardar cambios':cotizando?'Guardar cotización':'Guardar'}</button>
       </div>
     </div>`;
   window._nvItems=window._nvItems&&window._nvRestaurando?window._nvItems:[{prodId:null,desc:'',qty:1,precio:0,armado:'solo',respaldoId:null}];
   window._nvRestaurando=false;
   renderItemsNV();
+}
+
+// Carga una venta o cotización existente en el formulario completo y abre la pestaña.
+function abrirEnFormularioNV(doc,modo,id){
+  window._nvModo={tipo:modo,id:id||null};
+  window._nvItems=(doc.items||[]).map(it=>({...it}));
+  window._nvRestaurando=true;
+  setTab('nueva-venta');
+  const s=(el,val)=>{const e=document.getElementById(el);if(e&&val!=null)e.value=val;};
+  s('nv-tipo',doc.tipo||'min');
+  llenarSelectVendedores('nv-vendedor',doc.vendedor||listaVendedores()[0]);
+  s('nv-cliente',doc.cliente==='Cliente mostrador'?'':doc.cliente||'');
+  s('nv-rut',doc.rut||'');s('nv-empresa',doc.empresa||'');s('nv-tel',doc.tel||'');
+  s('nv-fecha',doc.fecha||today());
+  s('nv-fecha-desp',doc.fechaDesp||doc.fecha||today());
+  s('nv-pago',doc.pago||'Efectivo');
+  s('nv-estado',doc.estado||'pendiente');
+  s('nv-desp',doc.desp||0);
+  s('nv-calle',doc.despCalle||'');s('nv-numero',doc.despNumero||'');
+  s('nv-comuna',doc.despComuna||'');s('nv-hora',doc.despHora||'Sin preferencia');
+  s('nv-cancelado',doc.cancelado||0);
+  s('nv-garantia',doc.garantiaMeses||'');
+  s('nv-dir',doc.dir||'');
+  s('nv-notas',doc.notas||'');
+  // El descuento se guarda ya calculado en pesos, así que se recarga como monto fijo.
+  if((parseInt(doc.descuento)||0)>0){s('nv-desc-tipo','$');s('nv-desc-valor',parseInt(doc.descuento)||0);}
+  if(doc.cupon&&doc.cupon.codigo)s('nv-cupon',doc.cupon.codigo);
+  if(doc.pagoDesglose){
+    const d=doc.pagoDesglose;
+    s('nv-mix-efectivo',d.efectivo||0);s('nv-mix-tarjeta',d.tarjeta||0);
+    s('nv-mix-transferencia',d.transferencia||0);s('nv-mix-debito',d.debito||0);
+    s('nv-mix-credito',d.credito||0);
+  }
+  updTipoVentaNV();toggleDespNV();updPagoNV();
+  renderItemsNV();
+  recalcTotalNV();
+  window.scrollTo(0,0);
 }
 
 // =========== VENTAS EN PAUSA ===========
@@ -2247,7 +2308,13 @@ function recalcTotalNV(){
   if(barT)barT.textContent=fmt(total);
 }
 async function saveVentaNV(){
+  const modo=modoNV(),editId=idEdicionNV();
+  const editando=modo==='edicion',cotizando=modo==='cotizacion';
+  const orig=editando?ventas.find(x=>String(x.id)===String(editId)):null;
+  if(editando&&!orig){toast('No se encontró la venta que estabas editando.');salirModoNV();return;}
+
   let cliente=document.getElementById('nv-cliente').value.trim();
+  if(cotizando&&!cliente){alert('Falta el nombre del cliente para la cotización');return;}
   if(!cliente)cliente='Cliente mostrador';
   const items=(window._nvItems||[]).filter(it=>it.prodId||String(it.desc||'').trim()).map(it=>({...it}));
   if(!items.length){alert('Agrega al menos un producto');return;}
@@ -2255,13 +2322,22 @@ async function saveVentaNV(){
   const desc=calcDescuentoNV(sub);
   const descPromos=descuentoPromosNV();
   // Cupón de descuento: revalidar al guardar (pudo vencer o usarse desde otro equipo)
-  let cuponAplicado=null,descCupon=0;
-  const codeCupon=(document.getElementById('nv-cupon')||{value:''}).value.trim();
+  let cuponAplicado=null,descCupon=0,cuponYaAplicado=null;
+  const codeCupon=(document.getElementById('nv-cupon')||{value:''}).value.trim().toUpperCase();
   if(codeCupon){
-    const r=validarCupon(codeCupon,sub);
-    if(!r.ok){
-      if(!(await confirmDialog('⚠️ '+r.msg+'\n\n¿Guardar la venta SIN el cupón?')))return;
-    }else{cuponAplicado=r.cupon;descCupon=r.desc;}
+    // Al editar, el cupón que ya traía la venta figura como usado: se recalcula sin
+    // volver a marcarlo ni rechazarlo por estar usado.
+    const eraElMismo=orig&&orig.cupon&&String(orig.cupon.codigo).toUpperCase()===codeCupon;
+    if(eraElMismo){
+      const c=cupones.find(x=>String(x.id)===String(orig.cupon.id))||null;
+      descCupon=c?Math.min(c.tipoDesc==='%'?Math.round(sub*c.valor/100):Math.round(c.valor),sub):(parseInt(orig.descuentoCupon)||0);
+      cuponYaAplicado=orig.cupon;
+    }else{
+      const r=validarCupon(codeCupon,sub);
+      if(!r.ok){
+        if(!(await confirmDialog('⚠️ '+r.msg+'\n\n¿Guardar SIN el cupón?')))return;
+      }else{cuponAplicado=r.cupon;descCupon=r.desc;}
+    }
   }
   const totalFinal=Math.max(0,sub-desc-descCupon);
   const cancelado=parseInt(document.getElementById('nv-cancelado').value)||0;
@@ -2271,9 +2347,10 @@ async function saveVentaNV(){
     const g=id=>parseInt(document.getElementById(id).value)||0;
     pagoDesglose={efectivo:g('nv-mix-efectivo'),tarjeta:g('nv-mix-tarjeta'),transferencia:g('nv-mix-transferencia'),debito:g('nv-mix-debito'),credito:g('nv-mix-credito')};
   }
+  const gTxt=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   const v={
-    id:uid(),
-    horaCreacion:horaActual(),
+    id:editando?orig.id:uid(),
+    horaCreacion:editando?orig.horaCreacion:horaActual(),
     fecha:document.getElementById('nv-fecha').value||today(),
     fechaDesp:document.getElementById('nv-fecha-desp').value||today(),
     estado:document.getElementById('nv-estado').value||'pendiente',
@@ -2291,29 +2368,73 @@ async function saveVentaNV(){
     despComuna:document.getElementById('nv-comuna').value.trim(),
     despHora:document.getElementById('nv-hora').value,
     cancelado,
+    dir:gTxt('nv-dir'),
+    garantiaMeses:parseInt((document.getElementById('nv-garantia')||{}).value)||0,
     notas:document.getElementById('nv-notas').value.trim(),
     items,subtotal:sub,descuento:desc,descuentoPromos:descPromos,
-    descuentoCupon:descCupon,cupon:cuponAplicado?{id:cuponAplicado.id,codigo:cuponAplicado.codigo}:null,
+    descuentoCupon:descCupon,
+    cupon:cuponAplicado?{id:cuponAplicado.id,codigo:cuponAplicado.codigo}:(cuponYaAplicado||null),
     total:totalFinal,saldo:Math.max(0,totalFinal-cancelado)
   };
+
+  // ---- COTIZACIÓN: no toca stock, no da puntos, no genera cupones ----
+  if(cotizando){
+    const previa=editId?cotizaciones.find(x=>String(x.id)===String(editId)):null;
+    const c={...v,id:editId||v.id,convertida:previa?!!previa.convertida:false};
+    delete c.horaCreacion;
+    const i=editId?cotizaciones.findIndex(x=>String(x.id)===String(editId)):-1;
+    if(i>=0)cotizaciones[i]=c;else cotizaciones.push(c);
+    try{await saveCotDB(c);}catch(e){toast('⚠️ Error al guardar: '+e.message);}
+    salirModoNV();
+    toast(editId?'✅ Cotización actualizada':'✅ Cotización guardada');
+    setTab('cotizaciones');
+    return;
+  }
+
   // Todas las escrituras (stock + productos nuevos + venta) en UN solo batch atómico = 1 viaje de red
   const batch=writeBatch(db);
-  descontarStockItems(v.items,batch);              // descuenta stock (con combos) -> al batch
+  if(editando){
+    // Conservar lo que el formulario no edita
+    if(Array.isArray(orig.abonos)&&orig.abonos.length)v.abonos=orig.abonos;
+    if(orig.cuponSorpresa)v.cuponSorpresa=orig.cuponSorpresa;
+    // Stock: devolver lo de antes y descontar lo nuevo (salvo venta cancelada ya devuelta)
+    if(orig.stockDevuelto){v.stockDevuelto=true;}
+    else{
+      restaurarStockItems(orig.items||[],batch);
+      descontarStockItems(v.items,batch);
+    }
+  }else{
+    descontarStockItems(v.items,batch);              // descuenta stock (con combos) -> al batch
+  }
   await agregarProductosManuales(v.items,v.tipo,batch); // crea productos manuales -> al batch
   // Marcar el cupón como usado (fecha + venta) en el mismo batch
   if(cuponAplicado){
     cuponAplicado.usado=true;cuponAplicado.usadoFecha=today();cuponAplicado.usadoVentaId=v.id;
     batch.set(doc(db,'cupones',String(cuponAplicado.id)),cuponAplicado);
   }
-  // Cupón sorpresa (Sistema 2): si está activo y la venta supera el monto gatillante
-  if(cuponesConfig.activo&&(parseInt(cuponesConfig.monto)||0)>0&&totalFinal>=(parseInt(cuponesConfig.monto)||0)){
-    const cs=generarCuponSorpresa(v,batch);
-    v.cuponSorpresa={codigo:cs.codigo,tipoDesc:cs.tipoDesc,valor:cs.valor,vence:cs.vence};
+  // Cupón sorpresa y puntos: solo en ventas nuevas, para no duplicarlos al editar
+  if(!editando){
+    if(cuponesConfig.activo&&(parseInt(cuponesConfig.monto)||0)>0&&totalFinal>=(parseInt(cuponesConfig.monto)||0)){
+      const cs=generarCuponSorpresa(v,batch);
+      v.cuponSorpresa={codigo:cs.codigo,tipoDesc:cs.tipoDesc,valor:cs.valor,vence:cs.vence};
+    }
+    otorgarPuntos(v,batch);
   }
-  otorgarPuntos(v,batch);
   batch.set(doc(db,'ventas',String(v.id)),v);
-  ventas.push(v);
+  if(editando){
+    const i=ventas.findIndex(x=>String(x.id)===String(v.id));
+    if(i>=0)ventas[i]=v;else ventas.push(v);
+  }else{
+    ventas.push(v);
+  }
   // UI optimista: refresca de inmediato; el guardado sincroniza en 2do plano (offline-first)
+  if(editando){
+    salirModoNV();
+    batch.commit().catch(e=>toast('⚠️ Error al sincronizar la venta: '+e.message));
+    toast('✅ Cambios guardados');
+    setTab('ventas');
+    return;
+  }
   renderNuevaVentaTab();
   batch.commit().catch(e=>toast('⚠️ Error al sincronizar la venta: '+e.message));
   // Impresión: en PC se abre automáticamente; en celular queda un botón para no congelar Safari iOS
@@ -2610,17 +2731,14 @@ function renderCotizaciones(){
   document.getElementById('cot-content').innerHTML=html;
 }
 
+// Cotizar usa el mismo formulario completo que Nueva Venta.
 function nuevaCotizacion(){
-  window._editCotId=null;
-  window._cotItems=[];
-  abrirModalCot();
+  abrirEnFormularioNV({items:[{prodId:null,desc:'',qty:1,precio:0,armado:'solo',respaldoId:null}]},'cotizacion');
 }
 function editarCotizacion(id){
   const c=cotizaciones.find(x=>String(x.id)===String(id));
   if(!c)return;
-  window._editCotId=id;
-  window._cotItems=c.items.map(it=>({...it}));
-  abrirModalCot(c);
+  abrirEnFormularioNV(c,'cotizacion',id);
 }
 function abrirModalCot(c){
   c=c||{};
@@ -5942,7 +6060,13 @@ const ESTADO_CFG={
 };
 function estadoTag(e){const c=ESTADO_CFG[e]||ESTADO_CFG.pendiente;return`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;padding:2px 9px;border-radius:20px;font-weight:600;background:${c.bg};color:${c.color}"><span style="width:6px;height:6px;border-radius:50%;background:${c.color};display:inline-block"></span>${c.label}</span>`}
 
+// El atajo "+" del encabezado también lleva al formulario completo.
 function openVenta(){
+  salirModoNV();
+  setTab('nueva-venta');
+}
+
+function openVentaModalViejo(){
   editVentaId=null;
   llenarSelectVendedores('vt-vendedor','Isaías');
   ventaItems=[];
@@ -6518,8 +6642,16 @@ function descargarPedidoHTML(){
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);
 }
 
+// Editar usa el mismo formulario completo que Nueva Venta, para no perder
+// promociones, descuento, cupón ni desglose de pago mixto.
 async function editVenta(id){
   if(!(await requiereAdmin()))return;
+  const v=ventas.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  abrirEnFormularioNV(v,'edicion',id);
+}
+
+async function editVentaModalViejo(id){
   const v=ventas.find(x=>String(x.id)===String(id));
   if(!v)return;
   editVentaId=id;
@@ -7425,6 +7557,7 @@ Object.assign(window,{
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
   addItemNV,rmItemNV,selProdNV,updItemNV,recalcTotalNV,updTipoVentaNV,toggleDespNV,saveVentaNV,
+  salirModoNV,abrirEnFormularioNV,
   autocompleteProductoNV,selProdAutoNV,autocompleteProductoVT,selProdAutoVT,
   setArmadoNV,setRespaldoNV,
   renderInv,renderVentas,renderDespachos,renderResumen,renderInicio,renderNuevaVentaTab,renderVendedores,
