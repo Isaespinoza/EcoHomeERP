@@ -437,6 +437,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <button class="sidebar-item" id="si-cupones" onclick="setTab('cupones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg></span><span class="label">Cupones</span></button>
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
+    <button class="sidebar-item" id="si-personal" onclick="setTab('personal')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></span><span class="label">Personal</span><span class="badge" id="badge-personal"></span></button>
     <button class="sidebar-item" id="si-asistencia" onclick="setTab('asistencia')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="label">Asistencia</span></button>
     <button class="sidebar-item" id="si-hermanos" onclick="setTab('hermanos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="label">Hermanos</span><span class="badge" id="badge-hermanos"></span></button>
     <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
@@ -621,6 +622,10 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   </div>
 
   <!-- ASISTENCIA -->
+  <div id="tab-personal" class="section">
+    <div id="personal-content"></div>
+  </div>
+
   <div id="tab-asistencia" class="section">
     <div id="asistencia-content"></div>
   </div>
@@ -2567,13 +2572,26 @@ function fillVendSelects(){
 }
 
 function metasVend(){try{return JSON.parse(localStorage.getItem('dr_metas_vend'))||{};}catch(e){return{};}}
-function guardarMetaVendedor(nom){
+// La meta vive en la ficha del empleado (se sincroniza entre dispositivos). Los vendedores
+// que aún no tienen ficha siguen usando localStorage, como antes.
+function metaDeVendedor(nom){
+  const e=empleadoPorNombre(nom);
+  if(e)return metaEmpleado(e);
+  return parseInt(metasVend()[nom])||0;
+}
+async function guardarMetaVendedor(nom){
   const key=nom.replace(/[^a-zA-Z0-9]/g,'_');
   const inp=document.getElementById('meta-'+key);
-  const val=parseInt(inp&&inp.value)||0;
-  const m=metasVend();
-  if(val>0)m[nom]=val;else delete m[nom];
-  try{localStorage.setItem('dr_metas_vend',JSON.stringify(m));}catch(e){}
+  const val=Math.max(0,parseInt(inp&&inp.value)||0);
+  const e=empleadoPorNombre(nom);
+  if(e){
+    e.metaMensual=val;
+    await saveEmpleadoDB(e);
+  }else{
+    const m=metasVend();
+    if(val>0)m[nom]=val;else delete m[nom];
+    try{localStorage.setItem('dr_metas_vend',JSON.stringify(m));}catch(err){}
+  }
   toast('🎯 Meta guardada');
   renderVendedores();
 }
@@ -2615,15 +2633,21 @@ function renderVendedores(){
 
   // Resumen comparativo arriba
   const totalGeneral=items.reduce((a,v)=>a+v.total,0);
+  const comisionTotalEquipo=Object.entries(vends).reduce((a,[nom,d])=>{
+    const emp=empleadoPorNombre(nom);
+    return a+d.total*(emp?comisionPctEmpleado(emp):COMISION_PCT_DEFECTO)/100;
+  },0);
   let html=`<div class="section-title">👥 Vendedores</div>`;
   html+=`<div class="stat-grid">
     <div class="stat"><div class="stat-lbl">Total equipo</div><div class="stat-val gold">${fmt(totalGeneral)}</div></div>
-    <div class="stat"><div class="stat-lbl">Comisión total (1%)</div><div class="stat-val">${fmt(totalGeneral*0.01)}</div></div>
+    <div class="stat"><div class="stat-lbl">Comisión total</div><div class="stat-val">${fmt(comisionTotalEquipo)}</div></div>
   </div>`;
 
   // Tarjeta por cada vendedor
   Object.entries(vends).sort((a,b)=>b[1].total-a[1].total).forEach(([nom,d])=>{
-    const comision=d.total*0.01;
+    const _empV=empleadoPorNombre(nom);
+    const _pctCom=_empV?comisionPctEmpleado(_empV):COMISION_PCT_DEFECTO;
+    const comision=d.total*_pctCom/100;
     const topProd=Object.entries(d.productos).sort((a,b)=>b[1].qty-a[1].qty).slice(0,5);
     const maxProd=topProd.length?topProd[0][1].qty:1;
 
@@ -2631,8 +2655,7 @@ function renderVendedores(){
     const diasOrd=Object.entries(d.dias).sort((a,b)=>a[0].localeCompare(b[0]));
     const maxDia=Math.max(...diasOrd.map(x=>x[1]),1);
     const promedio=d.total/d.count;
-    const _metasAll=metasVend();
-    const _meta=parseInt(_metasAll[nom])||0;
+    const _meta=metaDeVendedor(nom);
     const _pct=_meta>0?Math.min(100,Math.round(d.total/_meta*100)):0;
     const _metaKey=nom.replace(/[^a-zA-Z0-9]/g,'_');
     const metaHtml=`<div style="background:var(--cream2);border-radius:10px;padding:10px 12px;margin-bottom:12px">
@@ -3359,6 +3382,43 @@ function llenarSelectVendedores(id,valorActual){
 // Criterio Dirección del Trabajo (Dictamen 5308/230 y Ord. 1445/2023):
 // Valor día = sueldo mensual ÷ 30, cualquiera sea el mes.
 // Valor hora = valor día ÷ horas de la jornada diaria (42h/6días = 7h; la colación no cuenta).
+const CARGOS=['Vendedor','Administrativo','Bodega','Despacho','Instalación','Jefatura'];
+const COMISION_PCT_DEFECTO=1;
+// Campos nuevos (cargo, horaEntrada, comisionPct...) no existen en los empleados creados
+// antes, por eso cada lectura pasa por estos helpers en vez de leer la propiedad directa.
+function comisionPctEmpleado(e){
+  return e&&e.comisionPct!=null?e.comisionPct:COMISION_PCT_DEFECTO;
+}
+function horaEntradaEmpleado(e){
+  return (e&&e.horaEntrada)||ASIST_ENTRADA;
+}
+function empleadoPorNombre(nombre){
+  return empleados.find(e=>e.nombre===nombre);
+}
+function metaEmpleado(e){
+  return (e&&e.metaMensual)||0;
+}
+
+// Ingreso mínimo mensual — Ley N° 21.830 (Diario Oficial 22.06.2026), vigente desde el
+// 01.05.2026. Al reajustarse (próximo: 01.01.2027) basta con cambiar estos valores.
+const IMM={
+  desde:'2026-05-01',
+  ley:'Ley 21.830',
+  general:553553,      // trabajadores de 18 a 65 años
+  menorMayor:412938,   // menores de 18 y mayores de 65 años
+  noRemuneracional:356815
+};
+// El mínimo legal se exige por jornada ordinaria completa (42 h semanales desde el
+// 26.04.2026). En jornada parcial se paga en proporción (Art. 44 inc. 3 CdT).
+function sueldoMinimoEmpleado(e){
+  const horas=(e&&e.horasSemana)||42;
+  const base=e&&e.tramoIMM==='menorMayor'?IMM.menorMayor:IMM.general;
+  return Math.round(base*Math.min(1,horas/42));
+}
+function bajoSueldoMinimo(e){
+  return (e.sueldoBase||0)>0&&(e.sueldoBase||0)<sueldoMinimoEmpleado(e);
+}
+
 function valorDiaEmpleado(e){
   return (e.sueldoBase||0)/30;
 }
@@ -3368,9 +3428,12 @@ function valorHoraEmpleado(e){
   const jornadaDiaria=horasSem/diasSem; // 7 horas con 42/6
   return valorDiaEmpleado(e)/jornadaDiaria;
 }
-function comisionEmpleadoMes(nombre,mesStr){
+function ventasEmpleadoMes(nombre,mesStr){
   return ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado'&&v.vendedor===nombre)
-    .reduce((a,v)=>a+v.total,0)*0.01;
+    .reduce((a,v)=>a+v.total,0);
+}
+function comisionEmpleadoMes(e,mesStr){
+  return ventasEmpleadoMes(e.nombre,mesStr)*comisionPctEmpleado(e)/100;
 }
 function liquidacionEmpleado(e,mesStr){
   const evs=rrhhEventos.filter(x=>String(x.empleadoId)===String(e.id)&&x.fecha&&x.fecha.startsWith(mesStr));
@@ -3382,7 +3445,7 @@ function liquidacionEmpleado(e,mesStr){
     else if(ev.tipo==='adelanto')adelantos+=(ev.monto||0);
     else if(ev.tipo==='bono')bonos+=(ev.monto||0);
   });
-  const comision=Math.round(comisionEmpleadoMes(e.nombre,mesStr));
+  const comision=Math.round(comisionEmpleadoMes(e,mesStr));
   // Asistencia del mes: descuento por horas de menos y pago de horas extra (50% recargo, fórmula DT)
   const asis=resumenAsistMes(e,mesStr);
   const total=(e.sueldoBase||0)-Math.round(descAusencias)-asis.descuento+asis.pagoExtra+comision+bonos-adelantos;
@@ -3419,7 +3482,7 @@ function renderSueldosSection(mesStr,mesNombre){
         ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Ausencias (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
         ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos según asistencia (${minToHM(liq.faltanteMin)})</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
         ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra 50% recargo (${minToHM(liq.extraMin)})</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
-        <div class="item-row"><span class="muted">+ Comisión 1% ventas</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
+        <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(e)}% ventas</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
         ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
         ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos entregados</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
         <div class="item-row" style="border-top:2px solid rgba(167,139,250,.3);margin-top:4px">
@@ -3450,8 +3513,16 @@ async function abrirEmpleado(id){
   const e=id?empleados.find(x=>String(x.id)===String(id)):null;
   const vals=await formDialog(e?'Editar empleado':'Nuevo empleado',[
     {name:'nombre',label:'Nombre (debe coincidir con el vendedor de las ventas)',default:e?e.nombre:'',required:true},
-    {name:'sueldoBase',label:'Sueldo base mensual ($)',type:'number',default:e?e.sueldoBase:'',required:true},
+    {name:'cargo',label:'Cargo',type:'select',options:CARGOS,default:e?(e.cargo||CARGOS[0]):CARGOS[0]},
+    {name:'rut',label:'RUT (opcional)',default:e?(e.rut||''):'',placeholder:'12.345.678-9'},
+    {name:'telefono',label:'Teléfono (opcional)',default:e?(e.telefono||''):'',placeholder:'9 1234 5678'},
+    {name:'fechaIngreso',label:'Fecha de ingreso',type:'date',default:e?(e.fechaIngreso||today()):today()},
+    {name:'sueldoBase',label:`Sueldo base mensual ($) — mínimo legal ${fmt(IMM.general)}`,type:'number',default:e?e.sueldoBase:'',required:true},
+    {name:'tramoIMM',label:'Tramo de ingreso mínimo',type:'select',options:['18 a 65 años','Menor de 18 o mayor de 65'],default:e&&e.tramoIMM==='menorMayor'?'Menor de 18 o mayor de 65':'18 a 65 años'},
     {name:'diasSemana',label:'Días a la semana que trabaja (jornada de 42h semanales)',type:'number',default:e?(e.diasSemana||6):6,required:true},
+    {name:'horaEntrada',label:'Hora de entrada',type:'time',default:e?(e.horaEntrada||ASIST_ENTRADA):ASIST_ENTRADA,required:true},
+    {name:'comisionPct',label:'Comisión sobre sus ventas (%)',type:'number',step:'0.1',default:e?comisionPctEmpleado(e):1},
+    {name:'metaMensual',label:'Meta de venta mensual ($, 0 = sin meta)',type:'number',default:e?(e.metaMensual||0):0},
   ]);
   if(!vals)return;
   const nombre=String(vals.nombre).trim();
@@ -3459,17 +3530,45 @@ async function abrirEmpleado(id){
   const sueldoBase=parseInt(vals.sueldoBase)||0;
   if(sueldoBase<=0){alert('Sueldo inválido');return;}
   const diasSemana=parseInt(vals.diasSemana)||6;
-  const nuevo={id:e?e.id:uid(),nombre,sueldoBase,horasSemana:42,diasSemana,activo:true};
+  if(diasSemana<1||diasSemana>7){alert('Los días a la semana deben estar entre 1 y 7');return;}
+  const comisionPct=Math.max(0,parseFloat(vals.comisionPct)||0);
+  const tramoIMM=vals.tramoIMM==='Menor de 18 o mayor de 65'?'menorMayor':'general';
+  // Aviso, no bloqueo: hay casos en que el sueldo base puede ir bajo el IMM (jornada
+  // parcial ya prorrateada, o remuneración variable que completa el mínimo).
+  const minimo=sueldoMinimoEmpleado({horasSemana:42,tramoIMM});
+  if(sueldoBase<minimo){
+    if(!(await confirmDialog(`El sueldo base ${fmt(sueldoBase)} está bajo el ingreso mínimo legal de ${fmt(minimo)} (${IMM.ley}, vigente desde el 01.05.2026). ¿Guardar de todas formas?`,{okText:'Guardar igual'})))return;
+  }
+  const nuevo={id:e?e.id:uid(),nombre,sueldoBase,horasSemana:42,diasSemana,tramoIMM,
+    cargo:String(vals.cargo||CARGOS[0]),
+    rut:String(vals.rut||'').trim(),
+    telefono:String(vals.telefono||'').trim(),
+    fechaIngreso:String(vals.fechaIngreso||'').trim(),
+    horaEntrada:String(vals.horaEntrada||ASIST_ENTRADA),
+    comisionPct,
+    metaMensual:Math.max(0,parseInt(vals.metaMensual)||0),
+    activo:e?e.activo!==false:true};
   if(e){const i=empleados.findIndex(x=>String(x.id)===String(id));empleados[i]=nuevo;}
   else empleados.push(nuevo);
   await saveEmpleadoDB(nuevo);
-  renderFinanzas();
+  refrescarVistaActiva();
 }
 async function eliminarEmpleado(id){
   if(!(await confirmDialog('¿Eliminar este empleado? Sus registros históricos se conservan.',{danger:true})))return;
   empleados=empleados.filter(e=>String(e.id)!==String(id));
   await delEmpleadoDB(id);
-  renderFinanzas();
+  refrescarVistaActiva();
+}
+// Baja/reingreso: conserva el historial (asistencia, liquidaciones) a diferencia de eliminar.
+async function toggleActivoEmpleado(id){
+  const e=empleados.find(x=>String(x.id)===String(id));
+  if(!e)return;
+  const dando=e.activo!==false;
+  if(dando&&!(await confirmDialog(`¿Dar de baja a ${e.nombre}? Deja de aparecer en asistencia y sueldos, pero se conserva todo su historial.`)))return;
+  e.activo=!dando;
+  await saveEmpleadoDB(e);
+  toast(dando?`${e.nombre} dado de baja`:`${e.nombre} reactivado`);
+  refrescarVistaActiva();
 }
 
 // =========== ASISTENCIA (marcaje entrada/salida) ===========
@@ -3494,7 +3593,7 @@ function valorHoraExtraEmpleado(e){
 // Cálculo de un día marcado: minutos trabajados, atraso, extra (tope legal 2h) y faltante
 function calcDiaAsist(r,e){
   const out={trabajado:0,atraso:0,extra:0,faltante:0,completo:!!(r.entrada&&r.salida)};
-  if(r.entrada)out.atraso=Math.max(0,hmToMin(r.entrada)-hmToMin(ASIST_ENTRADA));
+  if(r.entrada)out.atraso=Math.max(0,hmToMin(r.entrada)-hmToMin(horaEntradaEmpleado(e)));
   if(!out.completo)return out;
   let presencia=hmToMin(r.salida)-hmToMin(r.entrada);
   if(presencia<0)presencia=0;
@@ -3536,7 +3635,7 @@ function abrirModalAsist(empId,modo,regId){
   $('asist-f-salida').style.display=modo==='llegada'?'none':'';
   $('asist-fecha').value=modo==='editar'&&reg?reg.fecha:hoy;
   $('asist-fecha').max=hoy;
-  $('asist-entrada').value=modo==='editar'?(reg&&reg.entrada||''):(modo==='dia'?ASIST_ENTRADA:ahora);
+  $('asist-entrada').value=modo==='editar'?(reg&&reg.entrada||''):(modo==='dia'?horaEntradaEmpleado(e):ahora);
   $('asist-salida').value=modo==='editar'?(reg&&reg.salida||''):(modo==='salida'?ahora:'');
   $('asist-titulo').textContent={
     llegada:`🟢 Llegada de ${e.nombre}`,
@@ -3551,7 +3650,8 @@ function abrirModalAsist(empId,modo,regId){
     editar:'Corrige las horas de este registro. Deja la salida vacía si aún no sale.'
   }[modo];
   let chips='';
-  if(modo!=='salida')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-entrada','${ASIST_ENTRADA}')">🕙 Llegó a la hora (${ASIST_ENTRADA})</button>`;
+  const hEnt=horaEntradaEmpleado(e);
+  if(modo!=='salida')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-entrada','${hEnt}')">🕙 Llegó a la hora (${hEnt})</button>`;
   if(modo==='llegada')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-entrada','${ahora}')">Ahora (${ahora})</button>`;
   if(modo==='salida')chips+=`<button type="button" class="btn btn-sec btn-sm" onclick="setAsistHora('asist-salida','${ahora}')">Ahora (${ahora})</button>`;
   $('asist-chips').innerHTML=chips;
@@ -3634,7 +3734,7 @@ function renderAsistencia(){
   const hoy=today();
   const mesStr=hoy.slice(0,7);
   let html=`<div class="section-title">⏰ Asistencia</div>
-    <div class="help">Marca la llegada al empezar y la salida al terminar. Jornada legal: 42 h semanales (Ley 21.561) · entrada ${ASIST_ENTRADA} · colación ${ASIST_COLACION_MIN} min (no cuenta como trabajo). Horas extra: máx. 2 al día, con 50% de recargo. Los montos se aplican solos en la liquidación de Finanzas.</div>`;
+    <div class="help">Marca la llegada al empezar y la salida al terminar. Jornada legal: 42 h semanales (Ley 21.561) · cada empleado tiene su propia hora de entrada (se fija en su ficha, en Personal) · colación ${ASIST_COLACION_MIN} min (no cuenta como trabajo). Horas extra: máx. 2 al día, con 50% de recargo. Los montos se aplican solos en la liquidación de Finanzas.</div>`;
   if(!activos.length)html+='<div class="empty">Sin empleados registrados. Agrégalos en Finanzas → Sueldos.</div>';
   activos.forEach(e=>{
     const r=asistencia.find(x=>String(x.empleadoId)===String(e.id)&&x.fecha===hoy);
@@ -3707,13 +3807,184 @@ async function registrarEventoRRHH(empleadoId,tipo){
   if(vals.nota)ev.nota=String(vals.nota).trim();
   rrhhEventos.push(ev);
   await saveRRHHDB(ev);
-  renderFinanzas();
+  refrescarVistaActiva();
 }
 async function eliminarEventoRRHH(id){
   if(!(await confirmDialog('¿Eliminar este registro?',{danger:true})))return;
   rrhhEventos=rrhhEventos.filter(e=>String(e.id)!==String(id));
   await delRRHHDB(id);
-  renderFinanzas();
+  refrescarVistaActiva();
+}
+
+// =========== PERSONAL (ficha, control del día y desempeño) ===========
+// Reúne en una sola vista lo que antes estaba repartido entre Finanzas → Sueldos
+// (ficha y liquidación), Asistencia (marcaje) y Vendedores (metas y comisión).
+function estadoHoyEmpleado(e){
+  const hoy=today();
+  if(rrhhEventos.some(x=>String(x.empleadoId)===String(e.id)&&x.tipo==='ausencia'&&x.fecha===hoy))
+    return{icon:'🚫',txt:'Falta registrada hoy',cls:'danger',estado:'falta'};
+  const r=asistencia.find(x=>String(x.empleadoId)===String(e.id)&&x.fecha===hoy);
+  if(!r)return{icon:'⚪',txt:'Sin marcar',cls:'muted',estado:'sinmarcar'};
+  const c=calcDiaAsist(r,e);
+  if(!r.salida)return{icon:'🟢',txt:`Presente desde ${r.entrada}`+(c.atraso>0?` · ${c.atraso} min tarde`:''),cls:c.atraso>0?'warn':'ok',estado:'presente'};
+  return{icon:'✅',txt:`${r.entrada}–${r.salida} · trabajó ${minToHM(c.trabajado)}`,cls:'muted',estado:'cerrado'};
+}
+
+async function faltaRapida(empId){
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const hoy=today();
+  if(rrhhEventos.some(x=>String(x.empleadoId)===String(e.id)&&x.tipo==='ausencia'&&x.fecha===hoy)){
+    toast('Ya tiene la falta registrada hoy.');return;
+  }
+  if(!(await confirmDialog(`¿Registrar falta de ${e.nombre} hoy? Se le descuenta un día (${fmt(Math.round(valorDiaEmpleado(e)))}) en la liquidación del mes.`)))return;
+  const ev={id:uid(),empleadoId:e.id,tipo:'ausencia',fecha:hoy,nota:''};
+  rrhhEventos.push(ev);
+  await saveRRHHDB(ev);
+  toast(`🚫 Falta registrada a ${e.nombre}`);
+  refrescarVistaActiva();
+}
+
+async function atrasoRapido(empId,horas){
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const ev={id:uid(),empleadoId:e.id,tipo:'atraso',fecha:today(),horas,nota:''};
+  rrhhEventos.push(ev);
+  await saveRRHHDB(ev);
+  const etiqueta=horas<1?Math.round(horas*60)+' min':horas+' h';
+  toast(`⏰ Atraso de ${etiqueta} registrado a ${e.nombre} (−${fmt(Math.round(valorHoraEmpleado(e)*horas))})`);
+  refrescarVistaActiva();
+}
+
+function renderPersonal(){
+  const hoy=today(),mesStr=hoy.slice(0,7);
+  const mesNombre=MESES[parseInt(mesStr.slice(5,7))-1];
+  const activos=empleados.filter(e=>e.activo!==false);
+  const inactivos=empleados.filter(e=>e.activo===false);
+
+  let html=`<div class="section-title">Personal</div>
+    <div class="help">Ficha, control del día y desempeño de cada persona en un solo lugar. Las faltas y atrasos que registres aquí se descuentan solos en la liquidación de Finanzas → Sueldos. Ingreso mínimo vigente: <strong>${fmt(IMM.general)}</strong> (${IMM.ley}, desde el 01.05.2026) · ${fmt(IMM.menorMayor)} para menores de 18 y mayores de 65.</div>
+    <div style="margin-bottom:12px"><button class="btn" onclick="abrirEmpleado()">+ Agregar empleado</button></div>`;
+
+  if(!activos.length&&!inactivos.length){
+    html+='<div class="empty">Aún no hay empleados. Agrega al primero con el botón de arriba: define su sueldo, horario de entrada, comisión y meta.</div>';
+    document.getElementById('personal-content').innerHTML=html;
+    return;
+  }
+
+  const estados=activos.map(e=>estadoHoyEmpleado(e));
+  const presentes=estados.filter(s=>s.estado==='presente').length;
+  const sinMarcar=estados.filter(s=>s.estado==='sinmarcar').length;
+  const faltasMes=rrhhEventos.filter(x=>x.tipo==='ausencia'&&x.fecha&&x.fecha.startsWith(mesStr)).length;
+  const costoMes=activos.reduce((a,e)=>a+liquidacionEmpleado(e,mesStr).total,0);
+
+  html+=`<div class="stat-grid">
+    <div class="stat"><div class="stat-lbl">Equipo activo</div><div class="stat-val">${activos.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Presentes ahora</div><div class="stat-val ok">${presentes}</div></div>
+    <div class="stat"><div class="stat-lbl">Sin marcar hoy</div><div class="stat-val ${sinMarcar>0?'warn':''}">${sinMarcar}</div></div>
+    <div class="stat"><div class="stat-lbl">Faltas de ${mesNombre}</div><div class="stat-val ${faltasMes>0?'danger':''}">${faltasMes}</div></div>
+    <div class="stat"><div class="stat-lbl">Costo sueldos ${mesNombre}</div><div class="stat-val gold">${fmt(costoMes)}</div></div>
+  </div>`;
+
+  activos.forEach((e,i)=>{html+=tarjetaPersonal(e,estados[i],mesStr,mesNombre);});
+
+  if(inactivos.length){
+    html+=`<details style="margin-top:16px"><summary style="font-size:12px;color:var(--text3);cursor:pointer;padding:8px 0">Ex empleados (${inactivos.length})</summary>
+      ${inactivos.map(e=>`<div class="card" style="opacity:.7">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div>
+            <h4 style="margin:0">${e.nombre}</h4>
+            <div class="muted" style="font-size:11px">${e.cargo||'Sin cargo'}${e.fechaIngreso?' · ingresó '+e.fechaIngreso.split('-').reverse().join('/'):''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sec btn-sm" onclick="toggleActivoEmpleado('${e.id}')">↩️ Reactivar</button>
+            <button class="btn btn-sec btn-sm" onclick="eliminarEmpleado('${e.id}')">🗑️</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </details>`;
+  }
+
+  document.getElementById('personal-content').innerHTML=html;
+}
+
+function tarjetaPersonal(e,est,mesStr,mesNombre){
+  const liq=liquidacionEmpleado(e,mesStr);
+  const vendido=ventasEmpleadoMes(e.nombre,mesStr);
+  const meta=metaEmpleado(e);
+  const pct=meta>0?Math.round(vendido/meta*100):0;
+  const res=resumenAsistMes(e,mesStr);
+  const vDia=Math.round(valorDiaEmpleado(e)),vHora=Math.round(valorHoraEmpleado(e));
+
+  let acciones='';
+  if(est.estado==='sinmarcar'){
+    acciones+=`<button class="btn btn-sm" onclick="marcarAsistencia('${e.id}')">🟢 Llegada</button>`;
+    acciones+=`<button class="btn btn-sec btn-sm" onclick="faltaRapida('${e.id}')">🚫 Falta hoy</button>`;
+  }else if(est.estado==='presente'){
+    acciones+=`<button class="btn btn-sm" style="background:#f28a8a;color:#2a0e0e" onclick="marcarAsistencia('${e.id}')">🔴 Salida</button>`;
+  }
+
+  return `<div class="card" style="border-top:3px solid #a78bfa">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+      <div style="min-width:0">
+        <h4 style="margin:0 0 2px">${e.nombre}</h4>
+        <div class="muted" style="font-size:11px">${e.cargo||'Sin cargo'} · entra ${horaEntradaEmpleado(e)} · ${e.diasSemana||6} días/sem</div>
+        <div style="font-size:12px;margin-top:6px" class="${est.cls}">${est.icon} ${est.txt}</div>
+        ${bajoSueldoMinimo(e)?`<div class="danger" style="font-size:11px;margin-top:4px">⚠️ Sueldo base bajo el mínimo legal (${fmt(sueldoMinimoEmpleado(e))} · ${IMM.ley})</div>`:''}
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${acciones}</div>
+    </div>
+
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <span class="muted" style="font-size:11px;align-self:center;margin-right:2px">Atraso rápido:</span>
+      <button class="btn btn-sec btn-sm" onclick="atrasoRapido('${e.id}',0.5)">30 min</button>
+      <button class="btn btn-sec btn-sm" onclick="atrasoRapido('${e.id}',1)">1 h</button>
+      <button class="btn btn-sec btn-sm" onclick="atrasoRapido('${e.id}',2)">2 h</button>
+      <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','atraso')">Otro…</button>
+    </div>
+
+    ${meta>0?`<div style="background:var(--accent-bg);border-radius:10px;padding:10px 12px;margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text3);margin-bottom:6px">
+        <span>🎯 Meta de ${mesNombre}</span><span>${fmt(vendido)} / ${fmt(meta)} · ${pct}%</span>
+      </div>
+      <div style="height:9px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:var(--accent-grad);border-radius:6px;transition:width .5s"></div></div>
+      ${pct>=100?'<div style="font-size:11px;color:#8bf0b0;font-weight:700;margin-top:6px">🎉 ¡Meta cumplida!</div>':''}
+    </div>`:`<div class="muted" style="font-size:11px;margin-top:10px">Vendió ${fmt(vendido)} en ${mesNombre} · sin meta fijada</div>`}
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px" class="muted">
+      <span>Asistió <strong>${res.dias}</strong> día${res.dias!==1?'s':''}</span>
+      <span>Extra <strong class="ok">${minToHM(res.extraMin)}</strong></span>
+      <span>De menos <strong class="${res.faltanteMin>0?'danger':'ok'}">${minToHM(res.faltanteMin)}</strong></span>
+      <span>Día ${fmt(vDia)} · hora ${fmt(vHora)}</span>
+    </div>
+
+    <details style="margin-top:10px">
+      <summary style="font-size:11px;color:#a78bfa;cursor:pointer">Ficha y liquidación de ${mesNombre}</summary>
+      <div style="font-size:11px;margin:8px 0" class="muted">
+        ${e.rut?`RUT ${e.rut} · `:''}${e.telefono?`Tel ${e.telefono} · `:''}${e.fechaIngreso?`Ingresó ${e.fechaIngreso.split('-').reverse().join('/')}`:''}
+      </div>
+      <div class="item-row"><span class="muted">Sueldo base</span><strong>${fmt(liq.base)}</strong></div>
+      ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
+      ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
+      ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
+      <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(e)}%</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
+      ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
+      ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
+      <div class="item-row" style="border-top:2px solid var(--border)"><strong>Total a pagar</strong><strong style="color:#a78bfa">${fmt(liq.total)}</strong></div>
+      ${liq.eventos.length?`<div style="margin-top:8px">${liq.eventos.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(ev=>`<div class="item-row" style="font-size:11px">
+        <span>${ev.fecha.split('-').reverse().join('/')} · ${ev.tipo==='ausencia'?'🚫 Falta':ev.tipo==='atraso'?'⏰ Atraso '+ev.horas+'h':ev.tipo==='adelanto'?'💸 Adelanto':'🎁 Bono'}${ev.nota?' — '+ev.nota:''}</span>
+        <span style="display:flex;gap:6px;align-items:center">${ev.monto?fmt(ev.monto):''}<button onclick="eliminarEventoRRHH('${ev.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">🗑️</button></span>
+      </div>`).join('')}</div>`:''}
+    </details>
+
+    <div style="display:flex;gap:4px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','adelanto')">💸 Adelanto</button>
+      <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','bono')">🎁 Bono</button>
+      <button class="btn btn-sec btn-sm" onclick="registrarAsistenciaPasada('${e.id}')">📅 Día olvidado</button>
+      <button class="btn btn-sec btn-sm" onclick="abrirEmpleado('${e.id}')">✏️ Editar ficha</button>
+      <button class="btn btn-sec btn-sm" onclick="toggleActivoEmpleado('${e.id}')">🚪 Dar de baja</button>
+    </div>
+  </div>`;
 }
 
 // =========== CAJA ===========
@@ -5302,7 +5573,8 @@ async function initFirebase(){
     empleados=empSnap.docs.map(d=>d.data());
     onSnapshot(collection(db,'empleados'),snap=>{
       empleados=snap.docs.map(d=>d.data());
-      if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
+      refrescarVistaActiva();
+      actualizarBadges();
     });
 
     if(!MODO_VENDEDORA){
@@ -5310,7 +5582,7 @@ async function initFirebase(){
       rrhhEventos=rhSnap.docs.map(d=>d.data());
       onSnapshot(collection(db,'rrhh'),snap=>{
         rrhhEventos=snap.docs.map(d=>d.data());
-        if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
+        refrescarVistaActiva();
       });
       // Cargar clave de administrador y config de calculadora
       if(admSnap&&admSnap.exists())_adminHash=admSnap.data().hash;
@@ -5326,7 +5598,8 @@ async function initFirebase(){
       asistencia=asiSnap.docs.map(d=>d.data());
       onSnapshot(collection(db,'asistencia'),snap=>{
         asistencia=snap.docs.map(d=>d.data());
-        if(document.getElementById('tab-asistencia').classList.contains('active'))renderAsistencia();
+        refrescarVistaActiva();
+        actualizarBadges();
       });
     }
     pintarCandado();
@@ -5376,7 +5649,7 @@ function initPrivacidad(){
 
 function setTab(t){
   // El Inicio, Resumen y Finanzas (datos sensibles) requieren modo administrador
-  if((t==='resumen'||t==='finanzas'||t==='costosfab'||t==='hermanos'||t==='cupones')&&!esAdmin()){
+  if((t==='resumen'||t==='finanzas'||t==='costosfab'||t==='hermanos'||t==='cupones'||t==='personal')&&!esAdmin()){
     requiereAdmin().then(ok=>{if(ok)setTab(t);});
     closeSidebar();
     return;
@@ -5405,6 +5678,7 @@ function setTab(t){
   if(t==='costosfab')renderCalculadora();
   if(t==='hermanos')renderHermanos();
   if(t==='asistencia')renderAsistencia();
+  if(t==='personal')renderPersonal();
   if(t==='cupones')renderCupones();
 }
 
@@ -5487,7 +5761,7 @@ function refrescarVistaActiva(){
     despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
     vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
     clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora,
-    hermanos:renderHermanos,asistencia:renderAsistencia,cupones:renderCupones}[id];
+    hermanos:renderHermanos,asistencia:renderAsistencia,personal:renderPersonal,cupones:renderCupones}[id];
   if(typeof fn==='function'){try{fn();}catch(e){}}
 }
 
@@ -5510,6 +5784,8 @@ function actualizarBadges(){
     setBadge('badge-inventario',bajos,true);
     const hermanosConSaldo=HERMANOS_LISTA.filter(n=>saldoHermano(n)>0).length;
     setBadge('badge-hermanos',hermanosConSaldo,false);
+    const sinMarcar=(empleados||[]).filter(e=>e.activo!==false&&estadoHoyEmpleado(e).estado==='sinmarcar').length;
+    setBadge('badge-personal',sinMarcar,true);
   }catch(e){}
 }
 
