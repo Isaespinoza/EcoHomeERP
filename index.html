@@ -6719,18 +6719,20 @@ function imprimirVenta(id){
     const autoPrintM=!!window._autoPrint;
     window._autoPrint=false;
     const fontsLink='<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">';
-    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}.page{width:148mm;padding:10mm 12mm;margin:0 auto;background:#fff}.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #151513}.hdr-co{display:flex;gap:8px;align-items:center}.logo-img{height:32px;width:auto;display:block}.co-name{font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.co-sub{font-size:9px;color:#6b6f6b}.hdr-doc{text-align:right}.doc-title{font-family:"Space Grotesk",sans-serif;font-size:11px;font-weight:700;color:#3f6e56;letter-spacing:.04em}.doc-meta{font-size:10px;color:#6b6f6b;margin-top:2px}.tabla{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}.tabla thead th{background:#3f6e56;color:#fff;padding:7px 8px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.03em}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #d8dcd8}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tot-row{display:flex;justify-content:space-between;padding:5px 6px;font-size:11.5px;color:#4a4d4a}.tot-final{border-top:1.5px solid #151513;margin-top:2px;padding:8px 6px;font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.saldo-ok{background:#eaf5ee;border-radius:6px;font-weight:600;color:#3f6e56}.saldo-pend{background:#fff5e6;border:1px solid #f59e0b;border-radius:6px;font-weight:600;color:#92400e}.firma{margin-top:24px;display:flex;gap:24px}.firma-col{flex:1;text-align:center}.stamp-wrap{display:flex;justify-content:center;height:70px;align-items:flex-end}.firma-line{border-top:1px solid #b9beb9;margin-top:6px}.firma-lbl{padding-top:6px;font-size:9.5px;color:#6b6f6b}.footer{font-size:9px;color:#8a8d8a;text-align:center;margin-top:16px;padding-top:10px;border-top:1px solid #e4e8e4}.btnprint{position:fixed;top:10px;right:10px;background:#3f6e56;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.35}}@media print{.btnprint{display:none}}';
+    const cssM='@page{size:A5;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}.page{width:148mm;padding:10mm 12mm;margin:0 auto;background:#fff}.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #151513}.hdr-co{display:flex;gap:8px;align-items:center}.logo-img{height:32px;width:auto;display:block}.co-name{font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.co-sub{font-size:9px;color:#6b6f6b}.hdr-doc{text-align:right}.doc-title{font-family:"Space Grotesk",sans-serif;font-size:11px;font-weight:700;color:#3f6e56;letter-spacing:.04em}.doc-meta{font-size:10px;color:#6b6f6b;margin-top:2px}.tabla{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}.tabla thead th{background:#3f6e56;color:#fff;padding:7px 8px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.03em}.tabla thead th:nth-child(2){text-align:center}.tabla thead th:nth-child(3),.tabla thead th:nth-child(4){text-align:right}.tabla td{padding:6px 8px;border-bottom:1px dotted #d8dcd8}.tabla td:nth-child(2){text-align:center}.tabla td:nth-child(3),.tabla td:nth-child(4){text-align:right}.tot-row{display:flex;justify-content:space-between;padding:5px 6px;font-size:11.5px;color:#4a4d4a}.tot-final{border-top:1.5px solid #151513;margin-top:2px;padding:8px 6px;font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;color:#151513}.saldo-ok{background:#eaf5ee;border-radius:6px;font-weight:600;color:#3f6e56}.saldo-pend{background:#fff5e6;border:1px solid #f59e0b;border-radius:6px;font-weight:600;color:#92400e}.firma{margin-top:24px;display:flex;gap:24px}.firma-col{flex:1;text-align:center}.stamp-wrap{display:flex;justify-content:center;height:70px;align-items:flex-end}.firma-line{border-top:1px solid #b9beb9;margin-top:6px}.firma-lbl{padding-top:6px;font-size:9.5px;color:#6b6f6b}.footer{font-size:9px;color:#8a8d8a;text-align:center;margin-top:16px;padding-top:10px;border-top:1px solid #e4e8e4}.copia-tag{display:inline-block;border:1px solid #3f6e56;color:#3f6e56;border-radius:99px;padding:1px 8px;font-size:8.5px;font-weight:700;letter-spacing:.06em;margin-top:4px}.conforme{margin-top:14px;border:1.5px solid #3f6e56;border-radius:8px;padding:9px 12px}.conforme-tit{font-family:"Space Grotesk",sans-serif;font-size:10px;font-weight:700;color:#3f6e56;letter-spacing:.04em;margin-bottom:4px}.conforme-txt{font-size:9px;color:#4a4d4a;line-height:1.4}.conforme-campos{display:flex;gap:14px;margin-top:18px}.conforme-campo{flex:1}.conforme-linea{border-top:1px solid #8a8d8a}.conforme-lbl{padding-top:4px;font-size:8.5px;color:#6b6f6b}.btnprint{position:fixed;top:10px;right:10px;background:#3f6e56;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.35;margin-bottom:22px}}@media print{.btnprint{display:none}.page{break-after:page;page-break-after:always}.page:last-of-type{break-after:auto;page-break-after:auto}}';
     const descM=v.descuento>0?'<div class="tot-row"><span>Descuento aplicado</span><span>-'+fmt(v.descuento)+'</span></div>':'';
     const cupM=(v.descuentoCupon||0)>0?'<div class="tot-row"><span>Cupón '+((v.cupon||{}).codigo||'')+'</span><span>-'+fmt(v.descuentoCupon)+'</span></div>':'';
     const sorpresaM=v.cuponSorpresa?'<div style="margin-top:10px;padding:10px;border:2px dashed #3f6e56;border-radius:6px;text-align:center"><div style="font-size:11px;color:#3f6e56;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:20px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:11px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'';
     const garantiaM=v.garantiaMeses>0?(()=>{const venc=new Date(v.fecha+'T12:00:00');venc.setMonth(venc.getMonth()+v.garantiaMeses);const vig=new Date()<=venc;return'<div style="margin-top:10px;font-size:10.5px;color:#4a4d4a">🛡️ Garantía ('+v.garantiaMeses+' meses): <strong style="color:'+(vig?'#3f6e56':'#c0392b')+'">'+(vig?'Vigente':'Vencida')+'</strong> hasta '+venc.toLocaleDateString('es-CL')+'</div>';})():'';
     const notasM=v.notas?'<div style="margin-top:10px;padding:8px 10px;background:#f4f6f4;border-left:3px solid #3f6e56;font-size:11px;font-style:italic">'+v.notas+'</div>':'';
-    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante EcoHome</title>'+fontsLink+'<style>'+cssM+'</style></head><body>'
-      +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
-      +'<div class="page">'
+    // Dos hojas: la del cliente sin nada que firmar y la del negocio con el recibí conforme.
+    const cuerpoM=(copia)=>{
+      const esNegocio=copia==='negocio';
+      return '<div class="page">'
       +'<div class="hdr">'
       +'<div class="hdr-co"><img class="logo-img" src="'+logoSrc+'" alt="EcoHome"><div><div class="co-name">EcoHome</div><div class="co-sub">Muebles y colchones · Rivas 737, San Miguel</div><div class="co-sub">RUT 78.284.233-1 · contacto@distribuidora-ecohome.cl · [Teléfono]</div></div></div>'
-      +'<div class="hdr-doc"><div class="doc-title">COMPROBANTE DE VENTA</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div><div class="doc-meta">Pago: <strong>'+(v.pago||'—')+'</strong></div></div>'
+      +'<div class="hdr-doc"><div class="doc-title">COMPROBANTE DE VENTA</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div><div class="doc-meta">Pago: <strong>'+(v.pago||'—')+'</strong></div>'
+      +'<div class="copia-tag">'+(esNegocio?'COPIA ECOHOME':'COPIA CLIENTE')+'</div></div>'
       +'</div>'
       +'<table class="tabla"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>'
       +'<tbody>'+itemsHtml+'</tbody></table>'
@@ -6742,9 +6744,27 @@ function imprimirVenta(id){
       +'<div class="tot-row '+(v.saldo>0?'saldo-pend':'saldo-ok')+'"><span>Saldo pendiente</span><span>'+fmt(v.saldo)+'</span></div>'
       +'</div></div>'
       +garantiaM+notasM+sorpresaM
-      +'<div class="firma"><div class="firma-col"><div class="stamp-wrap"></div><div class="firma-line"></div><div class="firma-lbl">Firma cliente</div></div><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
-      +'<div class="footer">Conserve este comprobante para hacer válida la garantía de cada producto · EcoHome</div>'
-      +'</div></body></html>';
+      +(esNegocio
+        ? '<div class="conforme">'
+          +'<div class="conforme-tit">RECIBÍ CONFORME</div>'
+          +'<div class="conforme-txt">Declaro haber recibido los productos detallados, en buen estado y conformes a lo solicitado.</div>'
+          +'<div class="conforme-campos">'
+          +'<div class="conforme-campo"><div class="conforme-linea"></div><div class="conforme-lbl">Firma del cliente</div></div>'
+          +'<div class="conforme-campo"><div class="conforme-linea"></div><div class="conforme-lbl">Nombre y RUT</div></div>'
+          +'</div></div>'
+          +'<div class="firma"><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
+        : '<div class="firma"><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>')
+      +'<div class="footer">'
+      +(esNegocio?'Copia de EcoHome. Se archiva firmada por el cliente como respaldo de la entrega.'
+                 :'Conserve este comprobante para hacer válida la garantía de cada producto · EcoHome')
+      +'</div>'
+      +'</div>';
+    };
+    const htmlM='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comprobante EcoHome</title>'+fontsLink+'<style>'+cssM+'</style></head><body>'
+      +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF (2 hojas)</button>'
+      +cuerpoM('cliente')
+      +cuerpoM('negocio')
+      +'</body></html>';
     window._lastPedidoHtml=htmlM;
     window._lastPedidoNombre='Comprobante_EcoHome_'+fechaFmt.replace(/\//g,'-')+'.html';
     const autoS='<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>';
@@ -6830,9 +6850,19 @@ function imprimirVenta(id){
     +'.firma-lbl{padding-top:6px;font-size:11.5px;color:#6b6f6b}'
     +'.footer-text{font-size:11px;color:#666;line-height:1.5;margin-top:14px}'
     +'.line-bottom{border-bottom:2px solid #3f6e56;margin-top:14px}'
+    // Marca de que copia es cada hoja y bloque de recibi conforme (solo en la del negocio)
+    +'.copia-tag{display:inline-block;border:1px solid #3f6e56;color:#3f6e56;border-radius:99px;padding:2px 10px;font-size:10px;font-weight:700;letter-spacing:.06em;margin-top:6px}'
+    +'.conforme{margin-top:18px;border:1.5px solid #3f6e56;border-radius:10px;padding:12px 16px}'
+    +'.conforme-tit{font-family:"Space Grotesk",sans-serif;font-size:12px;font-weight:700;color:#3f6e56;letter-spacing:.04em;margin-bottom:6px}'
+    +'.conforme-txt{font-size:10.5px;color:#4a4d4a;line-height:1.45}'
+    +'.conforme-campos{display:flex;gap:22px;margin-top:22px}'
+    +'.conforme-campo{flex:1}'
+    +'.conforme-linea{border-top:1px solid #8a8d8a}'
+    +'.conforme-lbl{padding-top:5px;font-size:10px;color:#6b6f6b}'
     +'.btnprint{position:fixed;top:10px;right:10px;background:#3f6e56;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
-    +'@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.15}}'
-    +'@media print{body{padding:0;margin:0}.page{padding:14mm 16mm;margin:0}.btnprint{display:none}}';
+    +'@media screen{body{background:#e3e5e3;padding:26px 0 60px}.page{box-shadow:0 10px 34px rgba(0,0,0,.2);zoom:1.15;margin-bottom:26px}}'
+    // Cada copia va en su propia hoja; la ultima no fuerza un salto extra
+    +'@media print{body{padding:0;margin:0}.page{padding:14mm 16mm;margin:0;break-after:page;page-break-after:always}.page:last-of-type{break-after:auto;page-break-after:auto}.btnprint{display:none}}';
 
   const autoPrint=!!window._autoPrint;
   window._autoPrint=false;
@@ -6841,13 +6871,15 @@ function imprimirVenta(id){
 
   const garantiaP=v.garantiaMeses>0?(()=>{const venc=new Date(v.fecha+'T12:00:00');venc.setMonth(venc.getMonth()+v.garantiaMeses);const vig=new Date()<=venc;return'<div style="margin-top:6px;font-size:11px;color:#4a4d4a">🛡️ Garantía ('+v.garantiaMeses+' meses): <strong style="color:'+(vig?'#3f6e56':'#c0392b')+'">'+(vig?'Vigente':'Vencida')+'</strong> hasta '+venc.toLocaleDateString('es-CL')+'</div>';})():'';
 
-  const htmlCompleto='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido '+v.cliente+'</title>'+fontsLinkP
-    +'<style>'+cssStr+'</style></head><body>'
-    +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
-    +'<div class="page">'
+  // Se imprimen dos hojas iguales: la del cliente sin nada que firmar, y la del
+  // negocio con el recibí conforme para que la firme al recibir.
+  const cuerpoPagina=(copia)=>{
+    const esNegocio=copia==='negocio';
+    return '<div class="page">'
     +'<div class="hdr">'
     +'<div class="hdr-co"><img class="logo-img" src="'+logoSrc+'" alt="EcoHome"><div><div class="co-name">EcoHome</div><div class="co-sub">Muebles y colchones · Rivas 737, San Miguel</div><div class="co-sub">RUT 78.284.233-1 · contacto@distribuidora-ecohome.cl · [Teléfono]</div></div></div>'
-    +'<div class="hdr-doc"><div class="doc-title">PEDIDO</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div></div>'
+    +'<div class="hdr-doc"><div class="doc-title">PEDIDO</div><div class="doc-meta">'+fechaFmt+(v.horaCreacion?' · '+v.horaCreacion:'')+'</div>'
+    +'<div class="copia-tag">'+(esNegocio?'COPIA ECOHOME':'COPIA CLIENTE')+'</div></div>'
     +'</div>'
     +'<div class="info-grid">'
     +'<div class="info-card"><div class="info-lbl">CLIENTE</div><div class="info-name">'+v.cliente+'</div>'
@@ -6874,13 +6906,34 @@ function imprimirVenta(id){
     +garantiaP
     +despachoBlock+notasBlock
     +(v.cuponSorpresa?'<div style="margin-top:14px;padding:12px;border:2px dashed #3f6e56;border-radius:6px;text-align:center"><div style="font-size:12px;color:#3f6e56;font-weight:bold">🎁 ¡GANASTE UN CUPÓN PARA TU PRÓXIMA COMPRA!</div><div style="font-size:22px;font-weight:bold;letter-spacing:2px;margin:4px 0">'+v.cuponSorpresa.codigo+'</div><div style="font-size:12px">'+descCuponTxt(v.cuponSorpresa)+' de descuento · Válido hasta el '+(v.cuponSorpresa.vence||'').split('-').reverse().join('/')+'</div></div>':'')
-    +'<div class="firma"><div class="firma-col"><div class="stamp-wrap"></div><div class="firma-line"></div><div class="firma-lbl">Firma cliente</div></div><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
+    // La copia del cliente lleva solo el timbre; la del negocio, el recibí conforme.
+    +(esNegocio
+      ? '<div class="conforme">'
+        +'<div class="conforme-tit">RECIBÍ CONFORME</div>'
+        +'<div class="conforme-txt">Declaro haber recibido los productos detallados en este documento, en buen estado y conformes a lo solicitado.</div>'
+        +'<div class="conforme-campos">'
+        +'<div class="conforme-campo"><div class="conforme-linea"></div><div class="conforme-lbl">Firma del cliente</div></div>'
+        +'<div class="conforme-campo"><div class="conforme-linea"></div><div class="conforme-lbl">Nombre y RUT</div></div>'
+        +'<div class="conforme-campo"><div class="conforme-linea"></div><div class="conforme-lbl">Fecha de recepción</div></div>'
+        +'</div></div>'
+        +'<div class="firma"><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>'
+      : '<div class="firma"><div class="firma-col"><div class="stamp-wrap">'+TIMBRE_SVG+'</div><div class="firma-line"></div><div class="firma-lbl">Firma / timbre EcoHome</div></div></div>')
     +'<div class="footer-text">'
-    +'Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.<br>'
-    +'El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado<br>'
-    +'con el vendedor<br><br>Atentamente,<br><br>EcoHome.</div>'
-    +'<div class="line-bottom"></div>'
+    +(esNegocio
+      ? 'Copia de EcoHome. Se archiva firmada por el cliente como respaldo de la entrega.'
+      : 'Agradecemos tu confianza. Es un placer colaborar contigo en este proyecto.<br>'
+        +'El siguiente pedido se enviará dentro de 3 días hábiles, o en el plazo acordado<br>'
+        +'con el vendedor<br><br>Atentamente,<br><br>EcoHome.')
     +'</div>'
+    +'<div class="line-bottom"></div>'
+    +'</div>';
+  };
+
+  const htmlCompleto='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido '+v.cliente+'</title>'+fontsLinkP
+    +'<style>'+cssStr+'</style></head><body>'
+    +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF (2 hojas)</button>'
+    +cuerpoPagina('cliente')
+    +cuerpoPagina('negocio')
     +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>'
     +'</body></html>';
 
