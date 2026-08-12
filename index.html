@@ -3428,6 +3428,43 @@ function valorHoraEmpleado(e){
   const jornadaDiaria=horasSem/diasSem; // 7 horas con 42/6
   return valorDiaEmpleado(e)/jornadaDiaria;
 }
+// Primer mes (o mes de salida): el sueldo base se paga en proporción a los días
+// contratados, sobre el mes comercial de 30 días que usa la Dirección del Trabajo.
+// Quien entra el día 11 de un mes de 31 cobra 21/30, no el sueldo completo.
+function diasDelMes(mesStr){
+  const [a,m]=mesStr.split('-').map(Number);
+  return new Date(a,m,0).getDate();
+}
+function diasContratadoMes(e,mesStr){
+  const ultimo=diasDelMes(mesStr);
+  const iniMes=mesStr+'-01';
+  const finMes=`${mesStr}-${String(ultimo).padStart(2,'0')}`;
+  const ingreso=(e&&e.fechaIngreso)||'';
+  const egreso=(e&&e.fechaEgreso)||'';
+  // Sin fecha de ingreso no se puede prorratear: se asume mes completo, como antes.
+  if(!ingreso&&!egreso)return 30;
+  const desde=ingreso&&ingreso>iniMes?ingreso:iniMes;
+  const hasta=egreso&&egreso<finMes?egreso:finMes;
+  if(ingreso&&ingreso>finMes)return 0;   // aún no entraba
+  if(egreso&&egreso<iniMes)return 0;     // ya se había ido
+  // Mes trabajado de punta a punta: se paga entero. El mes comercial es de 30 días,
+  // así que febrero completo también vale 30 y no 28.
+  if(desde===iniMes&&hasta===finMes)return 30;
+  const dIni=parseInt(desde.slice(8,10),10);
+  const dFin=parseInt(hasta.slice(8,10),10);
+  const dias=dFin-dIni+1;
+  if(dias<=0)return 0;
+  return Math.min(30,dias);              // tope 30: un mes parcial nunca paga de más
+}
+function sueldoBaseMes(e,mesStr){
+  const dias=diasContratadoMes(e,mesStr);
+  if(dias>=30)return e.sueldoBase||0;
+  return Math.round((e.sueldoBase||0)/30*dias);
+}
+function esMesParcial(e,mesStr){
+  return diasContratadoMes(e,mesStr)<30;
+}
+
 function ventasEmpleadoMes(nombre,mesStr){
   return ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado'&&v.vendedor===nombre)
     .reduce((a,v)=>a+v.total,0);
@@ -3448,8 +3485,13 @@ function liquidacionEmpleado(e,mesStr){
   const comision=Math.round(comisionEmpleadoMes(e,mesStr));
   // Asistencia del mes: descuento por horas de menos y pago de horas extra (50% recargo, fórmula DT)
   const asis=resumenAsistMes(e,mesStr);
-  const total=(e.sueldoBase||0)-Math.round(descAusencias)-asis.descuento+asis.pagoExtra+comision+bonos-adelantos;
-  return{base:e.sueldoBase||0,descAusencias:Math.round(descAusencias),diasPerdidos,horasPerdidas,comision,bonos,adelantos,total,eventos:evs,
+  // El sueldo base va proporcional si entró (o salió) a mitad de mes. Las ausencias y
+  // atrasos siguen descontándose sobre el valor día completo, que no cambia por eso.
+  const base=sueldoBaseMes(e,mesStr);
+  const diasContrato=diasContratadoMes(e,mesStr);
+  const total=base-Math.round(descAusencias)-asis.descuento+asis.pagoExtra+comision+bonos-adelantos;
+  return{base,sueldoCompleto:e.sueldoBase||0,diasContrato,parcial:diasContrato<30,
+    descAusencias:Math.round(descAusencias),diasPerdidos,horasPerdidas,comision,bonos,adelantos,total,eventos:evs,
     descAsist:asis.descuento,pagoExtras:asis.pagoExtra,extraMin:asis.extraMin,faltanteMin:asis.faltanteMin};
 }
 function renderSueldosSection(mesStr,mesNombre){
@@ -3478,7 +3520,7 @@ function renderSueldosSection(mesStr,mesNombre){
             <button onclick="eliminarEmpleado('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#f28a8a">Eliminar</button>
           </div>
         </div>
-        <div class="item-row"><span class="muted">Sueldo base</span><strong>${fmt(liq.base)}</strong></div>
+        <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}
         ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Ausencias (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
         ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos según asistencia (${minToHM(liq.faltanteMin)})</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
         ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra 50% recargo (${minToHM(liq.extraMin)})</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
@@ -3516,7 +3558,8 @@ async function abrirEmpleado(id){
     {name:'cargo',label:'Cargo',type:'select',options:CARGOS,default:e?(e.cargo||CARGOS[0]):CARGOS[0]},
     {name:'rut',label:'RUT (opcional)',default:e?(e.rut||''):'',placeholder:'12.345.678-9'},
     {name:'telefono',label:'Teléfono (opcional)',default:e?(e.telefono||''):'',placeholder:'9 1234 5678'},
-    {name:'fechaIngreso',label:'Fecha de ingreso',type:'date',default:e?(e.fechaIngreso||today()):today()},
+    {name:'fechaIngreso',label:'Fecha de ingreso (si entró a mitad de mes, el sueldo va proporcional)',type:'date',default:e?(e.fechaIngreso||today()):today()},
+    {name:'fechaEgreso',label:'Fecha de salida (vacío = sigue trabajando)',type:'date',default:e?(e.fechaEgreso||''):''},
     {name:'sueldoBase',label:`Sueldo base mensual ($) — mínimo legal ${fmt(IMM.general)}`,type:'number',default:e?e.sueldoBase:'',required:true},
     {name:'tramoIMM',label:'Tramo de ingreso mínimo',type:'select',options:['18 a 65 años','Menor de 18 o mayor de 65'],default:e&&e.tramoIMM==='menorMayor'?'Menor de 18 o mayor de 65':'18 a 65 años'},
     {name:'diasSemana',label:'Días a la semana que trabaja (jornada de 42h semanales)',type:'number',default:e?(e.diasSemana||6):6,required:true},
@@ -3544,6 +3587,7 @@ async function abrirEmpleado(id){
     rut:String(vals.rut||'').trim(),
     telefono:String(vals.telefono||'').trim(),
     fechaIngreso:String(vals.fechaIngreso||'').trim(),
+    fechaEgreso:String(vals.fechaEgreso||'').trim(),
     horaEntrada:String(vals.horaEntrada||ASIST_ENTRADA),
     comisionPct,
     metaMensual:Math.max(0,parseInt(vals.metaMensual)||0),
@@ -3963,7 +4007,7 @@ function tarjetaPersonal(e,est,mesStr,mesNombre){
       <div style="font-size:11px;margin:8px 0" class="muted">
         ${e.rut?`RUT ${e.rut} · `:''}${e.telefono?`Tel ${e.telefono} · `:''}${e.fechaIngreso?`Ingresó ${e.fechaIngreso.split('-').reverse().join('/')}`:''}
       </div>
-      <div class="item-row"><span class="muted">Sueldo base</span><strong>${fmt(liq.base)}</strong></div>
+      <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}
       ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
       ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
       ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
