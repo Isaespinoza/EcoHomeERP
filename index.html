@@ -3464,6 +3464,19 @@ function sueldoBaseMes(e,mesStr){
 function esMesParcial(e,mesStr){
   return diasContratadoMes(e,mesStr)<30;
 }
+// Las fichas creadas antes de que existiera el campo no tienen fecha de ingreso, y sin
+// ella diasContratadoMes() asume el mes entero: el primer sueldo sale completo aunque la
+// persona haya entrado a mitad de mes. Se avisa en pantalla en vez de adivinar la fecha.
+function sinFechaIngreso(e){
+  return !(e&&e.fechaIngreso)&&!(e&&e.fechaEgreso);
+}
+function avisoSinIngreso(e){
+  if(!sinFechaIngreso(e))return"";
+  return `<div class="item-row" style="font-size:11px;background:rgba(230,160,60,.12);border-radius:8px;padding:6px 8px;margin:4px 0">
+    <span class="warn">⚠ Sin fecha de ingreso: se está pagando el mes completo</span>
+    <button class="btn btn-sec btn-sm" onclick="definirFechaIngreso('${e.id}')">Definir</button>
+  </div>`;
+}
 
 function ventasEmpleadoMes(nombre,mesStr){
   return ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado'&&v.vendedor===nombre)
@@ -3520,7 +3533,7 @@ function renderSueldosSection(mesStr,mesNombre){
             <button onclick="eliminarEmpleado('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#f28a8a">Eliminar</button>
           </div>
         </div>
-        <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}
+        <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}${avisoSinIngreso(e)}
         ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Ausencias (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
         ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos según asistencia (${minToHM(liq.faltanteMin)})</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
         ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra 50% recargo (${minToHM(liq.extraMin)})</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
@@ -3595,6 +3608,21 @@ async function abrirEmpleado(id){
   if(e){const i=empleados.findIndex(x=>String(x.id)===String(id));empleados[i]=nuevo;}
   else empleados.push(nuevo);
   await saveEmpleadoDB(nuevo);
+  refrescarVistaActiva();
+}
+// Atajo para completar sólo la fecha de ingreso, sin abrir toda la ficha.
+async function definirFechaIngreso(id){
+  const e=empleados.find(x=>String(x.id)===String(id));
+  if(!e)return;
+  const vals=await formDialog(`¿Cuándo entró ${e.nombre}?`,[
+    {name:"fechaIngreso",label:"Fecha de ingreso (el sueldo de ese mes queda proporcional a los días trabajados)",type:"date",default:e.fechaIngreso||today(),required:true}
+  ]);
+  if(!vals)return;
+  const fecha=String(vals.fechaIngreso||"").trim();
+  if(!fecha)return;
+  e.fechaIngreso=fecha;
+  await saveEmpleadoDB(e);
+  toast(`${e.nombre} ingresó el ${fecha.split("-").reverse().join("/")}`);
   refrescarVistaActiva();
 }
 async function eliminarEmpleado(id){
@@ -4007,7 +4035,7 @@ function tarjetaPersonal(e,est,mesStr,mesNombre){
       <div style="font-size:11px;margin:8px 0" class="muted">
         ${e.rut?`RUT ${e.rut} · `:''}${e.telefono?`Tel ${e.telefono} · `:''}${e.fechaIngreso?`Ingresó ${e.fechaIngreso.split('-').reverse().join('/')}`:''}
       </div>
-      <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}
+      <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}${avisoSinIngreso(e)}
       ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
       ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
       ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
@@ -7955,7 +7983,7 @@ Object.assign(window,{
   toggleAdmin,requiereAdmin,
   renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirCompra,guardarCompra,eliminarCompra,
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
-  abrirEmpleado,eliminarEmpleado,registrarEventoRRHH,eliminarEventoRRHH,
+  abrirEmpleado,eliminarEmpleado,definirFechaIngreso,registrarEventoRRHH,eliminarEventoRRHH,
   renderPersonal,faltaRapida,atrasoRapido,toggleActivoEmpleado,
   renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,restaurarInsumosDefault,
   handleFotoCompra,calcSugerenciaCompra,verFotoCompra,
