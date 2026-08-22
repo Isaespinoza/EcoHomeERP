@@ -408,6 +408,10 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   body:not(.modo-vendedora){padding-bottom:110px}
   body:not(.modo-vendedora) .help-fab{bottom:96px}
   body:not(.modo-vendedora) .fab{bottom:96px}
+  /* Nueva Venta: la barra del total se apoya justo encima de la tabbar flotante.
+     Antes quedaba debajo y el boton Guardar caia tapado por la tabbar y sobre el
+     home indicator del iPhone, asi que casi no se podia tocar. */
+  body:not(.modo-vendedora) #nv-barra-total{bottom:calc(86px + env(safe-area-inset-bottom))!important;padding-bottom:10px!important}
 }
 </style>
 </head>
@@ -1888,10 +1892,10 @@ function renderNuevaVentaTab(){
     </div>
     <div class="field"><label>Notas</label><textarea id="nv-notas" rows="2"></textarea></div>
 
-    <div style="height:90px"></div>
+    <div style="height:130px"></div>
 
     <!-- BARRA TOTAL FIJA -->
-    <div id="nv-barra-total" style="position:fixed;bottom:0;left:0;right:0;z-index:150;background:var(--accent-grad);box-shadow:0 -4px 16px rgba(0,0,0,.35);padding:10px 14px">
+    <div id="nv-barra-total" style="position:fixed;bottom:0;left:0;right:0;z-index:160;background:var(--accent-grad);box-shadow:0 -4px 16px rgba(0,0,0,.35);padding:10px 14px calc(10px + env(safe-area-inset-bottom))">
       <div style="max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px">
         <div style="flex:1;color:#fff">
           <div style="font-size:10px;opacity:.85"><span id="nv-bar-items">0 productos</span><span id="nv-bar-desc"></span></div>
