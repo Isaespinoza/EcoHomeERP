@@ -163,6 +163,9 @@ label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-wei
 .help-fab svg{width:20px;height:20px}
 @keyframes helpPulse{0%,100%{box-shadow:0 6px 20px rgba(168,127,62,.5)}50%{box-shadow:0 6px 26px rgba(168,127,62,.85)}}
 @media(max-width:640px){.help-fab{bottom:14px;right:14px;padding:12px 17px;font-size:14px}}
+/* En Nueva Venta el borde inferior es de la barra del total: el boton de Ayuda
+   se paraba encima del boton Guardar (z-index 900). Ahi lo escondemos. */
+body[data-tab="nueva-venta"] .help-fab{display:none}
 .ayuda-intro{background:var(--gold-bg);border:1px solid color-mix(in srgb,var(--gold) 25%,var(--border));border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.55;color:var(--text2);margin-bottom:14px}
 .ayuda-intro b{color:var(--gold)}
 .ayuda-item{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--white)}
@@ -5737,6 +5740,9 @@ function setTab(t){
   const si=document.getElementById('si-'+t);
   if(si)si.classList.add('active');
   document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  // Marca la pestana en el <body> para que el CSS pueda apartar lo que estorbe
+  // (el boton de Ayuda tapaba el Guardar de Nueva Venta).
+  document.body.dataset.tab=t;
   closeSidebar();
   if(t==='inicio')renderInicio();
   if(t==='inventario')renderInv();
