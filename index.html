@@ -1259,8 +1259,22 @@ const app=initializeApp({apiKey:"AIzaSyAWC_1RUqXFXWgY9duTHffq-kanGFKP9Mw",authDo
 // Persistencia offline: las escrituras se confirman al instante en local y sincronizan en 2do plano.
 // Si el navegador no la soporta, cae a Firestore normal sin romper nada.
 let db;
+// Redes de oficina con proxy: dejan cargar la app pero cortan el canal de streaming
+// que usa Firestore, y entonces solo se ve lo ultimo guardado en el equipo. Con este
+// modo se usa long polling, que pasa por cualquier proxy. Se prende desde el aviso
+// naranja y queda guardado en ese equipo (no afecta al telefono ni a las otras PC).
+// Tambien se puede forzar con ?lp=1 en la direccion, y apagar con ?lp=0.
+const RED_CON_PROXY=(()=>{
+  try{
+    const u=new URLSearchParams(location.search);
+    if(u.has('lp'))localStorage.setItem('erpRedProxy',u.get('lp')==='0'?'0':'1');
+  }catch(e){}
+  try{return localStorage.getItem('erpRedProxy')==='1';}catch(e){return false;}
+})();
+const cfgFS={localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})};
+if(RED_CON_PROXY)cfgFS.experimentalForceLongPolling=true;
 try{
-  db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
+  db=initializeFirestore(app,cfgFS);
 }catch(e){
   db=getFirestore(app);
 }
@@ -5508,6 +5522,12 @@ function mostrarAvisoSinConexion(){
   d.innerHTML=`<span>⚠️ No se pudo conectar con el servidor. Estás viendo los últimos datos guardados en este equipo y <strong>los cambios no se están sincronizando</strong>.</span>
     <button onclick="location.reload()" style="background:#fff;color:#b45309;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px">Reintentar</button>
     <button onclick="this.parentElement.remove()" style="background:none;border:1px solid rgba(255,255,255,.6);color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px">Ocultar</button>`;
+  // Boton extra: cambiar el modo de conexion cuando el proxy corta el streaming.
+  const bLP=document.createElement('button');
+  bLP.textContent=RED_CON_PROXY?'Volver a la conexión normal':'Probar otra conexión';
+  bLP.style.cssText='background:none;border:1px solid rgba(255,255,255,.6);color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px';
+  bLP.onclick=()=>{try{localStorage.setItem('erpRedProxy',RED_CON_PROXY?'0':'1');}catch(e){}location.reload();};
+  d.insertBefore(bLP,d.lastElementChild);
   document.body.appendChild(d);
 }
 
