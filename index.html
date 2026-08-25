@@ -441,6 +441,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="sidebar-section-title">Gestión</div>
     <button class="sidebar-item" id="si-inventario" onclick="setTab('inventario')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="label">Inventario</span><span class="badge" id="badge-inventario"></span></button>
     <button class="sidebar-item" id="si-promociones" onclick="setTab('promociones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="label">Promociones</span></button>
+    <button class="sidebar-item" id="si-marketing" onclick="setTab('marketing')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l4 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6"/><path d="M19 6a7 7 0 0 1 0 12"/></svg></span><span class="label">Marketing</span></button>
     <button class="sidebar-item" id="si-cupones" onclick="setTab('cupones')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg></span><span class="label">Cupones</span></button>
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
@@ -655,6 +656,11 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   <!-- PROMOCIONES -->
   <div id="tab-promociones" class="section">
     <div id="promo-content"></div>
+  </div>
+
+  <!-- MARKETING -->
+  <div id="tab-marketing" class="section">
+    <div id="mkt-content"></div>
   </div>
 
   <!-- CUPONES -->
@@ -1329,6 +1335,8 @@ async function saveRRHHDB(e){await setDoc(doc(db,'rrhh',String(e.id)),e);}
 async function delRRHHDB(id){await deleteDoc(doc(db,'rrhh',String(id)));}
 async function delPromoDB(id){await deleteDoc(doc(db,'promociones',String(id)));}
 async function delCotDB(id){await deleteDoc(doc(db,'cotizaciones',String(id)));}
+async function saveCampanaDB(c){await setDoc(doc(db,'campanas',String(c.id)),c);}
+async function delCampanaDB(id){await deleteDoc(doc(db,'campanas',String(id)));}
 async function saveHermanoDB(m){await setDoc(doc(db,'hermanos',String(m.id)),m);}
 async function delHermanoDB(id){await deleteDoc(doc(db,'hermanos',String(id)));}
 async function saveAsistDB(r){await setDoc(doc(db,'asistencia',String(r.id)),r);}
@@ -1355,6 +1363,7 @@ const VENTAS_DEFAULT = [];
 let inventario=[];
 let ventas=[];
 let cotizaciones=[];
+let campanas=[];
 let promociones=[];
 let gastosFijos=[];
 let compras=[];
@@ -2767,6 +2776,7 @@ function renderCotizaciones(){
     </div>
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
       <button class="btn btn-sec btn-sm" onclick="imprimirCotizacion('${c.id}')">Imprimir</button>
+      <button class="btn btn-sec btn-sm" onclick="waCotizacion('${c.id}')" style="border-color:rgba(37,211,102,.5);color:var(--green)">WhatsApp</button>
       <button class="btn btn-sec btn-sm" onclick="editarCotizacion('${c.id}')">Editar</button>
       ${!c.convertida?`<button class="btn btn-sm" style="background:var(--accent-grad)" onclick="convertirEnVenta('${c.id}')">Convertir en venta</button>`:''}
       <button class="btn btn-danger btn-sm" onclick="eliminarCotizacion('${c.id}')">Eliminar</button>
@@ -5301,7 +5311,7 @@ function exportCupones(){
   lista.forEach(c=>{
     const est=estadoCupon(c);
     const vUso=c.usadoVentaId?ventas.find(v=>String(v.id)===String(c.usadoVentaId)):null;
-    csv.push(`${c.codigo},${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelizacion':'Flyer'},${c.tipoDesc==='%'?c.valor+'%':c.valor},${c.minCompra||0},${c.vence||''},${est},"${vUso?(c.usadoFecha+' · '+vUso.cliente).replace(/"/g,'""'):(c.usado?c.usadoFecha||'':'')}"`);
+    csv.push(`${c.codigo},${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelizacion':c.origen==='meta'?'Meta Ads':'Flyer'},${c.tipoDesc==='%'?c.valor+'%':c.valor},${c.minCompra||0},${c.vence||''},${est},"${vUso?(c.usadoFecha+' · '+vUso.cliente).replace(/"/g,'""'):(c.usado?c.usadoFecha||'':'')}"`);
   });
   downloadCSV('cupones_ecohome_'+today()+'.csv',csv.join('\n'));
 }
@@ -5372,6 +5382,7 @@ function renderCupones(){
       <select onchange="window._cupFOrigen=this.value;renderCupones()" style="flex:1;min-width:120px">
         <option value="" ${!fOrigen?'selected':''}>Todos los orígenes</option>
         <option value="flyer" ${fOrigen==='flyer'?'selected':''}>Flyer</option>
+        <option value="meta" ${fOrigen==='meta'?'selected':''}>Meta Ads</option>
         <option value="sorpresa" ${fOrigen==='sorpresa'?'selected':''}>Sorpresa</option>
         <option value="fidelizacion" ${fOrigen==='fidelizacion'?'selected':''}>Fidelización</option>
       </select>
@@ -5392,7 +5403,7 @@ function renderCupones(){
       const cliTxt=(c.origen==='sorpresa'||c.origen==='fidelizacion')&&c.cliente?`<div style="font-size:10px;color:var(--text3)">para ${c.cliente}</div>`:'';
       html+=`<tr>
         <td><strong style="letter-spacing:1px">${c.codigo}</strong>${cliTxt}</td>
-        <td>${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelización':'Flyer'}</td>
+        <td>${c.origen==='sorpresa'?'Sorpresa':c.origen==='fidelizacion'?'Fidelización':c.origen==='meta'?'Meta Ads':'Flyer'}</td>
         <td>${descCuponTxt(c)}</td>
         <td>${(c.minCompra||0)>0?fmt(c.minCompra):'—'}</td>
         <td>${c.vence?c.vence.split('-').reverse().join('/'):'—'}</td>
@@ -5541,6 +5552,7 @@ async function initFirebase(){
     const pEmp=leerColeccion('empleados');
     const pVta=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('ventas');
     const pCot=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('cotizaciones');
+    const pCam=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('campanas');
     const pGas=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('gastos');
     const pCom=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('compras');
     const pCaj=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('cajas');
@@ -5555,8 +5567,8 @@ async function initFirebase(){
     // Puntos de fidelización: también en modo vendedora (se ganan al vender)
     const pPts=leerColeccion('puntosCliente');
 
-    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap]=
-      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts]);
+    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap,camSnap]=
+      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts,pCam]);
 
     // Si la lectura se cortó por falta de conexión, "vacío" no significa que la base esté
     // vacía: sembrar los datos por defecto aquí pisaría el inventario real.
@@ -5649,6 +5661,13 @@ async function initFirebase(){
     });
 
     if(!MODO_VENDEDORA){
+      // Campañas de anuncios
+      if(camSnap)campanas=camSnap.docs.map(d=>d.data());
+      onSnapshot(collection(db,'campanas'),snap=>{
+        campanas=snap.docs.map(d=>d.data());
+        const t=document.getElementById('tab-marketing');
+        if(t&&t.classList.contains('active'))renderMarketing();
+      });
       // Cargar gastos fijos y compras
       gastosFijos=gasSnap.docs.map(d=>d.data());
       onSnapshot(collection(db,'gastos'),snap=>{
@@ -5748,7 +5767,7 @@ function initPrivacidad(){
 
 function setTab(t){
   // El Inicio, Resumen y Finanzas (datos sensibles) requieren modo administrador
-  if((t==='resumen'||t==='finanzas'||t==='costosfab'||t==='hermanos'||t==='cupones'||t==='personal')&&!esAdmin()){
+  if((t==='resumen'||t==='finanzas'||t==='costosfab'||t==='hermanos'||t==='cupones'||t==='personal'||t==='marketing')&&!esAdmin()){
     requiereAdmin().then(ok=>{if(ok)setTab(t);});
     closeSidebar();
     return;
@@ -5782,6 +5801,7 @@ function setTab(t){
   if(t==='asistencia')renderAsistencia();
   if(t==='personal')renderPersonal();
   if(t==='cupones')renderCupones();
+  if(t==='marketing')renderMarketing();
 }
 
 // =========== MODALS ===========
@@ -5863,7 +5883,7 @@ function refrescarVistaActiva(){
     despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
     vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
     clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora,
-    hermanos:renderHermanos,asistencia:renderAsistencia,personal:renderPersonal,cupones:renderCupones}[id];
+    hermanos:renderHermanos,asistencia:renderAsistencia,personal:renderPersonal,cupones:renderCupones,marketing:renderMarketing}[id];
   if(typeof fn==='function'){try{fn();}catch(e){}}
 }
 
@@ -5898,6 +5918,250 @@ function diasDesde(fechaISO){
   return Math.round((h-d)/86400000);
 }
 
+// =========== MARKETING (campañas de anuncios) ===========
+// El ERP sabe tres cosas que Ads Manager no puede saber: quién compró de verdad, con
+// qué margen quedó esa venta y qué cotización se murió sin cerrar. Esta pestaña cruza
+// el gasto en anuncios contra eso, así que no repite lo que ya se ve en Meta.
+//
+// El amarre venta-anuncio es el cupón: cada campaña genera su lote con campanaId, y
+// cuando esa venta se registra con el cupón queda atribuida sola. Por eso el gasto se
+// puede cargar a mano y el análisis igual funciona sin conectar la API de Meta.
+
+// Mismo criterio de costo que usa Finanzas en gananciaMes(), para que los dos números
+// cuadren: producto + respaldo, y lo que no tenga costo cargado no suma.
+function costoDeVenta(v){
+  let c=0;
+  (v.items||[]).forEach(it=>{
+    const p=it.prodId?inventario.find(x=>String(x.id)===String(it.prodId)):null;
+    if(p&&p.costo>0)c+=p.costo*it.qty;
+    if(it.respaldoId){
+      const r=inventario.find(x=>String(x.id)===String(it.respaldoId));
+      if(r&&r.costo>0)c+=r.costo*it.qty;
+    }
+  });
+  return c;
+}
+// Ítems sin costo cargado. Si hay varios, el margen que mostramos está inflado: más
+// vale avisarlo que dar un número preciso y falso.
+function itemsSinCosto(v){
+  return (v.items||[]).filter(it=>{
+    const p=it.prodId?inventario.find(x=>String(x.id)===String(it.prodId)):null;
+    return !(p&&p.costo>0);
+  }).length;
+}
+
+function cuponesDeCampana(id){
+  return cupones.filter(c=>String(c.campanaId||'')===String(id));
+}
+
+function metricasCampana(cam){
+  const cups=cuponesDeCampana(cam.id);
+  const ids=new Set(cups.map(c=>String(c.id)));
+  const usaCupon=x=>x.cupon&&ids.has(String(x.cupon.id));
+  const vts=ventas.filter(v=>usaCupon(v)&&(v.estado||'pendiente')!=='cancelado');
+  const cots=cotizaciones.filter(c=>usaCupon(c));
+  const cotsAbiertas=cots.filter(c=>!c.convertida);
+
+  const ingreso=vts.reduce((a,v)=>a+(v.total||0),0);
+  const margen=ingreso-vts.reduce((a,v)=>a+costoDeVenta(v),0);
+  const gasto=cam.gasto||0;
+  const sinCosto=vts.reduce((a,v)=>a+itemsSinCosto(v),0);
+
+  // Si no cargaron el dato de Meta, las cotizaciones sirven de proxy de los leads: es
+  // gente que pidió precio, que es lo que un anuncio realmente produce.
+  const leads=cam.leads>0?cam.leads:cots.length;
+  const cierre=leads>0?vts.length/leads:0;
+  const margenProm=vts.length?margen/vts.length:0;
+
+  return {
+    cups,ventas:vts,cotizaciones:cots,cotsAbiertas,
+    ingreso,margen,gasto,sinCosto,leads,cierre,
+    utilidad:margen-gasto,
+    leadsEstimados:!(cam.leads>0),
+    costoPorVenta:vts.length?Math.round(gasto/vts.length):null,
+    costoPorLead:leads>0?Math.round(gasto/leads):null,
+    roas:gasto>0?margen/gasto:null,
+    // El número accionable: lo que deja de margen una venta, por la proporción de
+    // leads que termina comprando. Pagar más que esto por lead es perder plata.
+    techoPorLead:(vts.length&&leads>0)?Math.round(margenProm*cierre):null,
+    plataParada:cotsAbiertas.reduce((a,c)=>a+(c.total||0),0)
+  };
+}
+
+function semaforoCampana(m){
+  if(!m.gasto)return{c:'var(--text3)',t:'Falta cargar el gasto'};
+  // Sin cupones no hay forma de amarrar ventas a la campaña. Eso no es un mal
+  // resultado, es ausencia de dato: no se pinta en rojo.
+  if(!m.cups.length)return{c:'var(--text3)',t:'Sin atribución'};
+  if(!m.ventas.length)return{c:'#f28a8a',t:'Sin ventas atribuidas'};
+  if(m.utilidad<=0)return{c:'#f28a8a',t:'Pierde plata'};
+  if(m.roas!==null&&m.roas<1.5)return{c:'#f4d778',t:'Apenas se sostiene'};
+  return{c:'var(--green)',t:'Rinde'};
+}
+
+function renderMarketing(){
+  const cams=[...campanas].sort((a,b)=>(b.desde||'').localeCompare(a.desde||''));
+  let html=`<div class="section-title">📣 Marketing</div>
+    <div class="help">Acá no se repiten los números de Ads Manager. Se cruza lo que gastaste contra lo que el ERP sabe: quién compró, con qué margen y qué cotización quedó abierta.</div>
+    <button class="btn" style="width:100%;margin-bottom:14px" onclick="abrirCampana()">+ Nueva campaña</button>`;
+
+  if(!cams.length){
+    html+='<div class="empty">No hay campañas cargadas.<br><br>Crea una con el nombre que usa en Meta, escribe cuánto llevas gastado y genera su lote de cupones. Cuando una venta use uno de esos cupones queda amarrada sola a la campaña.</div>';
+    document.getElementById('mkt-content').innerHTML=html;
+    return;
+  }
+
+  const met=cams.map(c=>({cam:c,m:metricasCampana(c)}));
+  // Solo entra al consolidado lo que tiene cupones: si sumáramos el gasto de las
+  // campañas sin atribuir contra un margen que no les corresponde, la utilidad
+  // global saldría falsamente negativa.
+  const medibles=met.filter(x=>x.m.cups.length);
+  const gastoTot=medibles.reduce((a,x)=>a+x.m.gasto,0);
+  const margenTot=medibles.reduce((a,x)=>a+x.m.margen,0);
+  const ventasTot=medibles.reduce((a,x)=>a+x.m.ventas.length,0);
+  const paradoTot=met.reduce((a,x)=>a+x.m.plataParada,0);
+  const utilTot=margenTot-gastoTot;
+
+  html+=`<div class="stat-grid">
+    <div class="stat"><div class="stat-lbl">Gasto en anuncios</div><div class="stat-val">${fmt(gastoTot)}</div></div>
+    <div class="stat"><div class="stat-lbl">Margen atribuido</div><div class="stat-val">${fmt(margenTot)}</div></div>
+    <div class="stat"><div class="stat-lbl">Utilidad</div><div class="stat-val" style="color:${utilTot>=0?'var(--green)':'#f28a8a'}">${fmt(utilTot)}</div></div>
+    <div class="stat"><div class="stat-lbl">Ventas atribuidas</div><div class="stat-val">${ventasTot}</div></div>
+  </div>`;
+
+  const fueraGasto=met.filter(x=>!x.m.cups.length).reduce((a,x)=>a+x.m.gasto,0);
+  if(fueraGasto>0)html+=`<div class="muted" style="font-size:11px;margin:-8px 0 14px">Los totales dejan fuera ${fmt(fueraGasto)} de campañas sin cupones, que no se pueden atribuir.</div>`;
+
+  // Lo que hay que hacer va antes que los números: es la parte que Ads Manager no da.
+  const acciones=[];
+  if(paradoTot>0){
+    const nAb=met.reduce((a,x)=>a+x.m.cotsAbiertas.length,0);
+    acciones.push(`Hay <b>${nAb} ${nAb===1?'cotización':'cotizaciones'} sin cerrar</b> de gente que llegó por anuncios, por ${fmt(paradoTot)}. Antes de subirle presupuesto a nada, esa es la plata más barata que tienes arriba de la mesa.`);
+  }
+  met.forEach(x=>{
+    if(x.m.gasto&&x.m.ventas.length&&x.m.utilidad<=0)
+      acciones.push(`<b>${x.cam.nombre}</b> te cuesta ${fmt(x.m.costoPorVenta)} por venta y esa venta deja ${fmt(Math.round(x.m.margen/x.m.ventas.length))} de margen. Estás pagando por vender: bájala o cámbiale el producto que promociona.`);
+    if(x.m.gasto&&!x.m.ventas.length&&x.m.cups.length)
+      acciones.push(`<b>${x.cam.nombre}</b> lleva ${fmt(x.m.gasto)} gastados y todavía ninguna venta con sus cupones.`);
+    if(x.m.gasto&&!x.m.cups.length&&(!x.cam.hasta||x.cam.hasta>=today()))
+      acciones.push(`<b>${x.cam.nombre}</b> no tiene cupones generados, así que no hay forma de saber qué vendió. Genérale un lote.`);
+    if(x.m.costoPorLead!==null&&x.m.techoPorLead!==null&&x.m.costoPorLead>x.m.techoPorLead)
+      acciones.push(`<b>${x.cam.nombre}</b>: pagas ${fmt(x.m.costoPorLead)} por lead, y con tu tasa de cierre actual el techo son ${fmt(x.m.techoPorLead)}. Cada lead extra a ese precio te resta.`);
+    if(x.m.sinCosto>0)
+      acciones.push(`<b>${x.cam.nombre}</b>: ${x.m.sinCosto} ${x.m.sinCosto===1?'ítem':'ítems'} vendido${x.m.sinCosto===1?'':'s'} sin costo cargado en inventario. El margen que se muestra está inflado hasta que los completes.`);
+  });
+  if(acciones.length){
+    html+=`<div class="card" style="border-left:3px solid var(--gold);margin-bottom:14px">
+      <h4 style="margin-bottom:8px">Qué conviene hacer</h4>
+      ${acciones.map(a=>`<div class="muted" style="font-size:12px;line-height:1.65;margin-bottom:7px">• ${a}</div>`).join('')}
+    </div>`;
+  }
+
+  html+=met.map(({cam,m})=>{
+    const s=semaforoCampana(m);
+    const per=[cam.desde,cam.hasta].filter(Boolean).map(f=>f.split('-').reverse().join('/')).join(' — ');
+    const usados=m.cups.filter(c=>c.usado).length;
+    const dato=(lbl,val,hint)=>`<div style="min-width:112px"><div class="muted" style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${lbl}</div><div style="font-weight:600;font-size:14px;margin-top:2px"${hint?` title="${hint}"`:''}>${val}</div></div>`;
+    return `<div class="card" style="border-left:3px solid ${s.c}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <h4>${cam.nombre}</h4>
+          <div class="muted" style="font-size:11px;margin-top:3px">${per||'sin período'} · ${m.cups.length} ${m.cups.length===1?'cupón':'cupones'} · ${usados} usado${usados===1?'':'s'}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:600;color:${s.c};font-size:12px">${s.t}</div>
+          <div class="muted" style="font-size:11px;margin-top:2px">${fmt(m.gasto)} gastados</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border2)">
+        ${!m.cups.length?`${dato('Leads',m.leads||'—')}${dato('Costo por lead',m.costoPorLead!==null?fmt(m.costoPorLead):'—','Lo único medible sin cupones')}<div style="flex:1;min-width:200px;align-self:center"><div class="muted" style="font-size:11px">Sin cupones no se puede saber qué vendió esta campaña. Solo se muestra lo que reportó Meta.</div></div>`:`
+        ${dato('Ventas',m.ventas.length)}
+        ${dato('Costo por venta',m.costoPorVenta!==null?fmt(m.costoPorVenta):'—','Lo que te cuesta cada venta real, no cada lead')}
+        ${dato('Margen dejado',fmt(m.margen),'Venta menos costo del producto')}
+        ${dato('Utilidad',`<span style="color:${m.utilidad>=0?'var(--green)':'#f28a8a'}">${fmt(m.utilidad)}</span>`,'Margen menos lo gastado en anuncios')}
+        ${dato('ROAS s/ margen',m.roas!==null?m.roas.toFixed(2)+'x':'—','Sobre margen, no sobre facturación: 1.0x es empatar')}
+        ${dato('Cierre',m.leads?Math.round(m.cierre*100)+'%':'—',m.leadsEstimados?'Estimado con las cotizaciones, porque no cargaste los leads de Meta':'Ventas sobre los leads que reportó Meta')}
+        ${dato('Techo por lead',m.techoPorLead!==null?fmt(m.techoPorLead):'—','Lo máximo que te conviene pagar por un lead de esta campaña')}`}
+      </div>
+      ${m.cotsAbiertas.length?`<div class="muted" style="font-size:11px;margin-top:10px;color:var(--gold)">${m.cotsAbiertas.length} ${m.cotsAbiertas.length===1?'cotización':'cotizaciones'} sin cerrar por ${fmt(m.plataParada)}</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-sec btn-sm" onclick="generarCuponesCampana('${cam.id}')">Generar cupones</button>
+        <button class="btn btn-sec btn-sm" onclick="abrirCampana('${cam.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarCampana('${cam.id}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('mkt-content').innerHTML=html;
+}
+
+async function abrirCampana(id){
+  const c=id?campanas.find(x=>String(x.id)===String(id)):null;
+  const vals=await formDialog(c?'Editar campaña':'Nueva campaña',[
+    {type:'info',label:'El gasto lo copias de Ads Manager una vez por semana. Los leads son opcionales: si los dejas vacíos se estiman con las cotizaciones que entraron.'},
+    {name:'nombre',label:'Nombre (el mismo que usa en Meta)',default:c?c.nombre:'',required:true},
+    {name:'desde',label:'Desde',type:'date',default:c?c.desde:today()},
+    {name:'hasta',label:'Hasta',type:'date',default:c?c.hasta:today()},
+    {name:'gasto',label:'Gasto en anuncios ($)',type:'number',default:c?c.gasto:''},
+    {name:'leads',label:'Leads que reportó Meta (opcional)',type:'number',default:c&&c.leads?c.leads:''}
+  ]);
+  if(!vals)return;
+  const nombre=String(vals.nombre).trim();
+  if(!nombre)return;
+  const nuevo={
+    id:c?c.id:uid(),nombre,plataforma:'meta',
+    desde:vals.desde||today(),hasta:vals.hasta||today(),
+    gasto:parseInt(vals.gasto)||0,leads:parseInt(vals.leads)||0
+  };
+  if(c){const i=campanas.findIndex(x=>String(x.id)===String(id));campanas[i]=nuevo;}
+  else campanas.push(nuevo);
+  try{await saveCampanaDB(nuevo);}catch(e){toast('⚠️ Error al guardar: '+e.message);}
+  renderMarketing();
+}
+
+async function eliminarCampana(id){
+  const usados=cuponesDeCampana(id).filter(c=>c.usado).length;
+  const aviso=usados>0
+    ?`Esta campaña tiene ${usados} ${usados===1?'cupón':'cupones'} ya usado${usados===1?'':'s'} en ventas. Los cupones no se borran, pero esas ventas dejan de estar atribuidas. ¿Eliminar igual?`
+    :'¿Eliminar esta campaña?';
+  if(!(await confirmDialog(aviso,{danger:true})))return;
+  campanas=campanas.filter(c=>String(c.id)!==String(id));
+  try{await delCampanaDB(id);}catch(e){toast('⚠️ Error al eliminar: '+e.message);}
+  renderMarketing();
+}
+
+// Lote de cupones amarrado a la campaña: es lo que después permite decir "esta venta
+// vino de este anuncio" sin depender de nada externo.
+async function generarCuponesCampana(id){
+  const cam=campanas.find(x=>String(x.id)===String(id));
+  if(!cam)return;
+  const vals=await formDialog('Cupones para '+cam.nombre,[
+    {type:'info',label:'El código de estos cupones va en el anuncio. Cuando el cliente lo use, la venta queda atribuida a esta campaña.'},
+    {name:'cant',label:'Cuántos cupones',type:'number',default:50,required:true},
+    {name:'monto',label:'Descuento por cupón ($)',type:'number',default:'',required:true},
+    {name:'min',label:'Compra mínima ($, 0 si no aplica)',type:'number',default:0},
+    {name:'vence',label:'Vencen el',type:'date',default:cam.hasta||today(),required:true}
+  ]);
+  if(!vals)return;
+  const cant=parseInt(vals.cant)||0;
+  const monto=parseInt(vals.monto)||0;
+  const minC=parseInt(vals.min)||0;
+  const vence=vals.vence;
+  if(cant<1||cant>500){alert('Ingresa una cantidad entre 1 y 500');return;}
+  if(monto<=0){alert('Ingresa el monto de descuento del cupón');return;}
+  if(!vence||vence<today()){alert('La fecha de vencimiento no puede ser pasada');return;}
+  if(!(await confirmDialog('Se generarán '+cant+' cupones de '+fmt(monto)+' para la campaña '+cam.nombre+'. ¿Continuar?')))return;
+  const batch=writeBatch(db);
+  for(let i=0;i<cant;i++){
+    const c={id:uid()+'_'+i,codigo:genCodigoCupon(),origen:'meta',campanaId:cam.id,tipoDesc:'$',valor:monto,minCompra:minC,creado:today(),vence,usado:false,usadoFecha:null,usadoVentaId:null};
+    cupones.push(c);
+    batch.set(doc(db,'cupones',String(c.id)),c);
+  }
+  batch.commit().catch(e=>toast('⚠️ Error al sincronizar cupones: '+e.message));
+  toast('✅ '+cant+' cupones generados para '+cam.nombre);
+  renderMarketing();
+}
+
 // ===== WhatsApp (click-to-chat) =====
 function telWa(tel){
   let t=(tel||'').replace(/\D/g,'');
@@ -5925,6 +6189,27 @@ function waDespacho(id){
   const dir=[v.despCalle,v.despNumero,v.despComuna].filter(Boolean).join(', ')||v.dir||'';
   const cuando=v.fechaDesp?v.fechaDesp.split('-').reverse().join('/'):'';
   abrirWa(v.tel,`Hola ${v.cliente} 👋, le escribimos de EcoHome para coordinar la entrega de su pedido${cuando?` para el ${cuando}`:''}${dir?` en ${dir}`:''}. ¿Nos confirma si estará disponible? ¡Gracias! 🚚`);
+}
+
+function waCotizacion(id){
+  const c=cotizaciones.find(x=>String(x.id)===String(id));if(!c)return;
+  const fechaFmt=c.fecha.split('-').reverse().join('/');
+  let msg=`Hola ${c.cliente} 👋, te escribimos de EcoHome con la cotización que nos pediste (${fechaFmt}):\n\n`;
+  c.items.forEach(it=>{
+    const nom=it.desc||((inventario.find(p=>p.id===it.prodId)||{}).nombre)||'Producto';
+    msg+=`• ${nom} x${it.qty} — ${fmt(it.qty*it.precio)}\n`;
+  });
+  if(c.descuento>0)msg+=`Descuento aplicado: -${fmt(c.descuento)}\n`;
+  if((c.descuentoCupon||0)>0)msg+=`Cupón ${((c.cupon||{}).codigo||'')}: -${fmt(c.descuentoCupon)}\n`;
+  msg+=`\n*Total: ${fmt(c.total)}*\n`;
+  if(c.desp>0){
+    const dir=[c.despCalle,c.despNumero,c.despComuna].filter(Boolean).join(', ')||c.dir||'';
+    msg+=`\n🚚 Despacho${dir?` a ${dir}`:''}: ${fmt(c.desp)}. Se cancela en efectivo directamente al chofer del camión (servicio externo, no facturado por EcoHome).\n`;
+  }
+  msg+=`\nCotización válida por 7 días. Precios sujetos a disponibilidad de stock.\n\n¿La dejamos reservada? 😊 EcoHome`;
+  // A diferencia de una venta, una cotización puede no traer teléfono guardado: en ese
+  // caso se abre WhatsApp igual, sin destinatario, para elegir el contacto a mano.
+  window.open('https://wa.me/'+telWa(c.tel)+'?text='+encodeURIComponent(msg),'_blank');
 }
 
 // Cambio de estado rápido desde la tarjeta (sin abrir el detalle)
@@ -7997,7 +8282,7 @@ Object.assign(window,{
   chipTipoVenta,chipEstadoVenta,chipEstadoDespacho,
   editarAbono,borrarAbono,abrirRegistroAbonos,renderRegistroAbonos,
   renderSaldos,abonarSaldo,pagarTotalSaldo,refrescarVistaActiva,actualizarBadges,
-  cambiarEstadoRapido,waWhatsApp,waCobro,waDespacho,
+  cambiarEstadoRapido,waCotizacion,waWhatsApp,waCobro,waDespacho,
   iniciarTour,tourSiguiente,tourAnterior,cerrarTour,exportarRespaldo,
   abrirRecompra,renderRecompra,marcarRecompraContactada,waRecompra,
   guardarMetaVendedor,
@@ -8025,7 +8310,8 @@ Object.assign(window,{
   addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno,
   renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada,
   abrirModalAsist,guardarAsistModal,setAsistHora,
-  renderCupones,guardarConfigCupones,generarLoteCupones,exportCupones,waCuponSorpresa,mostrarCuponSorpresa
+  renderCupones,guardarConfigCupones,generarLoteCupones,exportCupones,waCuponSorpresa,mostrarCuponSorpresa,
+  renderMarketing,abrirCampana,eliminarCampana,generarCuponesCampana
 });
 </script>
 
