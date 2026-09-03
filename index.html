@@ -607,6 +607,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
       <button class="btn btn-sm" style="background:var(--accent-grad)" onclick="abrirImportar()">Importar Excel</button>
       <button class="btn btn-sec btn-sm" onclick="abrirReposicion()" style="border-color:var(--sage);color:var(--accent-text)">Reposición</button>
       <button class="btn btn-sec btn-sm" onclick="exportInv()">Exportar</button>
+      <button class="btn btn-sec btn-sm" onclick="abrirListaPrecios()" style="border-color:var(--sage);color:var(--accent-text)">💲 Lista de precios</button>
       <button class="btn btn-sec btn-sm" onclick="resetearInventario()" style="border-color:#f28a8a;color:#f28a8a">Resetear</button>
     </div>
     <div id="inv-stats" class="stat-grid"></div>
@@ -1257,6 +1258,31 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-liq">
+  <div class="modal" style="max-width:540px">
+    <h3 id="liq-titulo">Liquidación</h3>
+    <div id="liq-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-liq')">Cerrar</button>
+      <button class="btn btn-sec btn-sm" onclick="copiarLiquidacion()">📋 Copiar</button>
+      <button class="btn btn-sec btn-sm" onclick="waLiquidacion()">💬 WhatsApp</button>
+      <button class="btn btn-sm" onclick="imprimirLiquidacionCtx()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-lista-precios">
+  <div class="modal" style="max-width:560px">
+    <h3>💲 Lista de precios</h3>
+    <div id="lp-content" style="max-height:52vh;overflow:auto"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-lista-precios')">Cerrar</button>
+      <button class="btn btn-sec btn-sm" onclick="copiarListaPrecios()">📋 Copiar texto</button>
+      <button class="btn btn-sm" onclick="imprimirListaPrecios()">🖨️ Ver / Imprimir</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocs,getDocFromCache,getDocsFromCache,setDoc,deleteDoc,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -1380,6 +1406,9 @@ let cuponesConfig={activo:false,monto:150000,tipoDesc:'$',valor:10000,dias:30};
 // =========== HELPERS ===========
 let montosOcultos=false;
 const fmt=n=>montosOcultos?'$••••••':'$'+Math.round(n||0).toLocaleString('es-CL');
+// Igual que fmt() pero sin el modo privacidad: los documentos que se imprimen o se le
+// mandan al trabajador tienen que llevar el monto de verdad, no los puntitos.
+const montoCLP=n=>'$'+Math.round(n||0).toLocaleString('es-CL');
 
 // Gráfico de línea/área en SVG puro (sin dependencias). puntos: [{label,val}]
 let _svgTrendSeq=0;
@@ -3590,7 +3619,8 @@ function renderSueldosSection(mesStr,mesNombre){
     });
     html+=`<div class="item-row" style="border-top:2px solid var(--border)">
       <strong>Total sueldos del mes</strong><strong style="color:#a78bfa">${fmt(totalSueldos)}</strong>
-    </div>`;
+    </div>
+    <div class="muted" style="font-size:11px;text-align:right">Se paga el ${fechaPagoDe(mesStr)}</div>`;
   }
   html+='</div>';
   return{html,totalSueldos};
@@ -3959,6 +3989,290 @@ async function atrasoRapido(empId,horas){
   refrescarVistaActiva();
 }
 
+// =========== PAGO DE SUELDOS ===========
+// Los sueldos se pagan el día 5 del mes siguiente al trabajado: el 05/09 se paga agosto.
+const DIA_PAGO=5;
+let pagoEmpleadoSel='';   // '' = todo el equipo
+let pagoMesSel='';        // mes trabajado que se está pagando (YYYY-MM); '' = el que toca ahora
+function mesDesplazado(mesStr,delta){
+  const [a,m]=mesStr.split('-').map(Number);
+  const d=new Date(a,m-1+delta,1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function nombreMesAnio(mesStr){
+  return `${MESES[parseInt(mesStr.slice(5,7),10)-1]} ${mesStr.slice(0,4)}`;
+}
+// Hasta el día 5 lo que queda pendiente es el mes anterior; pasado el 5, el mes en curso.
+function mesAPagar(){
+  const hoy=today();
+  return parseInt(hoy.slice(8,10),10)<=DIA_PAGO?mesDesplazado(hoy.slice(0,7),-1):hoy.slice(0,7);
+}
+function fechaPagoDe(mesStr){
+  const sig=mesDesplazado(mesStr,1);
+  return `${String(DIA_PAGO).padStart(2,'0')}/${sig.slice(5,7)}/${sig.slice(0,4)}`;
+}
+// =========== COMPROBANTE DE LIQUIDACION ===========
+// El desglose que se le muestra al trabajador. Todo sale de liquidacionEmpleado(), el
+// mismo calculo con que se paga, para que el papel y el panel no puedan dar totales
+// distintos. montoCLP en vez de fmt(): el comprobante nunca debe salir con los montos
+// tapados por el modo privacidad.
+function ventasEmpleadoMesLista(nombre,mesStr){
+  return ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado'&&v.vendedor===nombre);
+}
+const fechaCorta=f=>(f||'').split('-').reverse().join('/');
+function lineasLiquidacion(e,mesStr){
+  const liq=liquidacionEmpleado(e,mesStr);
+  const vDia=valorDiaEmpleado(e),vHora=valorHoraEmpleado(e);
+  const evs=liq.eventos.slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const faltas=evs.filter(x=>x.tipo==='ausencia');
+  const atrasos=evs.filter(x=>x.tipo==='atraso');
+  const bonos=evs.filter(x=>x.tipo==='bono');
+  const adelantos=evs.filter(x=>x.tipo==='adelanto');
+  // liq.descAusencias junta faltas y atrasos: aca se separan para que cada uno se explique solo
+  const descFaltas=Math.round(faltas.length*vDia);
+  const descAtrasos=Math.max(0,liq.descAusencias-descFaltas);
+  const vtas=ventasEmpleadoMesLista(e.nombre,mesStr);
+  const montoVtas=vtas.reduce((a,v)=>a+v.total,0);
+  const pct=comisionPctEmpleado(e);
+  const sueldoFull=liq.sueldoCompleto!=null?liq.sueldoCompleto:(e.sueldoBase||0);
+  const L=[];
+  L.push({sig:'+',concepto:'Sueldo base',
+    calc:liq.parcial
+      ? montoCLP(sueldoFull)+' de sueldo mensual \u00f7 30 d\u00edas \u00d7 '+liq.diasContrato+' d\u00edas trabajados'
+      : 'Mes completo \u00b7 '+montoCLP(sueldoFull)+' mensuales',
+    monto:liq.base});
+  if(descFaltas>0)L.push({sig:'-',concepto:'Faltas ('+faltas.length+' d\u00eda'+(faltas.length!==1?'s':'')+')',
+    calc:faltas.length+' \u00d7 valor del d\u00eda '+montoCLP(vDia),monto:descFaltas,
+    items:faltas.map(x=>({txt:fechaCorta(x.fecha)+' \u00b7 no asisti\u00f3'+(x.nota?' \u2014 '+x.nota:''),monto:-Math.round(vDia)}))});
+  if(descAtrasos>0)L.push({sig:'-',concepto:'Atrasos ('+liq.horasPerdidas+'h)',
+    calc:liq.horasPerdidas+'h \u00d7 valor de la hora '+montoCLP(vHora),monto:descAtrasos,
+    items:atrasos.map(x=>({txt:fechaCorta(x.fecha)+' \u00b7 '+x.horas+'h de atraso'+(x.nota?' \u2014 '+x.nota:''),monto:-Math.round(vHora*(x.horas||0))}))});
+  if(liq.descAsist>0)L.push({sig:'-',concepto:'Horas de menos seg\u00fan el registro de asistencia',
+    calc:minToHM(liq.faltanteMin)+' \u00d7 valor de la hora '+montoCLP(vHora),monto:liq.descAsist});
+  if(liq.pagoExtras>0)L.push({sig:'+',concepto:'Horas extra',
+    calc:minToHM(liq.extraMin)+' pagadas con 50% de recargo',monto:liq.pagoExtras});
+  L.push({sig:'+',concepto:'Comisi\u00f3n '+pct+'% sobre sus ventas',
+    calc:vtas.length+' venta'+(vtas.length!==1?'s':'')+' del mes por '+montoCLP(montoVtas)+' \u00d7 '+pct+'%',
+    monto:liq.comision});
+  if(liq.bonos>0)L.push({sig:'+',concepto:'Bonos',
+    calc:bonos.length+' bono'+(bonos.length!==1?'s':'')+' otorgado'+(bonos.length!==1?'s':'')+' este mes',monto:liq.bonos,
+    items:bonos.map(x=>({txt:fechaCorta(x.fecha)+(x.nota?' \u00b7 '+x.nota:''),monto:x.monto||0}))});
+  if(liq.adelantos>0)L.push({sig:'-',concepto:'Adelantos ya entregados',
+    calc:adelantos.length+' adelanto'+(adelantos.length!==1?'s':'')+' que ya recibi\u00f3 durante el mes',monto:liq.adelantos,
+    items:adelantos.map(x=>({txt:fechaCorta(x.fecha)+(x.nota?' \u00b7 '+x.nota:''),monto:-(x.monto||0)}))});
+  return{liq,lineas:L,vDia,vHora,vtas,montoVtas,pct,sueldoFull};
+}
+
+// Version en texto plano, para copiar o mandar por WhatsApp.
+function liquidacionTexto(e,mesStr){
+  const r=lineasLiquidacion(e,mesStr);
+  let t='*Liquidaci\u00f3n de sueldo \u00b7 '+nombreMesAnio(mesStr)+'*\n'+e.nombre+'\n\n';
+  r.lineas.forEach(l=>{
+    t+=(l.sig==='-'?'\u2212':'+')+' '+l.concepto+': '+(l.sig==='-'?'\u2212':'')+montoCLP(l.monto)+'\n    '+l.calc+'\n';
+    (l.items||[]).forEach(it=>{t+='       '+it.txt+' '+montoCLP(Math.abs(it.monto))+'\n';});
+  });
+  t+='\n*TOTAL A PAGAR: '+montoCLP(r.liq.total)+'*\nSe paga el '+fechaPagoDe(mesStr);
+  return t;
+}
+
+let liqCtx=null;   // {empId, mes} del comprobante abierto
+function verLiquidacion(empId,mesStr){
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  liqCtx={empId:String(empId),mes:mesStr};
+  const r=lineasLiquidacion(e,mesStr);
+  document.getElementById('liq-titulo').textContent='Liquidaci\u00f3n de '+e.nombre;
+  document.getElementById('liq-content').innerHTML=
+    '<div class="muted" style="font-size:11px;margin-bottom:10px">'
+    +nombreMesAnio(mesStr)+(e.cargo?' \u00b7 '+e.cargo:'')+(e.rut?' \u00b7 RUT '+e.rut:'')+'<br>'
+    +'Valor del d\u00eda '+montoCLP(r.vDia)+' \u00b7 valor de la hora '+montoCLP(r.vHora)
+    +' \u00b7 se paga el <strong>'+fechaPagoDe(mesStr)+'</strong></div>'
+    +r.lineas.map(l=>'<div style="padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">'
+      +'<span>'+l.concepto+'</span>'
+      +'<strong class="'+(l.sig==='-'?'danger':'ok')+'" style="white-space:nowrap">'+(l.sig==='-'?'\u2212':'+')+montoCLP(l.monto)+'</strong></div>'
+      +'<div class="muted" style="font-size:11px">'+l.calc+'</div>'
+      +(l.items||[]).map(it=>'<div class="muted" style="font-size:10.5px;display:flex;justify-content:space-between;padding-left:10px">'
+        +'<span>\u00b7 '+it.txt+'</span><span>'+(it.monto<0?'\u2212':'')+montoCLP(Math.abs(it.monto))+'</span></div>').join('')
+      +'</div>').join('')
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:2px solid var(--border)">'
+    +'<strong>Total a pagar</strong>'
+    +'<strong style="color:#a78bfa;font-size:20px">'+montoCLP(r.liq.total)+'</strong></div>'
+    +(typeof avisoSinIngreso==='function'?avisoSinIngreso(e):'');
+  openModal('modal-liq');
+}
+function copiarLiquidacion(){
+  if(!liqCtx)return;
+  const e=empleados.find(x=>String(x.id)===String(liqCtx.empId));if(!e)return;
+  navigator.clipboard.writeText(liquidacionTexto(e,liqCtx.mes))
+    .then(()=>toast('\u2705 Liquidaci\u00f3n copiada'))
+    .catch(()=>toast('No se pudo copiar'));
+}
+function waLiquidacion(){
+  if(!liqCtx)return;
+  const e=empleados.find(x=>String(x.id)===String(liqCtx.empId));if(!e)return;
+  const t=telWa(e.telefono);
+  if(!t){toast('Esta persona no tiene tel\u00e9fono en su ficha');return;}
+  window.open('https://wa.me/'+t+'?text='+encodeURIComponent(liquidacionTexto(e,liqCtx.mes)),'_blank');
+}
+function imprimirLiquidacionCtx(){
+  if(!liqCtx)return;
+  const e=empleados.find(x=>String(x.id)===String(liqCtx.empId));if(!e)return;
+  docLiquidaciones([e],liqCtx.mes);
+}
+function imprimirLiquidacionEquipo(mesStr){
+  const activos=empleados.filter(e=>e.activo!==false);
+  if(activos.length)docLiquidaciones(activos,mesStr);
+}
+
+// Comprobante imprimible: por cada persona salen dos hojas iguales, la del trabajador y
+// la de la empresa, que es la que queda firmada como respaldo del pago.
+function docLiquidaciones(lista,mesStr){
+  const MC='#3f6e56';
+  const logoSrc=(document.getElementById('dr-logo-src')||{}).src||'';
+  const css='@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}'
+    +'.page{width:210mm;min-height:297mm;padding:16mm 18mm;background:#fff}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid '+MC+'}'
+    +'.logo-img{height:34px;width:auto;display:block;margin-bottom:4px}'
+    +'.co-name{font-size:15px;font-weight:700}'
+    +'.co-sub{font-size:10px;color:#6b6f6b}'
+    +'.doc-title{font-size:13px;font-weight:700;color:'+MC+';letter-spacing:.05em;text-align:right}'
+    +'.doc-meta{font-size:10.5px;color:#6b6f6b;text-align:right;margin-top:3px}'
+    +'.copia-tag{display:inline-block;border:1px solid '+MC+';color:'+MC+';border-radius:99px;padding:2px 10px;font-size:9.5px;font-weight:700;letter-spacing:.06em;margin-top:5px}'
+    +'.info{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}'
+    +'.info-card{background:#f4f6f4;border:1px solid #e4e8e4;border-radius:9px;padding:10px 14px}'
+    +'.info-lbl{font-size:9.5px;font-weight:700;letter-spacing:.06em;color:#6b6f6b;margin-bottom:6px}'
+    +'.info-name{font-size:13px;font-weight:600}'
+    +'.info-sub{font-size:11px;color:#4a4d4a;margin-top:3px}'
+    +'.tabla{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}'
+    +'.tabla thead th{background:'+MC+';color:#fff;padding:8px 10px;text-align:left;font-size:10px;letter-spacing:.03em}'
+    +'.tabla thead th:last-child{text-align:right}'
+    +'.tabla td{padding:7px 10px;border-bottom:1px dotted #d8dcd8;vertical-align:top}'
+    +'.tabla td:last-child{text-align:right;white-space:nowrap;font-weight:600}'
+    +'.calc{font-size:10.5px;color:#6b6f6b;margin-top:2px}'
+    +'.sub{font-size:10px;color:#8a8d8a;margin-top:3px;padding-left:9px}'
+    +'.neg{color:#b03a3a}.pos{color:#2f7a4f}'
+    +'.tot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:11px 14px;border:2px solid '+MC+';border-radius:10px}'
+    +'.tot-lbl{font-size:13px;font-weight:700}.tot-val{font-size:20px;font-weight:700;color:'+MC+'}'
+    +'.nota{font-size:10.5px;color:#4a4d4a;line-height:1.5;margin-top:12px;padding:9px 12px;background:#f4f6f4;border-left:3px solid '+MC+'}'
+    +'.conforme{margin-top:20px;border:1.5px solid '+MC+';border-radius:10px;padding:12px 16px}'
+    +'.conforme-tit{font-size:11.5px;font-weight:700;color:'+MC+';letter-spacing:.04em;margin-bottom:5px}'
+    +'.conforme-txt{font-size:10.5px;color:#4a4d4a;line-height:1.45}'
+    +'.campos{display:flex;gap:22px;margin-top:26px}.campo{flex:1}'
+    +'.linea{border-top:1px solid #8a8d8a}.campo-lbl{padding-top:5px;font-size:10px;color:#6b6f6b}'
+    +'.footer{font-size:9.5px;color:#8a8d8a;text-align:center;margin-top:16px;padding-top:9px;border-top:1px solid #e4e8e4}'
+    +'.btnprint{position:fixed;top:10px;right:10px;background:'+MC+';color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
+    +'@media screen{body{background:#e3e5e3;padding:24px 0 60px}.page{margin:0 auto 24px;box-shadow:0 10px 34px rgba(0,0,0,.2)}}'
+    +'@media print{body{padding:0}.page{margin:0;break-after:page;page-break-after:always}.page:last-of-type{break-after:auto;page-break-after:auto}.btnprint{display:none}}';
+
+  const hoja=(e,copia)=>{
+    const r=lineasLiquidacion(e,mesStr);
+    const esEmpresa=copia==='empresa';
+    const filas=r.lineas.map(l=>'<tr><td><strong>'+l.concepto+'</strong>'
+      +'<div class="calc">'+l.calc+'</div>'
+      +(l.items||[]).map(it=>'<div class="sub">\u00b7 '+it.txt+' &nbsp;'+(it.monto<0?'\u2212':'')+montoCLP(Math.abs(it.monto))+'</div>').join('')
+      +'</td><td class="'+(l.sig==='-'?'neg':'pos')+'">'+(l.sig==='-'?'\u2212':'+')+montoCLP(l.monto)+'</td></tr>').join('');
+    return '<div class="page">'
+      +'<div class="hdr"><div>'
+      +(logoSrc?'<img class="logo-img" src="'+logoSrc+'" alt="EcoHome">':'')
+      +'<div class="co-name">EcoHome</div><div class="co-sub">Muebles y colchones · Rivas 737, San Miguel · RUT 78.284.233-1</div></div>'
+      +'<div><div class="doc-title">LIQUIDACI\u00d3N DE SUELDO</div>'
+      +'<div class="doc-meta">Mes trabajado: '+nombreMesAnio(mesStr)+'</div>'
+      +'<div class="doc-meta">Fecha de pago: '+fechaPagoDe(mesStr)+'</div>'
+      +'<div class="copia-tag">'+(esEmpresa?'COPIA EMPLEADOR':'COPIA TRABAJADOR')+'</div></div></div>'
+      +'<div class="info">'
+      +'<div class="info-card"><div class="info-lbl">TRABAJADOR</div>'
+      +'<div class="info-name">'+e.nombre+'</div>'
+      +(e.cargo?'<div class="info-sub">'+e.cargo+'</div>':'')
+      +(e.rut?'<div class="info-sub">RUT '+e.rut+'</div>':'')
+      +(e.fechaIngreso?'<div class="info-sub">Ingreso: '+fechaCorta(e.fechaIngreso)+'</div>':'')
+      +'</div>'
+      +'<div class="info-card"><div class="info-lbl">C\u00d3MO SE CALCULA</div>'
+      +'<div class="info-sub">Sueldo mensual: <strong>'+montoCLP(r.sueldoFull)+'</strong></div>'
+      +'<div class="info-sub">Valor del d\u00eda (mes de 30): <strong>'+montoCLP(r.vDia)+'</strong></div>'
+      +'<div class="info-sub">Valor de la hora: <strong>'+montoCLP(r.vHora)+'</strong></div>'
+      +'<div class="info-sub">Comisi\u00f3n pactada: <strong>'+r.pct+'% de sus ventas</strong></div>'
+      +'</div></div>'
+      +'<table class="tabla"><thead><tr><th>Concepto y c\u00f3mo se calcul\u00f3</th><th>Monto</th></tr></thead>'
+      +'<tbody>'+filas+'</tbody></table>'
+      +'<div class="tot"><span class="tot-lbl">TOTAL A PAGAR</span><span class="tot-val">'+montoCLP(r.liq.total)+'</span></div>'
+      +'<div class="nota">Cada l\u00ednea sale del registro del mes: las faltas y atrasos con su fecha, las horas del reloj de asistencia, '
+      +'las ventas que generaron la comisi\u00f3n y los adelantos que ya se entregaron. Si alg\u00fan dato no calza, dilo antes de firmar y se revisa.</div>'
+      +(esEmpresa
+        ? '<div class="conforme"><div class="conforme-tit">RECIB\u00cd CONFORME</div>'
+          +'<div class="conforme-txt">Declaro haber recibido el monto indicado como pago de mis remuneraciones del mes de '+nombreMesAnio(mesStr)+', y estar de acuerdo con el detalle se\u00f1alado.</div>'
+          +'<div class="campos">'
+          +'<div class="campo"><div class="linea"></div><div class="campo-lbl">Firma del trabajador</div></div>'
+          +'<div class="campo"><div class="linea"></div><div class="campo-lbl">Nombre y RUT</div></div>'
+          +'<div class="campo"><div class="linea"></div><div class="campo-lbl">Fecha</div></div>'
+          +'</div></div>'
+        : '<div class="campos"><div class="campo"><div class="linea"></div><div class="campo-lbl">Firma del empleador</div></div></div>')
+      +'<div class="footer">'+(esEmpresa?'Copia que archiva la empresa, firmada por el trabajador.':'Copia para el trabajador.')
+      +' Documento interno de EcoHome \u2014 no reemplaza la liquidaci\u00f3n previsional.</div>'
+      +'</div>';
+  };
+
+  const paginas=lista.map(e=>hoja(e,'trabajador')+hoja(e,'empresa')).join('');
+  const titulo=lista.length===1?'Liquidaci\u00f3n '+lista[0].nombre:'Liquidaciones '+nombreMesAnio(mesStr);
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+titulo+'</title><style>'+css+'</style></head><body>'
+    +'<button class="btnprint" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+    +paginas
+    +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},400)});</scr'+'ipt>'
+    +'</body></html>';
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const w=window.open(url,'_blank');
+  if(!w)alert('Activa las ventanas emergentes para poder imprimir el comprobante.');
+  setTimeout(()=>URL.revokeObjectURL(url),8000);
+}
+
+function pagoSetEmpleado(v){pagoEmpleadoSel=v;renderPersonal();}
+function pagoSetMes(v){pagoMesSel=v;renderPersonal();}
+function renderPagoSueldos(){
+  const activos=empleados.filter(e=>e.activo!==false);
+  if(!activos.length)return'';
+  const mes=pagoMesSel||mesAPagar();
+  const sel=activos.find(e=>String(e.id)===String(pagoEmpleadoSel));
+  const lista=sel?[sel]:activos;
+  const total=lista.reduce((a,e)=>a+liquidacionEmpleado(e,mes).total,0);
+  const meses=[];for(let i=0;i<12;i++)meses.push(mesDesplazado(mesAPagar(),-i));
+  const liq=sel?liquidacionEmpleado(sel,mes):null;
+  return `<div class="card" style="border-top:3px solid #a78bfa">
+    <h4 style="margin:0 0 4px">Pago de sueldos</h4>
+    <div class="muted" style="font-size:11px;margin-bottom:10px">Se paga el día ${DIA_PAGO} del mes siguiente al trabajado · los sueldos de ${nombreMesAnio(mes)} se pagan el <strong>${fechaPagoDe(mes)}</strong></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <select onchange="pagoSetEmpleado(this.value)" style="flex:1;min-width:150px">
+        <option value="">Todo el equipo (${activos.length})</option>
+        ${activos.map(e=>`<option value="${e.id}" ${sel&&String(sel.id)===String(e.id)?'selected':''}>${e.nombre}</option>`).join('')}
+      </select>
+      <select onchange="pagoSetMes(this.value)" style="flex:1;min-width:150px">
+        ${meses.map(m=>`<option value="${m}" ${m===mes?'selected':''}>${nombreMesAnio(m)}</option>`).join('')}
+      </select>
+    </div>
+    ${liq?`<div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:''}</span><strong>${fmt(liq.base)}</strong></div>
+      ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
+      ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
+      ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
+      <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(sel)}%</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
+      ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
+      ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos entregados</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
+      ${avisoSinIngreso(sel)}`
+    :lista.map(p=>`<div class="item-row">
+        <span>${p.nombre}<span class="muted" style="font-size:10px">${p.cargo?' · '+p.cargo:''}</span></span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <strong>${fmt(liquidacionEmpleado(p,mes).total)}</strong>
+          <button class="btn btn-sec btn-sm" onclick="verLiquidacion('${p.id}','${mes}')">Detalle</button>
+        </span>
+      </div>`).join('')}
+    <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
+      <strong>Total a pagar${sel?` a ${sel.nombre}`:''}</strong>
+      <strong style="color:#a78bfa;font-size:18px">${fmt(total)}</strong>
+    </div>
+    <button class="btn btn-sm" style="width:100%;margin-top:8px;background:#a78bfa" onclick="${sel?`verLiquidacion('${sel.id}','${mes}')`:`imprimirLiquidacionEquipo('${mes}')`}">${sel?'📄 Ver el detalle para mostrárselo':`🖨️ Imprimir los ${lista.length} comprobantes`}</button>
+    <div class="muted" style="font-size:10.5px;margin-top:6px">El comprobante explica de dónde sale cada peso y trae una copia para firmar.</div>
+  </div>`;
+}
+
 function renderPersonal(){
   const hoy=today(),mesStr=hoy.slice(0,7);
   const mesNombre=MESES[parseInt(mesStr.slice(5,7))-1];
@@ -3988,6 +4302,8 @@ function renderPersonal(){
     <div class="stat"><div class="stat-lbl">Faltas de ${mesNombre}</div><div class="stat-val ${faltasMes>0?'danger':''}">${faltasMes}</div></div>
     <div class="stat"><div class="stat-lbl">Costo sueldos ${mesNombre}</div><div class="stat-val gold">${fmt(costoMes)}</div></div>
   </div>`;
+
+  html+=renderPagoSueldos();
 
   activos.forEach((e,i)=>{html+=tarjetaPersonal(e,estados[i],mesStr,mesNombre);});
 
@@ -6408,6 +6724,163 @@ function exportReposicion(){
 // =========== INVENTARIO ===========
 let editProdId=null;
 
+// =========== LISTA DE PRECIOS ===========
+// La hoja que llevan las vendedoras: solo lo que hay disponible, con foto, stock y los
+// dos precios. Se elige por categoria (o producto por producto) antes de generarla.
+let lpSel=null;                                    // ids elegidos; null hasta que se abre
+let lpOpts={foto:true,stock:true,may:true,min:true};
+function lpProductosDisponibles(){
+  return inventario.filter(p=>{
+    if(p.combo&&p.combo.colchonId)return false;    // tarifas promocionales, no son stock fisico
+    return (parseInt(p.stock)||0)>0;               // la lista es de lo que se puede vender hoy
+  }).sort((a,b)=>(a.cat||'').localeCompare(b.cat||'')||(a.marca||'').localeCompare(b.marca||'')||a.nombre.localeCompare(b.nombre));
+}
+function lpGrupos(){
+  const g={};
+  lpProductosDisponibles().forEach(p=>{const c=p.cat||'Sin categor\u00eda';(g[c]=g[c]||[]).push(p);});
+  return g;
+}
+function abrirListaPrecios(){
+  const disp=lpProductosDisponibles();
+  if(!disp.length){toast('No hay productos con stock para armar la lista');return;}
+  const ids=new Set(disp.map(p=>String(p.id)));
+  // Primera vez entran todos; despues se respeta lo elegido, sacando lo que se quedo sin stock
+  lpSel=lpSel?new Set([...lpSel].filter(id=>ids.has(id))):ids;
+  renderLpSel();
+  openModal('modal-lista-precios');
+}
+function lpToggleProd(id){
+  id=String(id);
+  if(lpSel.has(id))lpSel.delete(id);else lpSel.add(id);
+  renderLpSel();
+}
+function lpToggleCat(cat){
+  const items=lpGrupos()[cat]||[];
+  const todos=items.every(p=>lpSel.has(String(p.id)));
+  items.forEach(p=>{if(todos)lpSel.delete(String(p.id));else lpSel.add(String(p.id));});
+  renderLpSel();
+}
+function lpTodos(v){
+  lpSel=v?new Set(lpProductosDisponibles().map(p=>String(p.id))):new Set();
+  renderLpSel();
+}
+function lpSetOpt(k,v){lpOpts[k]=!!v;renderLpSel();}
+function renderLpSel(){
+  const grupos=lpGrupos();
+  const cats=Object.keys(grupos).sort();
+  const elegidos=lpSel.size;
+  document.getElementById('lp-content').innerHTML=
+    '<div class="muted" style="font-size:11px;margin-bottom:8px">Solo aparecen los productos con stock. '
+    +'Destilda lo que no quieras en la hoja.</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<button class="btn btn-sec btn-sm" onclick="lpTodos(true)">Marcar todo</button>'
+    +'<button class="btn btn-sec btn-sm" onclick="lpTodos(false)">Desmarcar todo</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;margin-bottom:10px">'
+    +[['foto','Foto'],['stock','Stock'],['may','Precio mayorista'],['min','Precio minorista']].map(([k,lbl])=>
+      '<label style="display:flex;gap:5px;align-items:center;cursor:pointer">'
+      +'<input type="checkbox" '+(lpOpts[k]?'checked':'')+' onchange="lpSetOpt(\''+k+'\',this.checked)">'+lbl+'</label>').join('')
+    +'</div>'
+    +cats.map(cat=>{
+      const items=grupos[cat];
+      const n=items.filter(p=>lpSel.has(String(p.id))).length;
+      return '<div style="margin-bottom:10px">'
+        +'<label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600;font-size:12.5px">'
+        +'<input type="checkbox" '+(n===items.length?'checked':'')+' onchange="lpToggleCat(\''+cat.replace(/'/g,"\\'")+'\')">'
+        +cat+' <span class="pill">'+n+'/'+items.length+'</span></label>'
+        +items.map(p=>'<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0 3px 18px;font-size:11.5px">'
+          +'<input type="checkbox" '+(lpSel.has(String(p.id))?'checked':'')+' onchange="lpToggleProd(\''+p.id+'\')">'
+          +'<span style="flex:1;min-width:0">'+p.nombre+(p.marca?' <span class="muted">'+p.marca+'</span>':'')+'</span>'
+          +'<span class="muted" style="white-space:nowrap">'+(parseInt(p.stock)||0)+' u \u00b7 '+montoCLP(p.min||0)+'</span>'
+          +'</label>').join('')
+        +'</div>';
+    }).join('')
+    +'<div style="border-top:2px solid #8883;padding-top:8px;margin-top:4px;font-size:12px">'
+    +'<strong>'+elegidos+'</strong> producto'+(elegidos!==1?'s':'')+' en la lista</div>';
+}
+function lpElegidos(){
+  return lpProductosDisponibles().filter(p=>lpSel&&lpSel.has(String(p.id)));
+}
+function copiarListaPrecios(){
+  const items=lpElegidos();
+  if(!items.length){toast('No hay productos elegidos');return;}
+  const g={};
+  items.forEach(p=>{const c=p.cat||'Sin categor\u00eda';(g[c]=g[c]||[]).push(p);});
+  let t='*Lista de precios \u00b7 EcoHome*\n'+fechaCorta(today())+'\n';
+  Object.keys(g).sort().forEach(c=>{
+    t+='\n*'+c+'*\n';
+    g[c].forEach(p=>{
+      const datos=[];
+      if(lpOpts.may)datos.push('May '+montoCLP(p.may||0));
+      if(lpOpts.min)datos.push('Min '+montoCLP(p.min||0));
+      if(lpOpts.stock)datos.push((parseInt(p.stock)||0)+' u');
+      t+='\u2022 '+p.nombre+(p.marca?' ('+p.marca+')':'')+' \u2014 '+datos.join(' \u00b7 ')+'\n';
+    });
+  });
+  navigator.clipboard.writeText(t).then(()=>toast('\u2705 Lista copiada')).catch(()=>toast('No se pudo copiar'));
+}
+function imprimirListaPrecios(){
+  const items=lpElegidos();
+  if(!items.length){toast('No hay productos elegidos');return;}
+  const MC='#3f6e56';
+  const logoSrc=(document.getElementById('dr-logo-src')||{}).src||'';
+  const g={};
+  items.forEach(p=>{const c=p.cat||'Sin categor\u00eda';(g[c]=g[c]||[]).push(p);});
+  const css='@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Helvetica,Arial,sans-serif;color:#1c1e1c;background:#fff}'
+    +'.page{width:210mm;min-height:297mm;padding:14mm 15mm;background:#fff}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:9px;border-bottom:2px solid '+MC+';margin-bottom:12px}'
+    +'.logo-img{height:32px;width:auto;display:block;margin-bottom:3px}'
+    +'.co-name{font-size:15px;font-weight:700}'
+    +'.doc-title{font-size:14px;font-weight:700;color:'+MC+';letter-spacing:.05em;text-align:right}'
+    +'.doc-meta{font-size:10px;color:#6b6f6b;text-align:right;margin-top:2px}'
+    +'.cat{font-size:12px;font-weight:700;color:#fff;background:'+MC+';padding:5px 10px;border-radius:6px;margin:12px 0 8px;break-after:avoid;page-break-after:avoid}'
+    +'.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}'
+    +'.prod{border:1px solid #dfe3df;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;display:flex;flex-direction:column}'
+    +'.prod-img{width:100%;height:78px;object-fit:cover;display:block;background:#f0f2f0}'
+    +'.sin-img{width:100%;height:78px;background:#f0f2f0;display:flex;align-items:center;justify-content:center;color:#b6bbb6;font-size:10px}'
+    +'.prod-body{padding:6px 8px 7px;flex:1;display:flex;flex-direction:column}'
+    +'.prod-nom{font-size:11px;font-weight:700;line-height:1.25}'
+    +'.prod-marca{font-size:9px;color:#8a8d8a;margin-top:1px}'
+    +'.precios{margin-top:auto;padding-top:5px}'
+    +'.pr{display:flex;justify-content:space-between;font-size:10.5px;color:#4a4d4a}'
+    +'.pr-min{font-size:12.5px;font-weight:700;color:'+MC+'}'
+    +'.stock{display:inline-block;margin-top:4px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:#eaf2ec;color:#2f7a4f}'
+    +'.stock.bajo{background:#fff3e0;color:#9a5b18}'
+    +'.footer{font-size:9.5px;color:#8a8d8a;text-align:center;margin-top:14px;padding-top:8px;border-top:1px solid #e4e8e4}'
+    +'.btnprint{position:fixed;top:10px;right:10px;background:'+MC+';color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.2)}'
+    +'@media screen{body{background:#e3e5e3;padding:24px 0 60px}.page{margin:0 auto;box-shadow:0 10px 34px rgba(0,0,0,.2)}}'
+    +'@media print{body{padding:0}.page{margin:0}.btnprint{display:none}}';
+  const tarjeta=p=>{
+    const st=parseInt(p.stock)||0, minSt=parseInt(p.minStock)||2;
+    return '<div class="prod">'
+      +(lpOpts.foto?(p.foto?'<img class="prod-img" src="'+p.foto+'" alt="">':'<div class="sin-img">sin foto</div>'):'')
+      +'<div class="prod-body"><div class="prod-nom">'+p.nombre+'</div>'
+      +(p.marca?'<div class="prod-marca">'+p.marca+'</div>':'')
+      +'<div class="precios">'
+      +(lpOpts.may?'<div class="pr"><span>Mayorista</span><span>'+montoCLP(p.may||0)+'</span></div>':'')
+      +(lpOpts.min?'<div class="pr"><span>Minorista</span><span class="pr-min">'+montoCLP(p.min||0)+'</span></div>':'')
+      +(lpOpts.stock?'<div><span class="stock'+(st<=minSt?' bajo':'')+'">'+st+' disponible'+(st!==1?'s':'')+'</span></div>':'')
+      +'</div></div></div>';
+  };
+  const cuerpo=Object.keys(g).sort().map(c=>
+    '<div class="cat">'+c+' \u00b7 '+g[c].length+'</div><div class="grid">'+g[c].map(tarjeta).join('')+'</div>').join('');
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lista de precios EcoHome</title><style>'+css+'</style></head><body>'
+    +'<button class="btnprint" onclick="window.print()">\uD83D\uDDA8\uFE0F Imprimir / Guardar PDF</button>'
+    +'<div class="page"><div class="hdr"><div>'
+    +(logoSrc?'<img class="logo-img" src="'+logoSrc+'" alt="EcoHome">':'')
+    +'<div class="co-name">EcoHome</div></div>'
+    +'<div><div class="doc-title">LISTA DE PRECIOS</div>'
+    +'<div class="doc-meta">Al '+fechaCorta(today())+' \u00b7 '+items.length+' productos disponibles</div></div></div>'
+    +cuerpo
+    +'<div class="footer">Precios y stock al '+fechaCorta(today())+'. El stock cambia con cada venta: confirma en el ERP antes de comprometer una entrega.</div>'
+    +'</div></body></html>';
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const w=window.open(url,'_blank');
+  if(!w)alert('Activa las ventanas emergentes para poder ver la lista.');
+  setTimeout(()=>URL.revokeObjectURL(url),8000);
+}
+
 function fillFiltrosInv(){
   const marcas=[...new Set(inventario.map(p=>p.marca).filter(Boolean))].sort();
   const cats=[...new Set(inventario.map(p=>p.cat).filter(Boolean))].sort();
@@ -8270,6 +8743,7 @@ const renderInvDeb=debounce(renderInv,180);
 Object.assign(window,{
   setTab,openSidebar,closeSidebar,toggleTheme,togglePrivacidad,
   openProd,editProd,saveProd,delProd,delProdDirect,
+  abrirListaPrecios,lpToggleProd,lpToggleCat,lpTodos,lpSetOpt,copiarListaPrecios,imprimirListaPrecios,
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
   addItemNV,rmItemNV,selProdNV,updItemNV,recalcTotalNV,updTipoVentaNV,toggleDespNV,saveVentaNV,
@@ -8300,6 +8774,8 @@ Object.assign(window,{
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
   abrirEmpleado,eliminarEmpleado,definirFechaIngreso,registrarEventoRRHH,eliminarEventoRRHH,
   renderPersonal,faltaRapida,atrasoRapido,toggleActivoEmpleado,
+  pagoSetEmpleado,pagoSetMes,
+  verLiquidacion,copiarLiquidacion,waLiquidacion,imprimirLiquidacionCtx,imprimirLiquidacionEquipo,
   renderCalculadora,updInsumoCalc,aplicarCostosInventario,guardarConfigCalculadora,restaurarInsumosDefault,
   handleFotoCompra,calcSugerenciaCompra,verFotoCompra,
   handleFotoProd,quitarFotoProd,soltarFotoProd,pegarFotoProd,verFotoProdVenta,
