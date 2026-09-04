@@ -446,7 +446,6 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <button class="sidebar-item" id="si-clientes" onclick="setTab('clientes')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Clientes</span></button>
     <button class="sidebar-item" id="si-vendedores" onclick="setTab('vendedores')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span><span class="label">Vendedores</span></button>
     <button class="sidebar-item" id="si-personal" onclick="setTab('personal')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></span><span class="label">Personal</span><span class="badge" id="badge-personal"></span></button>
-    <button class="sidebar-item" id="si-asistencia" onclick="setTab('asistencia')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="label">Asistencia</span></button>
     <button class="sidebar-item" id="si-hermanos" onclick="setTab('hermanos')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="label">Hermanos</span><span class="badge" id="badge-hermanos"></span></button>
     <button class="sidebar-item" id="si-resumen" onclick="setTab('resumen')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="label">Resumen</span></button>
     <button class="sidebar-item" id="si-finanzas" onclick="setTab('finanzas')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="label">Finanzas</span></button>
@@ -635,9 +634,6 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div id="personal-content"></div>
   </div>
 
-  <div id="tab-asistencia" class="section">
-    <div id="asistencia-content"></div>
-  </div>
 
   <!-- HERMANOS -->
   <div id="tab-hermanos" class="section">
@@ -3495,26 +3491,37 @@ function diasDelMes(mesStr){
   const [a,m]=mesStr.split('-').map(Number);
   return new Date(a,m,0).getDate();
 }
-function diasContratadoMes(e,mesStr){
+// Tramo del mes en que la persona estuvo contratada. Devuelve las fechas límite además de
+// los días, porque las faltas y atrasos de fuera de ese tramo no se pueden descontar: no se
+// le puede descontar un día a alguien que todavía no entraba a trabajar.
+function rangoContratoMes(e,mesStr){
   const ultimo=diasDelMes(mesStr);
   const iniMes=mesStr+'-01';
   const finMes=`${mesStr}-${String(ultimo).padStart(2,'0')}`;
   const ingreso=(e&&e.fechaIngreso)||'';
   const egreso=(e&&e.fechaEgreso)||'';
   // Sin fecha de ingreso no se puede prorratear: se asume mes completo, como antes.
-  if(!ingreso&&!egreso)return 30;
+  if(!ingreso&&!egreso)return{desde:iniMes,hasta:finMes,dias:30};
+  if(ingreso&&ingreso>finMes)return{desde:'',hasta:'',dias:0};   // aún no entraba
+  if(egreso&&egreso<iniMes)return{desde:'',hasta:'',dias:0};     // ya se había ido
   const desde=ingreso&&ingreso>iniMes?ingreso:iniMes;
   const hasta=egreso&&egreso<finMes?egreso:finMes;
-  if(ingreso&&ingreso>finMes)return 0;   // aún no entraba
-  if(egreso&&egreso<iniMes)return 0;     // ya se había ido
   // Mes trabajado de punta a punta: se paga entero. El mes comercial es de 30 días,
   // así que febrero completo también vale 30 y no 28.
-  if(desde===iniMes&&hasta===finMes)return 30;
-  const dIni=parseInt(desde.slice(8,10),10);
-  const dFin=parseInt(hasta.slice(8,10),10);
-  const dias=dFin-dIni+1;
-  if(dias<=0)return 0;
-  return Math.min(30,dias);              // tope 30: un mes parcial nunca paga de más
+  if(desde===iniMes&&hasta===finMes)return{desde,hasta,dias:30};
+  const dias=parseInt(hasta.slice(8,10),10)-parseInt(desde.slice(8,10),10)+1;
+  if(dias<=0)return{desde,hasta,dias:0};
+  return{desde,hasta,dias:Math.min(30,dias)}; // tope 30: un mes parcial nunca paga de más
+}
+function diasContratadoMes(e,mesStr){
+  return rangoContratoMes(e,mesStr).dias;
+}
+// ¿Ese día estaba contratada? Se usa para no descontar faltas, atrasos ni marcajes de días
+// en que la persona todavía no entraba (o ya se había ido).
+function enContratoFecha(e,mesStr,fecha){
+  const r=rangoContratoMes(e,mesStr);
+  if(!r.dias||!r.desde)return false;
+  return fecha>=r.desde&&fecha<=r.hasta;
 }
 function sueldoBaseMes(e,mesStr){
   const dias=diasContratadoMes(e,mesStr);
@@ -3537,6 +3544,26 @@ function avisoSinIngreso(e){
     <button class="btn btn-sec btn-sm" onclick="definirFechaIngreso('${e.id}')">Definir</button>
   </div>`;
 }
+// La ficha de empleado trae la fecha de hoy por defecto, así que una ficha creada a mitad de
+// mes deja ese mes prorrateado —o en cero, si se creó ya empezado el mes siguiente— aunque la
+// persona haya trabajado entero. Por eso el prorrateo se avisa en grande, con el botón para
+// corregir la fecha, en vez de dejarlo en un "(12 de 30 días)" chico que se pasa por alto.
+function avisoBaseMes(e,mesStr){
+  if(sinFechaIngreso(e))return avisoSinIngreso(e);
+  const r=rangoContratoMes(e,mesStr);
+  if(r.dias>=30)return"";
+  const dm=f=>(f||'').split('-').reverse().join('/');
+  const motivo=[e.fechaIngreso?'ingresó el '+dm(e.fechaIngreso):'',e.fechaEgreso?'salió el '+dm(e.fechaEgreso):'']
+    .filter(Boolean).join(' y ');
+  const cero=r.dias===0;
+  const txt=cero
+    ? 'No se le paga sueldo base de este mes: '+motivo
+    : 'Sueldo base prorrateado a '+r.dias+' de 30 días porque '+motivo;
+  return `<div class="item-row" style="font-size:11px;background:rgba(${cero?'220,70,70':'230,160,60'},.12);border-radius:8px;padding:6px 8px;margin:4px 0">
+    <span class="${cero?'danger':'warn'}">⚠ ${txt}. Si trabajó el mes completo, corrige la fecha de ingreso.</span>
+    <button class="btn btn-sec btn-sm" onclick="definirFechaIngreso('${e.id}')">Corregir</button>
+  </div>`;
+}
 
 function ventasEmpleadoMes(nombre,mesStr){
   return ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado'&&v.vendedor===nombre)
@@ -3546,83 +3573,76 @@ function comisionEmpleadoMes(e,mesStr){
   return ventasEmpleadoMes(e.nombre,mesStr)*comisionPctEmpleado(e)/100;
 }
 function liquidacionEmpleado(e,mesStr){
-  const evs=rrhhEventos.filter(x=>String(x.empleadoId)===String(e.id)&&x.fecha&&x.fecha.startsWith(mesStr));
+  const rango=rangoContratoMes(e,mesStr);
+  // tipo 'pago' no es un movimiento del sueldo, es el acuse de que ese mes ya se pagó.
+  const todos=rrhhEventos.filter(x=>String(x.empleadoId)===String(e.id)&&x.tipo!=='pago'&&x.fecha&&x.fecha.startsWith(mesStr));
   const vDia=valorDiaEmpleado(e),vHora=valorHoraEmpleado(e);
-  let descAusencias=0,horasPerdidas=0,diasPerdidos=0,adelantos=0,bonos=0;
+  // Faltas y atrasos de días en que no estaba contratada no se descuentan (el sueldo base de
+  // esos días tampoco se paga). Adelantos y bonos sí cuentan: esa plata igual se movió.
+  const esDesc=ev=>ev.tipo==='ausencia'||ev.tipo==='atraso';
+  const eventosFuera=todos.filter(ev=>esDesc(ev)&&!enContratoFecha(e,mesStr,ev.fecha));
+  const evs=todos.filter(ev=>!esDesc(ev)||enContratoFecha(e,mesStr,ev.fecha));
+  let horasPerdidas=0,diasPerdidos=0,adelantos=0,bonos=0;
+  const diasConEvento=new Set(),descPorDia={};
+  const sumaDia=(f,m)=>{descPorDia[f]=(descPorDia[f]||0)+m;};
   evs.forEach(ev=>{
-    if(ev.tipo==='ausencia'){descAusencias+=vDia;diasPerdidos++;}
-    else if(ev.tipo==='atraso'){descAusencias+=vHora*(ev.horas||0);horasPerdidas+=(ev.horas||0);}
+    if(ev.tipo==='ausencia'){sumaDia(ev.fecha,vDia);diasPerdidos++;diasConEvento.add(ev.fecha);}
+    else if(ev.tipo==='atraso'){sumaDia(ev.fecha,vHora*(ev.horas||0));horasPerdidas+=(ev.horas||0);diasConEvento.add(ev.fecha);}
     else if(ev.tipo==='adelanto')adelantos+=(ev.monto||0);
     else if(ev.tipo==='bono')bonos+=(ev.monto||0);
   });
+  // Ningún día descuenta más que el día completo, aunque tenga falta y atraso anotados
+  // juntos o se hayan escrito 20 horas de atraso por error.
+  let descAusencias=0;
+  Object.values(descPorDia).forEach(m=>{descAusencias+=Math.min(m,vDia);});
   const comision=Math.round(comisionEmpleadoMes(e,mesStr));
-  // Asistencia del mes: descuento por horas de menos y pago de horas extra (50% recargo, fórmula DT)
-  const asis=resumenAsistMes(e,mesStr);
+  // Asistencia del mes: descuento por horas de menos y pago de horas extra (50% recargo, fórmula DT).
+  // Se le pasan los días que ya tienen falta o atraso a mano para no descontarlos dos veces.
+  const asis=resumenAsistMes(e,mesStr,diasConEvento);
   // El sueldo base va proporcional si entró (o salió) a mitad de mes. Las ausencias y
   // atrasos siguen descontándose sobre el valor día completo, que no cambia por eso.
   const base=sueldoBaseMes(e,mesStr);
-  const diasContrato=diasContratadoMes(e,mesStr);
-  const total=base-Math.round(descAusencias)-asis.descuento+asis.pagoExtra+comision+bonos-adelantos;
-  return{base,sueldoCompleto:e.sueldoBase||0,diasContrato,parcial:diasContrato<30,
+  const diasContrato=rango.dias;
+  // Los descuentos por no trabajar no pueden pasarse del sueldo base del mes: como mucho se lo
+  // comen entero. La comisión, los bonos y las horas extra son plata ganada aparte y no se
+  // tocan; los adelantos sí se restan al final, porque ya se entregaron en efectivo.
+  const descBruto=Math.round(descAusencias)+asis.descuento;
+  const descuentos=Math.min(descBruto,base);
+  const total=base-descuentos+asis.pagoExtra+comision+bonos-adelantos;
+  return{base,sueldoCompleto:e.sueldoBase||0,diasContrato,parcial:diasContrato<30,rango,
     descAusencias:Math.round(descAusencias),diasPerdidos,horasPerdidas,comision,bonos,adelantos,total,eventos:evs,
+    descuentos,descBruto,topeDescuento:descBruto>base,eventosFuera,diasAsistIgnorados:asis.ignorados,
     descAsist:asis.descuento,pagoExtras:asis.pagoExtra,extraMin:asis.extraMin,faltanteMin:asis.faltanteMin};
 }
 function renderSueldosSection(mesStr,mesNombre){
+  // El detalle vive en la pestaña Personal (ficha, marcaje, liquidación y comprobante, todo
+  // junto). Acá queda solo lo que Finanzas necesita: cuánto cuesta el mes y quién está pagado.
   const activos=empleados.filter(e=>e.activo!==false);
-  let totalSueldos=0;
-  let html=`<div class="card" style="border-top:3px solid #a78bfa;margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h4>Sueldos de ${mesNombre}</h4>
-      <button class="btn btn-sm" style="background:#a78bfa" onclick="abrirEmpleado()">+ Empleado</button>
+  let totalSueldos=0,pendientes=0;
+  let filas='';
+  activos.forEach(e=>{
+    const liq=liquidacionEmpleado(e,mesStr);
+    totalSueldos+=liq.total;
+    if(!pagoDeMes(e.id,mesStr))pendientes++;
+    filas+=`<div class="item-row" style="align-items:flex-start;gap:10px">
+      <span style="flex:1">${e.nombre}<span class="muted" style="font-size:10px">${e.cargo?' · '+e.cargo:''}</span> ${chipPagoMes(e,mesStr)}
+        <div class="muted" style="font-size:10.5px">base ${fmt(liq.base)}${liq.parcial?' ('+liq.diasContrato+'/30 días)':''}${liq.descuentos>0?' · − descuentos '+fmt(liq.descuentos):''}${liq.comision>0?' · + comisión '+fmt(liq.comision):''}${liq.adelantos>0?' · − adelantos '+fmt(liq.adelantos):''}</div>
+      </span>
+      <strong style="white-space:nowrap">${fmt(liq.total)}</strong>
     </div>`;
-  if(!activos.length){
-    html+='<div class="muted" style="font-size:12px;padding:8px 0">Sin empleados. Agrega a cada persona con su sueldo base y el sistema calcula la liquidación del mes (ausencias por hora/día, comisión 1%, adelantos).</div>';
-  }else{
-    activos.forEach(e=>{
-      const liq=liquidacionEmpleado(e,mesStr);
-      totalSueldos+=liq.total;
-      const vDia=Math.round(valorDiaEmpleado(e)),vHora=Math.round(valorHoraEmpleado(e));
-      html+=`<div style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);border-radius:10px;padding:12px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div>
-            <strong style="font-size:14px">${e.nombre}</strong>
-            <div class="muted" style="font-size:10px">${e.horasSemana||42}h/sem · ${e.diasSemana||6} días · valor día ${fmt(vDia)} · hora ${fmt(vHora)}</div>
-          </div>
-          <div style="display:flex;gap:4px">
-            <button onclick="abrirEmpleado('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text2)">Editar</button>
-            <button onclick="eliminarEmpleado('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#f28a8a">Eliminar</button>
-          </div>
-        </div>
-        <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}${avisoSinIngreso(e)}
-        ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Ausencias (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
-        ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos según asistencia (${minToHM(liq.faltanteMin)})</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
-        ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra 50% recargo (${minToHM(liq.extraMin)})</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
-        <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(e)}% ventas</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
-        ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
-        ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos entregados</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
-        <div class="item-row" style="border-top:2px solid rgba(167,139,250,.3);margin-top:4px">
-          <strong>Total a pagar</strong><strong style="color:#a78bfa;font-size:15px">${fmt(liq.total)}</strong>
-        </div>
-        ${liq.eventos.length?`<details style="margin-top:6px"><summary style="font-size:11px;color:#a78bfa;cursor:pointer">Ver ${liq.eventos.length} registro(s) del mes</summary>
-          ${liq.eventos.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(ev=>`<div class="item-row" style="font-size:11px">
-            <span>${ev.fecha.split('-').reverse().join('/')} · ${ev.tipo==='ausencia'?'Falta':ev.tipo==='atraso'?'Atraso '+ev.horas+'h':ev.tipo==='adelanto'?'Adelanto':'Bono'}${ev.nota?' — '+ev.nota:''}</span>
-            <span style="display:flex;gap:6px;align-items:center">${ev.monto?fmt(ev.monto):''}<button onclick="eliminarEventoRRHH('${ev.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#f28a8a">×</button></span>
-          </div>`).join('')}
-        </details>`:''}
-        <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','ausencia')">Falta</button>
-          <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','atraso')">Atraso</button>
-          <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','adelanto')">Adelanto</button>
-          <button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','bono')">Bono</button>
-        </div>
-      </div>`;
-    });
-    html+=`<div class="item-row" style="border-top:2px solid var(--border)">
+  });
+  const html=`<div class="card" style="border-top:3px solid #a78bfa;margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h4>Sueldos de ${mesNombre}</h4>
+      <button class="btn btn-sm" style="background:#a78bfa" onclick="setTab('personal')">Abrir Personal</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin-bottom:8px">Se paga el ${fechaPagoDe(mesStr)}. El detalle de cada persona —marcaje, faltas, comprobante y marcar como pagado— está en la pestaña <strong>Personal</strong>.</div>
+    ${activos.length?filas:'<div class="muted" style="font-size:12px;padding:8px 0">Sin empleados. Agrégalos en la pestaña Personal.</div>'}
+    ${activos.length?`<div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
       <strong>Total sueldos del mes</strong><strong style="color:#a78bfa">${fmt(totalSueldos)}</strong>
     </div>
-    <div class="muted" style="font-size:11px;text-align:right">Se paga el ${fechaPagoDe(mesStr)}</div>`;
-  }
-  html+='</div>';
+    <div class="muted" style="font-size:11px;text-align:right">${pendientes?pendientes+' sin marcar como pagado':'Todos marcados como pagados'}</div>`:''}
+  </div>`;
   return{html,totalSueldos};
 }
 async function abrirEmpleado(id){
@@ -3739,15 +3759,25 @@ function calcDiaAsist(r,e){
 }
 
 // Resumen del mes de un empleado: horas acumuladas y montos según normativa
-function resumenAsistMes(e,mesStr){
+// fechasExcluidas: días que ya tienen una falta o un atraso registrado a mano en Personal.
+// Ese registro manda y el marcaje del mismo día no vuelve a descontar; si no, el día se
+// cobraría dos veces (una por la falta y otra por las horas de menos del marcaje).
+function resumenAsistMes(e,mesStr,fechasExcluidas){
+  const excl=fechasExcluidas||new Set();
   const regs=asistencia.filter(r=>String(r.empleadoId)===String(e.id)&&r.fecha&&r.fecha.startsWith(mesStr));
-  const res={dias:0,atrasoMin:0,extraMin:0,faltanteMin:0,descuento:0,pagoExtra:0,regs};
+  const res={dias:0,atrasoMin:0,extraMin:0,faltanteMin:0,descuento:0,pagoExtra:0,regs,ignorados:0};
+  const vHora=valorHoraEmpleado(e),vDia=valorDiaEmpleado(e);
+  let desc=0;
   regs.forEach(r=>{
+    if(excl.has(r.fecha)||!enContratoFecha(e,mesStr,r.fecha)){res.ignorados++;return;}
     const c=calcDiaAsist(r,e);
     if(c.completo)res.dias++;
     res.atrasoMin+=c.atraso;res.extraMin+=c.extra;res.faltanteMin+=c.faltante;
+    // Un día nunca descuenta más que el valor del día completo: la hora que se descuenta vale
+    // exactamente valor día ÷ jornada diaria, así que 7 h de menos = 1 día y ni un peso más.
+    desc+=Math.min(c.faltante/60*vHora,vDia);
   });
-  res.descuento=Math.round(res.faltanteMin/60*valorHoraEmpleado(e));
+  res.descuento=Math.round(desc);
   res.pagoExtra=Math.round(res.extraMin/60*valorHoraExtraEmpleado(e));
   return res;
 }
@@ -3829,7 +3859,7 @@ async function guardarAsistModal(){
     r.entrada=ent;r.salida=sal;
   }
   closeModal('modal-asist');
-  renderAsistencia();
+  refrescarVistaActiva();
   saveAsistDB(r).catch(err=>toast('⚠️ Error al sincronizar: '+err.message));
 }
 
@@ -3859,65 +3889,9 @@ async function eliminarAsistencia(id){
   if(!(await confirmDialog('¿Eliminar este registro de asistencia?',{danger:true})))return;
   asistencia=asistencia.filter(x=>String(x.id)!==String(id));
   await delAsistDB(id);
-  renderAsistencia();
+  refrescarVistaActiva();
 }
 
-function renderAsistencia(){
-  const activos=empleados.filter(e=>e.activo!==false);
-  const hoy=today();
-  const mesStr=hoy.slice(0,7);
-  let html=`<div class="section-title">⏰ Asistencia</div>
-    <div class="help">Marca la llegada al empezar y la salida al terminar. Jornada legal: 42 h semanales (Ley 21.561) · cada empleado tiene su propia hora de entrada (se fija en su ficha, en Personal) · colación ${ASIST_COLACION_MIN} min (no cuenta como trabajo). Horas extra: máx. 2 al día, con 50% de recargo. Los montos se aplican solos en la liquidación de Finanzas.</div>`;
-  if(!activos.length)html+='<div class="empty">Sin empleados registrados. Agrégalos en Finanzas → Sueldos.</div>';
-  activos.forEach(e=>{
-    const r=asistencia.find(x=>String(x.empleadoId)===String(e.id)&&x.fecha===hoy);
-    const res=resumenAsistMes(e,mesStr);
-    const c=r?calcDiaAsist(r,e):null;
-    let estadoHoy,btn='';
-    if(!r){
-      estadoHoy='Sin marcar hoy';
-      btn=`<button class="btn" onclick="marcarAsistencia('${e.id}')">🟢 Marcar llegada</button>`;
-    }else if(!r.salida){
-      estadoHoy=`Llegó a las <strong>${r.entrada}</strong>${c.atraso>0?` <span class="warn">(${c.atraso} min tarde)</span>`:''}`;
-      btn=`<button class="btn" style="background:#f28a8a;color:#2a0e0e" onclick="marcarAsistencia('${e.id}')">Marcar salida</button>`;
-    }else{
-      estadoHoy=`Llegó <strong>${r.entrada}</strong> · salió <strong>${r.salida}</strong> · trabajó ${minToHM(c.trabajado)}`;
-    }
-    const balanceMin=res.extraMin-res.faltanteMin;
-    html+=`<div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div>
-          <h4 style="margin:0 0 4px">${e.nombre}</h4>
-          <div style="font-size:12px">${estadoHoy}</div>
-        </div>
-        ${btn}
-      </div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px" class="muted">
-        <span>Mes: <strong>${res.dias}</strong> día${res.dias!==1?'s':''}</span>
-        <span>Atrasos llegada: <strong class="${res.atrasoMin>0?'warn':'ok'}">${res.atrasoMin} min</strong></span>
-        <span>Horas extra: <strong class="ok">${minToHM(res.extraMin)}</strong></span>
-        <span>Horas de menos: <strong class="${res.faltanteMin>0?'danger':'ok'}">${minToHM(res.faltanteMin)}</strong></span>
-        <span>Balance: <strong class="${balanceMin>=0?'ok':'danger'}">${minToHM(balanceMin)}</strong></span>
-      </div>
-      ${res.regs.length?`<details style="margin-top:8px"><summary style="font-size:11px;color:var(--accent-text);cursor:pointer">Ver registros del mes (${res.regs.length})</summary>
-        ${res.regs.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(reg=>{
-          const cc=calcDiaAsist(reg,e);
-          return `<div class="item-row" style="font-size:11px">
-            <span>${reg.fecha.split('-').reverse().join('/')} · ${reg.entrada||'—'} → ${reg.salida||'…'}</span>
-            <span style="display:flex;gap:8px;align-items:center">
-              ${cc.completo?minToHM(cc.trabajado):''}
-              ${cc.extra>0?`<span class="ok">+${minToHM(cc.extra)}</span>`:''}
-              ${cc.faltante>0&&cc.completo?`<span class="danger">−${minToHM(cc.faltante)}</span>`:''}
-              <button onclick="corregirAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">✏️</button>
-              <button onclick="eliminarAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">🗑️</button>
-            </span>
-          </div>`;}).join('')}
-      </details>`:''}
-      <div style="margin-top:6px"><button onclick="registrarAsistenciaPasada('${e.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent-text)">Registrar día olvidado</button></div>
-    </div>`;
-  });
-  document.getElementById('asistencia-content').innerHTML=html;
-}
 async function registrarEventoRRHH(empleadoId,tipo){
   const e=empleados.find(x=>String(x.id)===String(empleadoId));
   if(!e)return;
@@ -4011,6 +3985,100 @@ function fechaPagoDe(mesStr){
   const sig=mesDesplazado(mesStr,1);
   return `${String(DIA_PAGO).padStart(2,'0')}/${sig.slice(5,7)}/${sig.slice(0,4)}`;
 }
+// =========== SUELDOS YA PAGADOS ("pagado hasta el ...") ===========
+// Marcar un mes como pagado deja un registro más en la colección 'rrhh', con tipo 'pago' y el
+// mes que cubre. Así se sincroniza y funciona offline igual que las faltas y los adelantos,
+// sin colección nueva que cargar. El cálculo no los mira: liquidacionEmpleado() los filtra.
+function pagoDeMes(empId,mesStr){
+  return rrhhEventos.find(x=>x.tipo==='pago'&&String(x.empleadoId)===String(empId)&&x.mes===mesStr);
+}
+function mesesPagados(e){
+  return rrhhEventos.filter(x=>x.tipo==='pago'&&String(x.empleadoId)===String(e.id)&&x.mes)
+    .map(x=>x.mes).sort();
+}
+// Hasta qué día le quedó cubierto el sueldo: el último día del último mes marcado como pagado.
+// Es el mes trabajado el que manda, no el día en que se entregó la plata (ese va aparte).
+function pagadoHasta(e){
+  const ms=mesesPagados(e);
+  if(!ms.length)return"";
+  const m=ms[ms.length-1];
+  return m+'-'+String(diasDelMes(m)).padStart(2,'0');
+}
+function pagadoHastaTxt(e){
+  const f=pagadoHasta(e);
+  if(!f)return'Sin sueldos marcados como pagados';
+  const ms=mesesPagados(e),p=pagoDeMes(e.id,ms[ms.length-1]);
+  return 'Pagado hasta el '+fechaCorta(f)+(p&&p.fecha?' \u00b7 se le pag\u00f3 el '+fechaCorta(p.fecha):'');
+}
+// Meses trabajados que quedaron sin marcar, entre el ingreso y el último mes que ya toca pagar.
+// Sirve para que no se pase uno por alto al ir saltando de mes en el selector.
+function mesesSinPagar(e){
+  const desde=(e&&e.fechaIngreso)?e.fechaIngreso.slice(0,7):'';
+  const hasta=mesAPagar();
+  if(!desde||desde>hasta)return[];
+  const out=[];
+  for(let m=desde;m<=hasta;m=mesDesplazado(m,1)){
+    if(diasContratadoMes(e,m)>0&&!pagoDeMes(e.id,m))out.push(m);
+  }
+  return out;
+}
+// Marca (o deshace) el pago del sueldo de un mes. El monto viene calculado, pero se puede
+// corregir a mano: lo que se guarda es lo que realmente se entregó.
+async function marcarPagado(empId,mesStr){
+  const e=empleados.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const ya=pagoDeMes(empId,mesStr);
+  if(ya){
+    if(!(await confirmDialog('\u00bfDeshacer el pago de '+nombreMesAnio(mesStr)+' de '+e.nombre+'? Vuelve a quedar pendiente.')))return;
+    rrhhEventos=rrhhEventos.filter(x=>String(x.id)!==String(ya.id));
+    await delRRHHDB(ya.id);
+    toast('Pago deshecho');
+    refrescarVistaActiva();
+    return;
+  }
+  const vals=await formDialog('Marcar pagado \u00b7 '+e.nombre+' \u00b7 '+nombreMesAnio(mesStr),[
+    {name:'fecha',label:'Fecha en que se le pag\u00f3',type:'date',default:today(),required:true},
+    {name:'monto',label:'Monto pagado ($)',type:'number',default:liquidacionEmpleado(e,mesStr).total,required:true},
+    {name:'nota',label:'Nota (transferencia, efectivo\u2026)',type:'text'}
+  ]);
+  if(!vals)return;
+  const fecha=String(vals.fecha).trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)){alert('Fecha inv\u00e1lida');return;}
+  const ev={id:uid(),empleadoId:e.id,tipo:'pago',mes:mesStr,fecha,
+    monto:parseInt(vals.monto)||0,nota:vals.nota?String(vals.nota).trim():''};
+  rrhhEventos.push(ev);
+  await saveRRHHDB(ev);
+  toast('\u2705 '+e.nombre+': '+nombreMesAnio(mesStr)+' pagado');
+  refrescarVistaActiva();
+}
+// Marca de una vez a los que quedan pendientes del mes, con la misma fecha de pago.
+async function marcarPagadoEquipo(mesStr){
+  const pend=empleados.filter(e=>e.activo!==false&&diasContratadoMes(e,mesStr)>0&&!pagoDeMes(e.id,mesStr));
+  if(!pend.length){toast('Todo el equipo ya figura pagado en '+nombreMesAnio(mesStr));return;}
+  const vals=await formDialog('Marcar pagado a '+pend.length+' persona(s) \u00b7 '+nombreMesAnio(mesStr),[
+    {name:'fecha',label:'Fecha en que se pag\u00f3',type:'date',default:today(),required:true},
+    {name:'nota',label:'Nota (opcional)',type:'text'}
+  ]);
+  if(!vals)return;
+  const fecha=String(vals.fecha).trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)){alert('Fecha inv\u00e1lida');return;}
+  const nota=vals.nota?String(vals.nota).trim():'';
+  for(const e of pend){
+    const ev={id:uid(),empleadoId:e.id,tipo:'pago',mes:mesStr,fecha,
+      monto:liquidacionEmpleado(e,mesStr).total,nota};
+    rrhhEventos.push(ev);
+    await saveRRHHDB(ev);
+  }
+  toast('\u2705 '+pend.length+' sueldo(s) marcados como pagados');
+  refrescarVistaActiva();
+}
+// Chip verde/naranja con el estado del mes que se está mirando.
+function chipPagoMes(e,mesStr){
+  const p=pagoDeMes(e.id,mesStr);
+  return p
+    ? '<span style="background:rgba(40,160,90,.15);color:#15803d;border-radius:6px;padding:2px 7px;font-size:10px;white-space:nowrap">\u2713 Pagado '+fechaCorta(p.fecha)+'</span>'
+    : '<span style="background:rgba(230,160,60,.15);color:#b45309;border-radius:6px;padding:2px 7px;font-size:10px;white-space:nowrap">Pendiente</span>';
+}
 // =========== COMPROBANTE DE LIQUIDACION ===========
 // El desglose que se le muestra al trabajador. Todo sale de liquidacionEmpleado(), el
 // mismo calculo con que se paga, para que el papel y el panel no puedan dar totales
@@ -4048,7 +4116,13 @@ function lineasLiquidacion(e,mesStr){
     calc:liq.horasPerdidas+'h \u00d7 valor de la hora '+montoCLP(vHora),monto:descAtrasos,
     items:atrasos.map(x=>({txt:fechaCorta(x.fecha)+' \u00b7 '+x.horas+'h de atraso'+(x.nota?' \u2014 '+x.nota:''),monto:-Math.round(vHora*(x.horas||0))}))});
   if(liq.descAsist>0)L.push({sig:'-',concepto:'Horas de menos seg\u00fan el registro de asistencia',
-    calc:minToHM(liq.faltanteMin)+' \u00d7 valor de la hora '+montoCLP(vHora),monto:liq.descAsist});
+    calc:minToHM(liq.faltanteMin)+' \u00d7 valor de la hora '+montoCLP(vHora)
+      +(liq.diasAsistIgnorados?' \u00b7 '+liq.diasAsistIgnorados+' d\u00eda(s) marcados no se cuentan ac\u00e1: ya tienen falta o atraso registrado':''),
+    monto:liq.descAsist});
+  // El tope va como l\u00ednea propia para que el comprobante siga cuadrando con el total.
+  if(liq.topeDescuento)L.push({sig:'+',concepto:'Tope legal de descuentos',
+    calc:'Los descuentos sumaban '+montoCLP(liq.descBruto)+' y no pueden superar el sueldo base del mes ('+montoCLP(liq.base)+')',
+    monto:liq.descBruto-liq.base});
   if(liq.pagoExtras>0)L.push({sig:'+',concepto:'Horas extra',
     calc:minToHM(liq.extraMin)+' pagadas con 50% de recargo',monto:liq.pagoExtras});
   L.push({sig:'+',concepto:'Comisi\u00f3n '+pct+'% sobre sus ventas',
@@ -4071,7 +4145,9 @@ function liquidacionTexto(e,mesStr){
     t+=(l.sig==='-'?'\u2212':'+')+' '+l.concepto+': '+(l.sig==='-'?'\u2212':'')+montoCLP(l.monto)+'\n    '+l.calc+'\n';
     (l.items||[]).forEach(it=>{t+='       '+it.txt+' '+montoCLP(Math.abs(it.monto))+'\n';});
   });
-  t+='\n*TOTAL A PAGAR: '+montoCLP(r.liq.total)+'*\nSe paga el '+fechaPagoDe(mesStr);
+  const pg=pagoDeMes(e.id,mesStr);
+  t+='\n*TOTAL A PAGAR: '+montoCLP(r.liq.total)+'*\n'
+    +(pg?'Pagado el '+fechaCorta(pg.fecha):'Se paga el '+fechaPagoDe(mesStr));
   return t;
 }
 
@@ -4086,7 +4162,9 @@ function verLiquidacion(empId,mesStr){
     '<div class="muted" style="font-size:11px;margin-bottom:10px">'
     +nombreMesAnio(mesStr)+(e.cargo?' \u00b7 '+e.cargo:'')+(e.rut?' \u00b7 RUT '+e.rut:'')+'<br>'
     +'Valor del d\u00eda '+montoCLP(r.vDia)+' \u00b7 valor de la hora '+montoCLP(r.vHora)
-    +' \u00b7 se paga el <strong>'+fechaPagoDe(mesStr)+'</strong></div>'
+    +' \u00b7 '+(pagoDeMes(e.id,mesStr)
+      ?'<strong>pagado el '+fechaCorta(pagoDeMes(e.id,mesStr).fecha)+'</strong>'
+      :'se paga el <strong>'+fechaPagoDe(mesStr)+'</strong>')+'</div>'
     +r.lineas.map(l=>'<div style="padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">'
       +'<span>'+l.concepto+'</span>'
@@ -4197,6 +4275,7 @@ function docLiquidaciones(lista,mesStr){
       +'<table class="tabla"><thead><tr><th>Concepto y c\u00f3mo se calcul\u00f3</th><th>Monto</th></tr></thead>'
       +'<tbody>'+filas+'</tbody></table>'
       +'<div class="tot"><span class="tot-lbl">TOTAL A PAGAR</span><span class="tot-val">'+montoCLP(r.liq.total)+'</span></div>'
+      +(pagoDeMes(e.id,mesStr)?'<div class="info-sub">Pagado el <strong>'+fechaCorta(pagoDeMes(e.id,mesStr).fecha)+'</strong></div>':'')
       +'<div class="nota">Cada l\u00ednea sale del registro del mes: las faltas y atrasos con su fecha, las horas del reloj de asistencia, '
       +'las ventas que generaron la comisi\u00f3n y los adelantos que ya se entregaron. Si alg\u00fan dato no calza, dilo antes de firmar y se revisa.</div>'
       +(esEmpresa
@@ -4249,26 +4328,50 @@ function renderPagoSueldos(){
         ${meses.map(m=>`<option value="${m}" ${m===mes?'selected':''}>${nombreMesAnio(m)}</option>`).join('')}
       </select>
     </div>
-    ${liq?`<div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:''}</span><strong>${fmt(liq.base)}</strong></div>
-      ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
-      ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
-      ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
-      <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(sel)}%</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
-      ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
-      ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos entregados</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
-      ${avisoSinIngreso(sel)}`
-    :lista.map(p=>`<div class="item-row">
-        <span>${p.nombre}<span class="muted" style="font-size:10px">${p.cargo?' · '+p.cargo:''}</span></span>
+    ${liq?`${avisoBaseMes(sel,mes)}
+      <div class="item-row" style="gap:10px"><span style="flex:1">${chipPagoMes(sel,mes)}
+        <div class="muted" style="font-size:10.5px">${pagadoHastaTxt(sel)}</div></span>
+        <button class="btn btn-sec btn-sm" onclick="marcarPagado('${sel.id}','${mes}')">${pagoDeMes(sel.id,mes)?'Deshacer':'\u2713 Marcar pagado'}</button>
+      </div>
+      <div class="muted" style="font-size:10.5px;margin-bottom:8px">Valor del día ${fmt(Math.round(valorDiaEmpleado(sel)))} · hora que se descuenta ${fmt(Math.round(valorHoraEmpleado(sel)))} · hora extra ${fmt(Math.round(valorHoraExtraEmpleado(sel)))}</div>
+      ${lineasLiquidacion(sel,mes).lineas.map(l=>`<div class="item-row" style="align-items:flex-start;gap:10px">
+        <span style="flex:1">${l.concepto}
+          <div class="muted" style="font-size:10.5px">${l.calc}</div>
+          ${(l.items||[]).map(it=>`<div class="muted" style="font-size:10px;display:flex;justify-content:space-between;gap:8px;padding-left:8px"><span>· ${it.txt}</span><span style="white-space:nowrap">${it.monto<0?'−':''}${fmt(Math.abs(it.monto))}</span></div>`).join('')}
+        </span>
+        <strong class="${l.sig==='-'?'danger':'ok'}" style="white-space:nowrap">${l.sig==='-'?'−':'+'}${fmt(l.monto)}</strong>
+      </div>`).join('')}
+      ${liq.eventosFuera.length?`<div class="muted" style="font-size:10.5px;margin-top:4px">${liq.eventosFuera.length} falta(s)/atraso(s) del mes no se descuentan: son de días fuera de su periodo contratado.</div>`:''}
+      ${(()=>{const sp=mesesSinPagar(sel).filter(m=>m!==mes);
+        return sp.length?`<div class="muted" style="font-size:10.5px;margin-top:4px">⚠ También quedan sin marcar: ${sp.map(nombreMesAnio).join(', ')}.</div>`:'';})()}`
+    :lista.map(p=>{
+        const q=liquidacionEmpleado(p,mes);
+        const partes=['base '+fmt(q.base)+(q.parcial?' ('+q.diasContrato+'/30 días)':'')];
+        if(q.descAusencias>0)partes.push('− faltas/atrasos '+fmt(q.descAusencias));
+        if(q.descAsist>0)partes.push('− horas de menos '+fmt(q.descAsist));
+        if(q.topeDescuento)partes.push('tope: no descuenta más que el base');
+        if(q.pagoExtras>0)partes.push('+ horas extra '+fmt(q.pagoExtras));
+        partes.push('+ comisión '+fmt(q.comision));
+        if(q.bonos>0)partes.push('+ bonos '+fmt(q.bonos));
+        if(q.adelantos>0)partes.push('− adelantos '+fmt(q.adelantos));
+        return `<div class="item-row" style="align-items:flex-start;gap:10px">
+        <span style="flex:1">${p.nombre}<span class="muted" style="font-size:10px">${p.cargo?' · '+p.cargo:''}</span> ${chipPagoMes(p,mes)}
+          <div class="muted" style="font-size:10.5px">${partes.join(' · ')}</div>
+          <div class="muted" style="font-size:10.5px">${pagadoHastaTxt(p)}</div>
+          ${avisoBaseMes(p,mes)}</span>
         <span style="display:flex;gap:8px;align-items:center">
-          <strong>${fmt(liquidacionEmpleado(p,mes).total)}</strong>
+          <strong>${fmt(q.total)}</strong>
           <button class="btn btn-sec btn-sm" onclick="verLiquidacion('${p.id}','${mes}')">Detalle</button>
         </span>
-      </div>`).join('')}
+      </div>`;}).join('')}
     <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
       <strong>Total a pagar${sel?` a ${sel.nombre}`:''}</strong>
       <strong style="color:#a78bfa;font-size:18px">${fmt(total)}</strong>
     </div>
-    <button class="btn btn-sm" style="width:100%;margin-top:8px;background:#a78bfa" onclick="${sel?`verLiquidacion('${sel.id}','${mes}')`:`imprimirLiquidacionEquipo('${mes}')`}">${sel?'📄 Ver el detalle para mostrárselo':`🖨️ Imprimir los ${lista.length} comprobantes`}</button>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" style="flex:1;min-width:150px;background:#a78bfa" onclick="${sel?`verLiquidacion('${sel.id}','${mes}')`:`imprimirLiquidacionEquipo('${mes}')`}">${sel?'📄 Ver el detalle para mostrárselo':`🖨️ Imprimir los ${lista.length} comprobantes`}</button>
+      ${sel?'':`<button class="btn btn-sec btn-sm" style="flex:1;min-width:150px" onclick="marcarPagadoEquipo('${mes}')">✓ Marcar pagado a todos</button>`}
+    </div>
     <div class="muted" style="font-size:10.5px;margin-top:6px">El comprobante explica de dónde sale cada peso y trae una copia para firmar.</div>
   </div>`;
 }
@@ -4280,7 +4383,7 @@ function renderPersonal(){
   const inactivos=empleados.filter(e=>e.activo===false);
 
   let html=`<div class="section-title">Personal</div>
-    <div class="help">Ficha, control del día y desempeño de cada persona en un solo lugar. Las faltas y atrasos que registres aquí se descuentan solos en la liquidación de Finanzas → Sueldos. Ingreso mínimo vigente: <strong>${fmt(IMM.general)}</strong> (${IMM.ley}, desde el 01.05.2026) · ${fmt(IMM.menorMayor)} para menores de 18 y mayores de 65.</div>
+    <div class="help">Todo el equipo en un solo lugar: ficha, marcaje de entrada y salida, faltas y atrasos, liquidación del mes y comprobante. Lo que registres acá se descuenta solo y Finanzas toma el total. Jornada legal 42 h semanales (Ley 21.561) · colación ${ASIST_COLACION_MIN} min · horas extra máx. 2 al día con 50% de recargo. Ingreso mínimo vigente: <strong>${fmt(IMM.general)}</strong> (${IMM.ley}, desde el 01.05.2026) · ${fmt(IMM.menorMayor)} para menores de 18 y mayores de 65.</div>
     <div style="margin-bottom:12px"><button class="btn" onclick="abrirEmpleado()">+ Agregar empleado</button></div>`;
 
   if(!activos.length&&!inactivos.length){
@@ -4342,6 +4445,8 @@ function tarjetaPersonal(e,est,mesStr,mesNombre){
   }else if(est.estado==='presente'){
     acciones+=`<button class="btn btn-sm" style="background:#f28a8a;color:#2a0e0e" onclick="marcarAsistencia('${e.id}')">🔴 Salida</button>`;
   }
+  // El día olvidado y la falta de otro día se registran desde acá, ya no hace falta ir a Asistencia.
+  acciones+=`<button class="btn btn-sec btn-sm" onclick="registrarEventoRRHH('${e.id}','ausencia')">🚫 Falta…</button>`;
 
   return `<div class="card" style="border-top:3px solid #a78bfa">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
@@ -4372,24 +4477,48 @@ function tarjetaPersonal(e,est,mesStr,mesNombre){
 
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px" class="muted">
       <span>Asistió <strong>${res.dias}</strong> día${res.dias!==1?'s':''}</span>
+      <span>Atrasos llegada <strong class="${res.atrasoMin>0?'warn':'ok'}">${res.atrasoMin} min</strong></span>
       <span>Extra <strong class="ok">${minToHM(res.extraMin)}</strong></span>
       <span>De menos <strong class="${res.faltanteMin>0?'danger':'ok'}">${minToHM(res.faltanteMin)}</strong></span>
+      <span>Balance <strong class="${res.extraMin-res.faltanteMin>=0?'ok':'danger'}">${minToHM(res.extraMin-res.faltanteMin)}</strong></span>
       <span>Día ${fmt(vDia)} · hora ${fmt(vHora)}</span>
     </div>
+
+    ${res.regs.length?`<details style="margin-top:10px">
+      <summary style="font-size:11px;color:#a78bfa;cursor:pointer">Marcajes de ${mesNombre} (${res.regs.length})</summary>
+      ${res.regs.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(reg=>{
+        const cc=calcDiaAsist(reg,e);
+        return `<div class="item-row" style="font-size:11px">
+          <span>${fechaCorta(reg.fecha)} · ${reg.entrada||'—'} → ${reg.salida||'…'}${cc.atraso>0?' <span class="warn">('+cc.atraso+' min tarde)</span>':''}</span>
+          <span style="display:flex;gap:8px;align-items:center">
+            ${cc.completo?minToHM(cc.trabajado):''}
+            ${cc.extra>0?'<span class="ok">+'+minToHM(cc.extra)+'</span>':''}
+            ${cc.faltante>0&&cc.completo?'<span class="danger">−'+minToHM(cc.faltante)+'</span>':''}
+            <button onclick="corregirAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">✏️</button>
+            <button onclick="eliminarAsistencia('${reg.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">🗑️</button>
+          </span>
+        </div>`;}).join('')}
+    </details>`:'<div class="muted" style="font-size:11px;margin-top:8px">Sin marcajes de entrada/salida este mes.</div>'}
 
     <details style="margin-top:10px">
       <summary style="font-size:11px;color:#a78bfa;cursor:pointer">Ficha y liquidación de ${mesNombre}</summary>
       <div style="font-size:11px;margin:8px 0" class="muted">
         ${e.rut?`RUT ${e.rut} · `:''}${e.telefono?`Tel ${e.telefono} · `:''}${e.fechaIngreso?`Ingresó ${e.fechaIngreso.split('-').reverse().join('/')}`:''}
       </div>
-      <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${liq.parcial?`<div class="item-row" style="font-size:11px"><span class="muted">Proporcional por mes incompleto · sueldo full ${fmt(liq.sueldoCompleto)}</span><span></span></div>`:``}${avisoSinIngreso(e)}
+      <div class="item-row"><span class="muted">Sueldo base${liq.parcial?` <span style="font-size:10px">(${liq.diasContrato} de 30 días)</span>`:``}</span><strong>${fmt(liq.base)}</strong></div>${avisoBaseMes(e,mesStr)}
       ${liq.descAusencias>0?`<div class="item-row"><span class="muted">− Faltas y atrasos (${liq.diasPerdidos} día${liq.diasPerdidos!==1?'s':''}${liq.horasPerdidas>0?' + '+liq.horasPerdidas+'h':''})</span><strong class="danger">−${fmt(liq.descAusencias)}</strong></div>`:''}
       ${liq.descAsist>0?`<div class="item-row"><span class="muted">− Horas de menos</span><strong class="danger">−${fmt(liq.descAsist)}</strong></div>`:''}
       ${liq.pagoExtras>0?`<div class="item-row"><span class="muted">+ Horas extra</span><strong class="ok">+${fmt(liq.pagoExtras)}</strong></div>`:''}
       <div class="item-row"><span class="muted">+ Comisión ${comisionPctEmpleado(e)}%</span><strong class="ok">+${fmt(liq.comision)}</strong></div>
       ${liq.bonos>0?`<div class="item-row"><span class="muted">+ Bonos</span><strong class="ok">+${fmt(liq.bonos)}</strong></div>`:''}
       ${liq.adelantos>0?`<div class="item-row"><span class="muted">− Adelantos</span><strong class="danger">−${fmt(liq.adelantos)}</strong></div>`:''}
+      ${liq.topeDescuento?`<div class="item-row"><span class="muted">+ Tope: los descuentos no pueden superar el sueldo base</span><strong class="ok">+${fmt(liq.descBruto-liq.base)}</strong></div>`:''}
       <div class="item-row" style="border-top:2px solid var(--border)"><strong>Total a pagar</strong><strong style="color:#a78bfa">${fmt(liq.total)}</strong></div>
+      <div class="item-row" style="font-size:11px">
+        <span class="muted">${chipPagoMes(e,mesStr)} ${pagadoHastaTxt(e)}</span>
+        <button class="btn btn-sec btn-sm" onclick="marcarPagado('${e.id}','${mesStr}')">${pagoDeMes(e.id,mesStr)?'Deshacer':'\u2713 Marcar pagado'}</button>
+      </div>
+      <button class="btn btn-sec btn-sm" style="width:100%;margin-top:6px" onclick="verLiquidacion('${e.id}','${mesStr}')">📄 Comprobante para mostrárselo</button>
       ${liq.eventos.length?`<div style="margin-top:8px">${liq.eventos.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(ev=>`<div class="item-row" style="font-size:11px">
         <span>${ev.fecha.split('-').reverse().join('/')} · ${ev.tipo==='ausencia'?'🚫 Falta':ev.tipo==='atraso'?'⏰ Atraso '+ev.horas+'h':ev.tipo==='adelanto'?'💸 Adelanto':'🎁 Bono'}${ev.nota?' — '+ev.nota:''}</span>
         <span style="display:flex;gap:6px;align-items:center">${ev.monto?fmt(ev.monto):''}<button onclick="eliminarEventoRRHH('${ev.id}')" style="background:none;border:none;cursor:pointer;font-size:11px">🗑️</button></span>
@@ -6114,7 +6243,6 @@ function setTab(t){
   if(t==='caja')renderCaja();
   if(t==='costosfab')renderCalculadora();
   if(t==='hermanos')renderHermanos();
-  if(t==='asistencia')renderAsistencia();
   if(t==='personal')renderPersonal();
   if(t==='cupones')renderCupones();
   if(t==='marketing')renderMarketing();
@@ -6199,7 +6327,7 @@ function refrescarVistaActiva(){
     despachos:renderDespachos,inventario:renderInv,resumen:renderResumen,'nueva-venta':renderNuevaVentaTab,
     vendedores:renderVendedores,cotizaciones:renderCotizaciones,promociones:renderPromociones,
     clientes:renderClientes,finanzas:renderFinanzas,caja:renderCaja,costosfab:renderCalculadora,
-    hermanos:renderHermanos,asistencia:renderAsistencia,personal:renderPersonal,cupones:renderCupones,marketing:renderMarketing}[id];
+    hermanos:renderHermanos,personal:renderPersonal,cupones:renderCupones,marketing:renderMarketing}[id];
   if(typeof fn==='function'){try{fn();}catch(e){}}
 }
 
@@ -8773,6 +8901,7 @@ Object.assign(window,{
   renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirCompra,guardarCompra,eliminarCompra,
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
   abrirEmpleado,eliminarEmpleado,definirFechaIngreso,registrarEventoRRHH,eliminarEventoRRHH,
+  marcarPagado,marcarPagadoEquipo,
   renderPersonal,faltaRapida,atrasoRapido,toggleActivoEmpleado,
   pagoSetEmpleado,pagoSetMes,
   verLiquidacion,copiarLiquidacion,waLiquidacion,imprimirLiquidacionCtx,imprimirLiquidacionEquipo,
@@ -8784,7 +8913,7 @@ Object.assign(window,{
   renderVentasDeb,renderClientesDeb,renderInvDeb,
   renderHermanos,openMovHno,editHermano,saveHermano,delHermano,toggleTipoHno,
   addItemHno,rmItemHno,updItemHno,autocompleteProductoHno,selProdAutoHno,
-  renderAsistencia,marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada,
+  marcarAsistencia,corregirAsistencia,eliminarAsistencia,registrarAsistenciaPasada,
   abrirModalAsist,guardarAsistModal,setAsistHora,
   renderCupones,guardarConfigCupones,generarLoteCupones,exportCupones,waCuponSorpresa,mostrarCuponSorpresa,
   renderMarketing,abrirCampana,eliminarCampana,generarCuponesCampana
