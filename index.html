@@ -1249,6 +1249,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
       <button class="btn btn-sec btn-sm" onclick="closeModal('modal-detalle')">Cerrar</button>
       <button class="btn btn-sec btn-sm" id="pdf-venta-btn">📄 Descargar</button>
       <button class="btn btn-sec btn-sm" id="print-venta-btn">🖨️ Imprimir</button>
+      <button class="btn btn-danger btn-sm" id="del-venta-det-btn">🗑️ Eliminar</button>
       <button class="btn btn-sm" id="edit-venta-btn">Editar</button>
     </div>
   </div>
@@ -5897,8 +5898,9 @@ async function crearClaveAdmin(){
   alert('✅ Clave creada. Modo administrador activo en este equipo.');
   return true;
 }
-async function requiereAdmin(){
-  if(esAdmin())return true;
+async function requiereAdmin(siempre){
+  // siempre=true pide la clave aunque el modo administrador ya esté abierto (ej. eliminar una venta)
+  if(esAdmin()&&!siempre)return true;
   if(!_adminHash){
     // Intentar cargarla por si se creó en otro equipo
     try{
@@ -7627,6 +7629,7 @@ function viewVenta(id){
     ${v.notas?`<div class="help" style="margin-top:12px">${v.notas}</div>`:''}`;
   document.getElementById('det-content').innerHTML=html;
   document.getElementById('edit-venta-btn').onclick=()=>{closeModal('modal-detalle');editVenta(id)};
+  document.getElementById('del-venta-det-btn').onclick=()=>delVenta(id);
   document.getElementById('print-venta-btn').onclick=()=>{window._autoPrint=false;imprimirVenta(id)};
   document.getElementById('pdf-venta-btn').onclick=()=>descargarPedidoHTML();
 
@@ -8000,17 +8003,22 @@ async function editVentaModalViejo(id){
   openModal('modal-venta');
 }
 
-async function delVenta(){
-  if(!(await requiereAdmin()))return;
-  if(!(await confirmDialog('¿Eliminar esta venta? Los productos volverán al stock. Esta acción no se puede deshacer.',{danger:true})))return;
-  const v=ventas.find(x=>String(x.id)===String(editVentaId));
-  if(v&&!v.stockDevuelto)await restaurarStockItems(v.items||[]);
+// Se llama desde el detalle de la venta (con id) o desde el formulario viejo (usa editVentaId).
+// Pide la clave siempre, aunque el modo administrador ya esté abierto en el equipo.
+async function delVenta(id){
+  const vid=id!=null?id:editVentaId;
+  const v=ventas.find(x=>String(x.id)===String(vid));
+  if(!v)return;
+  if(!(await requiereAdmin(true)))return;
+  if(!(await confirmDialog(`¿Eliminar la venta de ${v.cliente} por ${fmt(v.total)}? Los productos volverán al stock. Esta acción no se puede deshacer.`,{danger:true})))return;
+  if(!v.stockDevuelto)await restaurarStockItems(v.items||[]);
   // Cupones: ofrecer reactivar el cupón usado y eliminar el sorpresa que generó (si sigue sin usar)
-  if(v)await ofrecerReactivarCupon(v);
-  if(v)await ofrecerEliminarCuponGenerado(v);
-  ventas=ventas.filter(x=>String(x.id)!==String(editVentaId));
-  await delVentaDB(editVentaId);
+  await ofrecerReactivarCupon(v);
+  await ofrecerEliminarCuponGenerado(v);
+  ventas=ventas.filter(x=>String(x.id)!==String(vid));
+  await delVentaDB(vid);
   closeModal('modal-venta');
+  closeModal('modal-detalle');
   renderVentas();
   renderInv();
 }
