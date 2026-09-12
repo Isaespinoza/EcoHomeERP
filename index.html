@@ -738,6 +738,21 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 </div>
 
 <!-- Modal Reposición de stock -->
+<div class="modal-bg" id="modal-sincosto">
+  <div class="modal" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="margin:0">💲 Productos sin costo</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-sincosto')">✕ Cerrar</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">Sin el costo cargado, el producto no suma al valor del inventario y la ganancia se ve más alta de lo que es. Escribe lo que te cuesta a ti cada uno y guarda; puedes cargar varios de una vez.</div>
+    <div id="sincosto-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-sincosto')">Cerrar</button>
+      <button class="btn btn-sm" id="sincosto-guardar" onclick="guardarCostosFaltantes()">Guardar costos</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-reposicion">
   <div class="modal" style="max-width:640px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -6817,6 +6832,76 @@ function listaReposicion(coberturaDias){
     return{...p,stock,min,vendidas,velocidadDia,diasCobertura,sugerido};
   }).filter(p=>p.sugerido>0).sort((a,b)=>a.diasCobertura-b.diasCobertura||a.stock-b.stock);
 }
+// =========== PRODUCTOS SIN COSTO ===========
+// El costo decide la ganancia y el margen: lo que no tiene costo cargado no suma al valor
+// del inventario y hace que la ganancia del mes se vea más alta de lo real. Las tarifas
+// promocionales (camas armadas) no son stock físico, así que no cuentan.
+function prodsSinCosto(){
+  return inventario
+    .filter(p=>!(p.combo&&p.combo.colchonId)&&!(parseInt(p.costo)>0))
+    .sort((a,b)=>(parseInt(b.stock)||0)-(parseInt(a.stock)||0)||String(a.nombre||'').localeCompare(String(b.nombre||'')));
+}
+async function abrirSinCosto(){
+  if(!(await requiereAdmin()))return;
+  openModal('modal-sincosto');
+  renderSinCosto();
+}
+function renderSinCosto(){
+  const cont=document.getElementById('sincosto-list');
+  if(!cont)return;
+  const lista=prodsSinCosto();
+  const btn=document.getElementById('sincosto-guardar');
+  if(!lista.length){
+    cont.innerHTML='<div class="empty">✅ Todos los productos tienen su costo cargado.</div>';
+    if(btn)btn.style.display='none';
+    return;
+  }
+  if(btn)btn.style.display='inline-block';
+  cont.innerHTML=lista.map(p=>{
+    const stock=parseInt(p.stock)||0;
+    const min=parseInt(p.min)||0;
+    return `<div class="card" style="padding:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px">
+          <h4 style="margin:0">${p.nombre}</h4>
+          <div class="muted" style="font-size:11px;margin-top:2px">${p.marca||'—'} · ${stock>0?stock+' u en stock':'sin stock'} · se vende a ${fmt(min)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="sc-${p.id}" data-min="${min}" placeholder="Costo $" oninput="recalcMargenSC('${p.id}')" style="width:110px;padding:7px;border-radius:6px;font-size:13px">
+          <span id="scm-${p.id}" class="muted" style="font-size:11px;min-width:104px"></span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+// Muestra el margen mientras escribe, para cachar al tiro un costo mal tecleado.
+function recalcMargenSC(id){
+  const inp=document.getElementById('sc-'+id),out=document.getElementById('scm-'+id);
+  if(!inp||!out)return;
+  const costo=parseInt(inp.value)||0,min=parseInt(inp.dataset.min)||0;
+  if(!(costo>0)||!(min>0)){out.textContent='';out.className='muted';return;}
+  const margen=min-costo;
+  out.textContent='margen '+fmt(margen)+' ('+Math.round(margen*100/min)+'%)';
+  out.className=margen>0?'muted':'warn';
+}
+async function guardarCostosFaltantes(){
+  const cambios=[];
+  prodsSinCosto().forEach(p=>{
+    const inp=document.getElementById('sc-'+p.id);
+    const costo=inp?parseInt(inp.value)||0:0;
+    if(costo>0)cambios.push({p,costo});
+  });
+  if(!cambios.length){alert('Escribe el costo de al menos un producto.');return;}
+  const batch=writeBatch(db);
+  cambios.forEach(({p,costo})=>{
+    p.costo=costo;
+    batch.set(doc(db,'inventario',String(p.id)),p);
+  });
+  await batch.commit();
+  renderSinCosto();
+  renderInv();
+  alert('✅ Costo guardado en '+cambios.length+' producto(s).');
+}
 function abrirReposicion(){openModal('modal-reposicion');renderReposicion();}
 function renderReposicion(){
   const cont=document.getElementById('reposicion-list');
@@ -7037,7 +7122,7 @@ function renderInv(){
   // Stats
   const totalUnidades=items.reduce((a,p)=>a+(parseInt(p.stock)||0),0);
   const valorCosto=items.reduce((a,p)=>a+(parseInt(p.stock)||0)*(parseInt(p.costo)||0),0);
-  const sinCosto=items.filter(p=>(parseInt(p.stock)||0)>0&&!(parseInt(p.costo)>0)).length;
+  const sinCosto=prodsSinCosto().length;
   const sinStock=items.filter(p=>(parseInt(p.stock)||0)<=0).length;
   const bajoStock=items.filter(p=>{const s=parseInt(p.stock)||0;const m=parseInt(p.minStock)||2;return s>0&&s<=m}).length;
 
@@ -7046,7 +7131,7 @@ function renderInv(){
     <div class="stat"><div class="stat-lbl">Unidades totales</div><div class="stat-val">${totalUnidades}</div></div>
     <div class="stat"><div class="stat-lbl">Valor inventario (costo)</div><div class="stat-val" style="font-size:15px">${fmt(valorCosto)}</div></div>
     <div class="stat" style="cursor:pointer" onclick="abrirReposicion()"><div class="stat-lbl">Sin stock / Bajo</div><div class="stat-val warn" style="font-size:15px">${sinStock} / ${bajoStock}</div></div>
-    ${sinCosto>0?`<div class="help" style="grid-column:1/-1;margin:0">⚠ ${sinCosto} producto(s) con stock no tienen costo asignado y no suman al valor del inventario. Edítalos y agrégales el costo.</div>`:''}`;
+    ${sinCosto>0?`<div class="help" style="grid-column:1/-1;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="flex:1">⚠ ${sinCosto} producto(s) sin costo asignado: no suman al valor del inventario y hacen que la ganancia se vea más alta de lo real.</span><button class="btn btn-sm" onclick="abrirSinCosto()">Cargar costos</button></div>`:''}`;
 
   if(!items.length){
     document.getElementById('inv-list').innerHTML='<div class="empty">No hay productos. Toca "+ Agregar producto" para empezar.</div>';
@@ -8879,6 +8964,7 @@ const renderInvDeb=debounce(renderInv,180);
 Object.assign(window,{
   setTab,openSidebar,closeSidebar,toggleTheme,togglePrivacidad,
   openProd,editProd,saveProd,delProd,delProdDirect,
+  abrirSinCosto,renderSinCosto,recalcMargenSC,guardarCostosFaltantes,
   abrirListaPrecios,lpToggleProd,lpToggleCat,lpTodos,lpSetOpt,copiarListaPrecios,imprimirListaPrecios,
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
