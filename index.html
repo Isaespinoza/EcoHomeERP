@@ -1226,7 +1226,10 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   <div class="modal" style="max-width:600px">
     <h3>📊 Importar productos desde Excel</h3>
     <div class="help">Sube un archivo Excel o CSV con las columnas: <strong>Producto, Marca, Categoría, Mayorista, Minorista, Stock</strong>. Opcional: <strong>Costo</strong> (tu precio de compra, para calcular ganancias). Descarga la plantilla si no la tienes.</div>
-    <button class="btn btn-sec btn-sm" onclick="descargarPlantilla()" style="margin-bottom:12px">📥 Descargar plantilla</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-sec btn-sm" onclick="descargarPlantilla()">📥 Descargar plantilla</button>
+      <button class="btn btn-sec btn-sm" onclick="abrirListaCostos()">🖨️ Imprimir lista de costos</button>
+    </div>
 
     <div id="imp-dropzone" onclick="document.getElementById('imp-file-input').click()"
       style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;background:rgba(255,255,255,.04)"
@@ -1285,7 +1288,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 
 <div class="modal-bg" id="modal-lista-precios">
   <div class="modal" style="max-width:560px">
-    <h3>💲 Lista de precios</h3>
+    <h3 id="lp-titulo">💲 Lista de precios</h3>
     <div id="lp-content" style="max-height:52vh;overflow:auto"></div>
     <div class="modal-actions">
       <button class="btn btn-sec btn-sm" onclick="closeModal('modal-lista-precios')">Cerrar</button>
@@ -6944,6 +6947,8 @@ let editProdId=null;
 // dos precios. Se elige por categoria (o producto por producto) antes de generarla.
 let lpSel=null;                                    // ids elegidos; null hasta que se abre
 let lpOpts={foto:true,stock:true,may:true,min:true};
+let lpModo='precios';                              // 'costos': la misma hoja con el costo en vez de los precios de venta (se abre desde Importar, que ya pide la clave)
+function lpCostoTxt(p){return (Number(p.costo)||0)>0?montoCLP(Number(p.costo)):'sin costo';}
 function lpProductosDisponibles(){
   return inventario.filter(p=>{
     if(p.combo&&p.combo.colchonId)return false;    // tarifas promocionales, no son stock fisico
@@ -6955,14 +6960,20 @@ function lpGrupos(){
   lpProductosDisponibles().forEach(p=>{const c=p.cat||'Sin categor\u00eda';(g[c]=g[c]||[]).push(p);});
   return g;
 }
-function abrirListaPrecios(){
+function abrirListaPrecios(modo){
+  lpModo=modo==='costos'?'costos':'precios';
   const disp=lpProductosDisponibles();
   if(!disp.length){toast('No hay productos con stock para armar la lista');return;}
   const ids=new Set(disp.map(p=>String(p.id)));
   // Primera vez entran todos; despues se respeta lo elegido, sacando lo que se quedo sin stock
   lpSel=lpSel?new Set([...lpSel].filter(id=>ids.has(id))):ids;
+  document.getElementById('lp-titulo').textContent=lpModo==='costos'?'🖨️ Lista de costos':'💲 Lista de precios';
   renderLpSel();
   openModal('modal-lista-precios');
+}
+function abrirListaCostos(){
+  if(lpProductosDisponibles().length)closeModal('modal-importar');
+  abrirListaPrecios('costos');
 }
 function lpToggleProd(id){
   id=String(id);
@@ -6992,7 +7003,7 @@ function renderLpSel(){
     +'<button class="btn btn-sec btn-sm" onclick="lpTodos(false)">Desmarcar todo</button>'
     +'</div>'
     +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;margin-bottom:10px">'
-    +[['foto','Foto'],['stock','Stock'],['may','Precio mayorista'],['min','Precio minorista']].map(([k,lbl])=>
+    +(lpModo==='costos'?[['foto','Foto'],['stock','Stock']]:[['foto','Foto'],['stock','Stock'],['may','Precio mayorista'],['min','Precio minorista']]).map(([k,lbl])=>
       '<label style="display:flex;gap:5px;align-items:center;cursor:pointer">'
       +'<input type="checkbox" '+(lpOpts[k]?'checked':'')+' onchange="lpSetOpt(\''+k+'\',this.checked)">'+lbl+'</label>').join('')
     +'</div>'
@@ -7006,7 +7017,7 @@ function renderLpSel(){
         +items.map(p=>'<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0 3px 18px;font-size:11.5px">'
           +'<input type="checkbox" '+(lpSel.has(String(p.id))?'checked':'')+' onchange="lpToggleProd(\''+p.id+'\')">'
           +'<span style="flex:1;min-width:0">'+p.nombre+(p.marca?' <span class="muted">'+p.marca+'</span>':'')+'</span>'
-          +'<span class="muted" style="white-space:nowrap">'+(parseInt(p.stock)||0)+' u \u00b7 '+montoCLP(p.min||0)+'</span>'
+          +'<span class="muted" style="white-space:nowrap">'+(parseInt(p.stock)||0)+' u \u00b7 '+(lpModo==='costos'?lpCostoTxt(p):montoCLP(p.min||0))+'</span>'
           +'</label>').join('')
         +'</div>';
     }).join('')
@@ -7021,13 +7032,15 @@ function copiarListaPrecios(){
   if(!items.length){toast('No hay productos elegidos');return;}
   const g={};
   items.forEach(p=>{const c=p.cat||'Sin categor\u00eda';(g[c]=g[c]||[]).push(p);});
-  let t='*Lista de precios \u00b7 EcoHome*\n'+fechaCorta(today())+'\n';
+  const costos=lpModo==='costos';
+  let t='*Lista de '+(costos?'costos':'precios')+' \u00b7 EcoHome*\n'+fechaCorta(today())+'\n';
   Object.keys(g).sort().forEach(c=>{
     t+='\n*'+c+'*\n';
     g[c].forEach(p=>{
       const datos=[];
-      if(lpOpts.may)datos.push('May '+montoCLP(p.may||0));
-      if(lpOpts.min)datos.push('Min '+montoCLP(p.min||0));
+      if(costos)datos.push('Costo '+lpCostoTxt(p));
+      if(!costos&&lpOpts.may)datos.push('May '+montoCLP(p.may||0));
+      if(!costos&&lpOpts.min)datos.push('Min '+montoCLP(p.min||0));
       if(lpOpts.stock)datos.push((parseInt(p.stock)||0)+' u');
       t+='\u2022 '+p.nombre+(p.marca?' ('+p.marca+')':'')+' \u2014 '+datos.join(' \u00b7 ')+'\n';
     });
@@ -7036,6 +7049,7 @@ function copiarListaPrecios(){
 }
 function imprimirListaPrecios(){
   const items=lpElegidos();
+  const costos=lpModo==='costos', docTit=costos?'Lista de costos':'Lista de precios';
   if(!items.length){toast('No hay productos elegidos');return;}
   const MC='#3f6e56';
   const logoSrc=(document.getElementById('dr-logo-src')||{}).src||'';
@@ -7073,22 +7087,25 @@ function imprimirListaPrecios(){
       +'<div class="prod-body"><div class="prod-nom">'+p.nombre+'</div>'
       +(p.marca?'<div class="prod-marca">'+p.marca+'</div>':'')
       +'<div class="precios">'
-      +(lpOpts.may?'<div class="pr"><span>Mayorista</span><span>'+montoCLP(p.may||0)+'</span></div>':'')
-      +(lpOpts.min?'<div class="pr"><span>Minorista</span><span class="pr-min">'+montoCLP(p.min||0)+'</span></div>':'')
+      +(costos?'<div class="pr"><span>Costo</span><span class="pr-min">'+lpCostoTxt(p)+'</span></div>':'')
+      +(!costos&&lpOpts.may?'<div class="pr"><span>Mayorista</span><span>'+montoCLP(p.may||0)+'</span></div>':'')
+      +(!costos&&lpOpts.min?'<div class="pr"><span>Minorista</span><span class="pr-min">'+montoCLP(p.min||0)+'</span></div>':'')
       +(lpOpts.stock?'<div><span class="stock'+(st<=minSt?' bajo':'')+'">'+st+' disponible'+(st!==1?'s':'')+'</span></div>':'')
       +'</div></div></div>';
   };
   const cuerpo=Object.keys(g).sort().map(c=>
     '<div class="cat">'+c+' \u00b7 '+g[c].length+'</div><div class="grid">'+g[c].map(tarjeta).join('')+'</div>').join('');
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lista de precios EcoHome</title><style>'+css+'</style></head><body>'
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+docTit+' EcoHome</title><style>'+css+'</style></head><body>'
     +'<button class="btnprint" onclick="window.print()">\uD83D\uDDA8\uFE0F Imprimir / Guardar PDF</button>'
     +'<div class="page"><div class="hdr"><div>'
     +(logoSrc?'<img class="logo-img" src="'+logoSrc+'" alt="EcoHome">':'')
     +'<div class="co-name">EcoHome</div></div>'
-    +'<div><div class="doc-title">LISTA DE PRECIOS</div>'
+    +'<div><div class="doc-title">'+docTit.toUpperCase()+'</div>'
     +'<div class="doc-meta">Al '+fechaCorta(today())+' \u00b7 '+items.length+' productos disponibles</div></div></div>'
     +cuerpo
-    +'<div class="footer">Precios y stock al '+fechaCorta(today())+'. El stock cambia con cada venta: confirma en el ERP antes de comprometer una entrega.</div>'
+    +(costos
+      ?'<div class="footer">Costos y stock al '+fechaCorta(today())+'. Documento interno: no compartir con clientes ni vendedoras.</div>'
+      :'<div class="footer">Precios y stock al '+fechaCorta(today())+'. El stock cambia con cada venta: confirma en el ERP antes de comprometer una entrega.</div>')
     +'</div></body></html>';
   const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
   const w=window.open(url,'_blank');
@@ -8965,7 +8982,7 @@ Object.assign(window,{
   setTab,openSidebar,closeSidebar,toggleTheme,togglePrivacidad,
   openProd,editProd,saveProd,delProd,delProdDirect,
   abrirSinCosto,renderSinCosto,recalcMargenSC,guardarCostosFaltantes,
-  abrirListaPrecios,lpToggleProd,lpToggleCat,lpTodos,lpSetOpt,copiarListaPrecios,imprimirListaPrecios,
+  abrirListaPrecios,lpToggleProd,lpToggleCat,lpTodos,lpSetOpt,copiarListaPrecios,imprimirListaPrecios,abrirListaCostos,
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
   addItemNV,rmItemNV,selProdNV,updItemNV,recalcTotalNV,updTipoVentaNV,toggleDespNV,saveVentaNV,
