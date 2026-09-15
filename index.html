@@ -607,6 +607,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
       <button class="btn btn-sec btn-sm" onclick="abrirReposicion()" style="border-color:var(--sage);color:var(--accent-text)">Reposición</button>
       <button class="btn btn-sec btn-sm" onclick="exportInv()">Exportar</button>
       <button class="btn btn-sec btn-sm" onclick="abrirListaPrecios()" style="border-color:var(--sage);color:var(--accent-text)">💲 Lista de precios</button>
+      <button class="btn btn-sec btn-sm" onclick="abrirPerdida()" style="border-color:#f28a8a;color:#f28a8a">🚨 Registrar pérdida</button>
       <button class="btn btn-sec btn-sm" onclick="resetearInventario()" style="border-color:#f28a8a;color:#f28a8a">Resetear</button>
     </div>
     <div id="inv-stats" class="stat-grid"></div>
@@ -749,6 +750,32 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="modal-actions">
       <button class="btn btn-sec btn-sm" onclick="closeModal('modal-sincosto')">Cerrar</button>
       <button class="btn btn-sm" id="sincosto-guardar" onclick="guardarCostosFaltantes()">Guardar costos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registrar pérdida (robo, daño, extravío) -->
+<div class="modal-bg" id="modal-perdida">
+  <div class="modal" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="margin:0">🚨 Registrar pérdida</h3>
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-perdida')">✕ Cerrar</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">Para mercadería robada, dañada o extraviada. Las unidades salen del stock y su costo se resta de la ganancia del mes.</div>
+    <div class="row">
+      <div class="field"><label>Fecha</label><input type="date" id="perd-fecha"></div>
+      <div class="field"><label>Motivo</label><select id="perd-motivo"><option>Robo</option><option>Daño</option><option>Extravío</option><option>Otro</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>N° de denuncia (opcional)</label><input type="text" id="perd-denuncia" placeholder="Parte de Carabineros, PDI o Fiscalía"></div>
+      <div class="field"><label>Notas (opcional)</label><input type="text" id="perd-notas" placeholder="Ej: entraron de noche por la bodega"></div>
+    </div>
+    <div class="search" style="margin-top:4px"><input type="text" id="perd-buscar" placeholder="Buscar producto..." oninput="renderPerdida()"></div>
+    <div id="perd-list" style="max-height:45vh;overflow-y:auto"></div>
+    <div id="perd-total" style="margin-top:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sec btn-sm" onclick="closeModal('modal-perdida')">Cancelar</button>
+      <button class="btn btn-sm" style="background:#f28a8a;color:#2a0e0e" onclick="guardarPerdida()">Registrar pérdida</button>
     </div>
   </div>
 </div>
@@ -1408,6 +1435,7 @@ let campanas=[];
 let promociones=[];
 let gastosFijos=[];
 let compras=[];
+let perdidas=[];
 let cajas=[];
 let empleados=[];
 let rrhhEventos=[];
@@ -4731,7 +4759,8 @@ function gananciaMes(anio,mes){
   }));
   const totalGastosFijos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
   const sueldos=totalSueldosMes(mesStr);
-  return{ventas:totalVentas,ganancia:totalVentas-costoVendido-totalGastosFijos-sueldos};
+  const totalPerdidas=perdidasDelMes(mesStr).reduce((a,x)=>a+(x.total||0),0);
+  return{ventas:totalVentas,ganancia:totalVentas-costoVendido-totalGastosFijos-sueldos-totalPerdidas};
 }
 // =========== IVA CON ARRASTRE DE REMANENTE ===========
 // Antes cada mes se calculaba aislado: si el crédito superaba al débito, ese excedente
@@ -4813,7 +4842,9 @@ function renderFinanzas(){
   const totalCompras=comprasMes.reduce((a,g)=>a+(g.monto||0),0);
   const totalGastosFijos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
   const sueldosSec=renderSueldosSection(mesStr,MESES[mesSel]);
-  const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos;
+  const perdidasMes=perdidasDelMes(mesStr);
+  const totalPerdidas=perdidasMes.reduce((a,x)=>a+(x.total||0),0);
+  const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos-totalPerdidas;
 
   // IVA del mes, arrastrando el remanente de crédito de los meses anteriores
   const iva=ivaDelMes(mesStr);
@@ -4840,6 +4871,7 @@ function renderFinanzas(){
       <div class="stat"><div class="stat-lbl">Costo de lo vendido</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(costoVendido)}</div></div>
       <div class="stat"><div class="stat-lbl">Gastos fijos</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalGastosFijos)}</div></div>
       ${sueldosSec.totalSueldos>0?`<div class="stat"><div class="stat-lbl">Sueldos del mes</div><div class="stat-val" style="font-size:15px;color:#a78bfa">−${fmt(sueldosSec.totalSueldos)}</div></div>`:''}
+      ${totalPerdidas>0?`<div class="stat"><div class="stat-lbl">Pérdidas (robo/daño)</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalPerdidas)}</div></div>`:''}
       <div class="stat" style="border:2px solid ${ganancia>=0?'#8bf0b0':'#f28a8a'}"><div class="stat-lbl">Ganancia del mes</div><div class="stat-val" style="font-size:17px;color:${ganancia>=0?'#8bf0b0':'#f28a8a'}">${fmt(ganancia)}</div></div>
     </div>
     ${itemsSinCosto>0?`<div class="help">Hay ${itemsSinCosto} ítem(s) vendido(s) sin costo asignado. Edita esos productos y agrégales el costo para que la ganancia sea exacta.</div>`:''}
@@ -4905,6 +4937,34 @@ function renderFinanzas(){
           <strong>Total compras del mes</strong><strong style="color:var(--blue)">${fmt(totalCompras)}</strong>
         </div>`
       :'<div class="muted" style="font-size:12px;padding:8px 0">Sin compras este mes. Registra aquí lo que compras día a día: materia prima, productos, insumos.</div>'}
+    </div>
+
+    <!-- PÉRDIDAS -->
+    <div class="card" style="border-top:3px solid #f28a8a;margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <h4>Pérdidas de ${MESES[mesSel]}</h4>
+        <button class="btn btn-sm" style="background:#f28a8a;color:#2a0e0e" onclick="abrirPerdida()">+ Registrar pérdida</button>
+      </div>
+      ${perdidasMes.length?perdidasMes.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(per=>{
+        const u=(per.items||[]).reduce((a,it)=>a+(it.qty||0),0);
+        return`<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${per.motivo||'Pérdida'} · ${u} u</div>
+            <div class="muted" style="font-size:11px;margin-top:2px">${per.fecha.split('-').reverse().join('/')} · ${per.denuncia?'Denuncia N° '+per.denuncia:'<span style="color:#f4d778">sin N° de denuncia</span>'}</div>
+            <div class="muted" style="font-size:11px;margin-top:4px">${(per.items||[]).map(it=>it.qty+'× '+it.nombre).join(', ')}</div>
+            ${per.notas?`<div class="muted" style="font-size:11px;margin-top:2px;font-style:italic">${per.notas}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <strong style="color:#f28a8a">−${fmt(per.total)}</strong>
+            <div style="margin-top:4px"><button onclick="eliminarPerdida('${per.id}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:#f28a8a">Eliminar</button></div>
+          </div>
+        </div>`;
+      }).join('')+`
+        <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
+          <strong>Total pérdidas del mes</strong><strong style="color:#f28a8a">−${fmt(totalPerdidas)}</strong>
+        </div>`
+      :'<div class="muted" style="font-size:12px;padding:8px 0">Sin pérdidas este mes. Si hubo robo, daño o extravío de mercadería, regístralo aquí: sale del stock y se resta de la ganancia.</div>'}
+      <div class="help" style="margin-top:10px">Se valoriza al costo de cada producto. Para que el SII acepte un robo como gasto, guarda la denuncia (Carabineros, PDI o Fiscalía) y pásasela al contador junto con este detalle.</div>
     </div>
 
     <!-- IVA DEL MES -->
@@ -6020,6 +6080,7 @@ async function initFirebase(){
     const pCam=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('campanas');
     const pGas=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('gastos');
     const pCom=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('compras');
+    const pPer=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('perdidas');
     const pCaj=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('cajas');
     const pRh=MODO_VENDEDORA?Promise.resolve(null):leerColeccion('rrhh');
     const pAdm=MODO_VENDEDORA?Promise.resolve(null):leerDoc('config','admin');
@@ -6032,8 +6093,8 @@ async function initFirebase(){
     // Puntos de fidelización: también en modo vendedora (se ganan al vender)
     const pPts=leerColeccion('puntosCliente');
 
-    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap,camSnap]=
-      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts,pCam]);
+    const [invSnap,vtaSnap,cotSnap,promSnap,gasSnap,comSnap,cajSnap,empSnap,rhSnap,admSnap,calcSnap,herSnap,asiSnap,cupSnap,cupCfgSnap,ptsSnap,camSnap,perSnap]=
+      await Promise.all([pInv,pVta,pCot,pProm,pGas,pCom,pCaj,pEmp,pRh,pAdm,pCalc,pHer,pAsi,pCup,pCupCfg,pPts,pCam,pPer]);
 
     // Si la lectura se cortó por falta de conexión, "vacío" no significa que la base esté
     // vacía: sembrar los datos por defecto aquí pisaría el inventario real.
@@ -6142,6 +6203,12 @@ async function initFirebase(){
       compras=comSnap.docs.map(d=>d.data());
       onSnapshot(collection(db,'compras'),snap=>{
         compras=snap.docs.map(d=>d.data());
+        if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
+      });
+      // Pérdidas de mercadería (robo, daño, extravío)
+      if(perSnap)perdidas=perSnap.docs.map(d=>d.data());
+      onSnapshot(collection(db,'perdidas'),snap=>{
+        perdidas=snap.docs.map(d=>d.data());
         if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
       });
       // Cargar cajas
@@ -6904,6 +6971,136 @@ async function guardarCostosFaltantes(){
   renderSinCosto();
   renderInv();
   alert('✅ Costo guardado en '+cambios.length+' producto(s).');
+}
+
+// =========== PÉRDIDAS DE MERCADERÍA ===========
+// Robo, daño o extravío: saca las unidades del stock y deja el registro valorizado al costo
+// que tenía el producto ese día, para que la ganancia del mes lo refleje y quede el respaldo
+// (N° de denuncia) para el contador. Editar el stock a mano no dejaba ningún rastro.
+function perdidasDelMes(mesStr){
+  return perdidas.filter(x=>x.fecha&&x.fecha.startsWith(mesStr));
+}
+// Solo stock físico: las tarifas de camas armadas y los packs son combos sin stock propio.
+function prodsPerdibles(){
+  return inventario.filter(p=>!p.combo&&(parseInt(p.stock)||0)>0)
+    .sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||'')));
+}
+async function abrirPerdida(){
+  if(!(await requiereAdmin(true)))return;
+  window._perdidaCant={};
+  document.getElementById('perd-fecha').value=today();
+  document.getElementById('perd-motivo').value='Robo';
+  document.getElementById('perd-denuncia').value='';
+  document.getElementById('perd-notas').value='';
+  document.getElementById('perd-buscar').value='';
+  openModal('modal-perdida');
+  renderPerdida();
+}
+function renderPerdida(){
+  const cont=document.getElementById('perd-list');
+  if(!cont)return;
+  const q=norm(document.getElementById('perd-buscar').value);
+  const cant=window._perdidaCant||{};
+  const lista=prodsPerdibles().filter(p=>cant[p.id]>0||!q||norm(p.nombre+' '+(p.marca||'')+' '+(p.cat||'')).includes(q));
+  cont.innerHTML=lista.length?lista.map(p=>{
+    const stock=parseInt(p.stock)||0, costo=parseInt(p.costo)||0;
+    return`<div class="item-row" style="gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px">${p.nombre}</div>
+        <div class="muted" style="font-size:11px;margin-top:2px">${p.marca||'—'} · ${stock} u en stock · ${costo>0?'costo '+fmt(costo):'<span class="warn">sin costo</span>'}</div>
+      </div>
+      <input type="number" min="0" max="${stock}" step="1" placeholder="0" value="${cant[p.id]||''}" oninput="updCantPerdida('${p.id}',this)" style="width:72px;padding:7px;border-radius:6px;font-size:13px">
+    </div>`;
+  }).join(''):'<div class="empty">No hay productos con stock que coincidan.</div>';
+  pintarTotalPerdida();
+}
+function updCantPerdida(id,inp){
+  const p=inventario.find(x=>String(x.id)===String(id));
+  if(!p)return;
+  const stock=parseInt(p.stock)||0;
+  let n=parseInt(inp.value)||0;
+  if(n<0)n=0;
+  if(n>stock){n=stock;inp.value=stock;}
+  if(n>0)window._perdidaCant[id]=n;else delete window._perdidaCant[id];
+  pintarTotalPerdida();
+}
+function itemsPerdida(){
+  return Object.entries(window._perdidaCant||{}).map(([id,qty])=>{
+    const p=inventario.find(x=>String(x.id)===String(id));
+    return p&&qty>0?{prodId:p.id,nombre:p.nombre,marca:p.marca||'',qty,costo:parseInt(p.costo)||0}:null;
+  }).filter(Boolean);
+}
+function pintarTotalPerdida(){
+  const out=document.getElementById('perd-total');
+  if(!out)return;
+  const items=itemsPerdida();
+  if(!items.length){out.innerHTML='<div class="muted" style="font-size:12px">Escribe cuántas unidades se perdieron de cada producto.</div>';return;}
+  const unidades=items.reduce((a,it)=>a+it.qty,0);
+  const total=items.reduce((a,it)=>a+it.costo*it.qty,0);
+  const sinCosto=items.filter(it=>!(it.costo>0)).length;
+  out.innerHTML=`<div class="item-row" style="border-top:2px solid var(--border)">
+      <strong>${items.length} producto(s) · ${unidades} u</strong><strong style="color:#f28a8a">−${fmt(total)}</strong>
+    </div>
+    ${sinCosto?`<div class="help" style="margin-top:6px">⚠ ${sinCosto} producto(s) sin costo cargado: salen del stock pero no suman al monto de la pérdida. Cárgales el costo antes si quieres que cuenten.</div>`:''}`;
+}
+async function guardarPerdida(){
+  const items=itemsPerdida();
+  if(!items.length){alert('Indica cuántas unidades se perdieron de al menos un producto.');return;}
+  // El stock pudo cambiar mientras el formulario estaba abierto (otra venta en otro equipo)
+  const excede=items.find(it=>{const p=inventario.find(x=>String(x.id)===String(it.prodId));return !p||it.qty>(parseInt(p.stock)||0);});
+  if(excede){alert('El stock de "'+excede.nombre+'" cambió y ya no alcanza. Revisa la cantidad.');renderPerdida();return;}
+  const fecha=document.getElementById('perd-fecha').value||today();
+  const motivo=document.getElementById('perd-motivo').value||'Robo';
+  const denuncia=document.getElementById('perd-denuncia').value.trim();
+  const notas=document.getElementById('perd-notas').value.trim();
+  const unidades=items.reduce((a,it)=>a+it.qty,0);
+  const total=items.reduce((a,it)=>a+it.costo*it.qty,0);
+  const mes=MESES[parseInt(fecha.slice(5,7))-1];
+  if(!(await confirmDialog(`¿Registrar la pérdida de ${unidades} unidad(es) por ${motivo.toLowerCase()}, valorizada en ${fmt(total)}? Salen del stock y se restan de la ganancia de ${mes}.`,{danger:true,okText:'Registrar pérdida'})))return;
+  const perdida={id:uid(),fecha,motivo,denuncia,notas,items,total,creado:new Date().toISOString()};
+  const actualizados=items.map(it=>{
+    const p=inventario.find(x=>String(x.id)===String(it.prodId));
+    return{...p,stock:(parseInt(p.stock)||0)-it.qty};
+  });
+  try{
+    const batch=writeBatch(db);
+    actualizados.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));
+    batch.set(doc(db,'perdidas',perdida.id),perdida);
+    await batch.commit();
+  }catch(e){
+    alert('No se pudo registrar la pérdida: '+e.message);
+    return;
+  }
+  actualizados.forEach(p=>{const i=inventario.findIndex(x=>String(x.id)===String(p.id));if(i>=0)inventario[i]=p;});
+  if(!perdidas.some(x=>x.id===perdida.id))perdidas.push(perdida);
+  closeModal('modal-perdida');
+  renderInv();
+  if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
+  toast('✅ Pérdida registrada: '+unidades+' u, '+fmt(total));
+}
+async function eliminarPerdida(id){
+  const per=perdidas.find(x=>String(x.id)===String(id));
+  if(!per)return;
+  if(!(await requiereAdmin(true)))return;
+  const unidades=(per.items||[]).reduce((a,it)=>a+(it.qty||0),0);
+  if(!(await confirmDialog(`¿Eliminar este registro de pérdida? Las ${unidades} unidad(es) vuelven al stock y el monto deja de restarse de la ganancia.`,{danger:true})))return;
+  const actualizados=[];
+  (per.items||[]).forEach(it=>{
+    const p=inventario.find(x=>String(x.id)===String(it.prodId));
+    if(p)actualizados.push({...p,stock:(parseInt(p.stock)||0)+(it.qty||0)});
+  });
+  try{
+    const batch=writeBatch(db);
+    actualizados.forEach(p=>batch.set(doc(db,'inventario',String(p.id)),p));
+    batch.delete(doc(db,'perdidas',String(id)));
+    await batch.commit();
+  }catch(e){
+    alert('No se pudo eliminar: '+e.message);
+    return;
+  }
+  actualizados.forEach(p=>{const i=inventario.findIndex(x=>String(x.id)===String(p.id));if(i>=0)inventario[i]=p;});
+  perdidas=perdidas.filter(x=>String(x.id)!==String(id));
+  renderFinanzas();
 }
 function abrirReposicion(){openModal('modal-reposicion');renderReposicion();}
 function renderReposicion(){
@@ -8982,6 +9179,7 @@ Object.assign(window,{
   setTab,openSidebar,closeSidebar,toggleTheme,togglePrivacidad,
   openProd,editProd,saveProd,delProd,delProdDirect,
   abrirSinCosto,renderSinCosto,recalcMargenSC,guardarCostosFaltantes,
+  abrirPerdida,renderPerdida,updCantPerdida,guardarPerdida,eliminarPerdida,
   abrirListaPrecios,lpToggleProd,lpToggleCat,lpTodos,lpSetOpt,copiarListaPrecios,imprimirListaPrecios,abrirListaCostos,
   openVenta,saveVenta,editVenta,delVenta,viewVenta,
   addItem,rmItem,selProd,updItem,recalcTotal,updTipoVenta,toggleDespCampos,sincFechaDesp,
