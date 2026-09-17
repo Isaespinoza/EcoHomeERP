@@ -2972,6 +2972,26 @@ async function convertirEnVenta(id){
   alert('✅ Cotización convertida en venta');
   renderCotizaciones();
 }
+// Overlay in-app para vistas/impresión: reemplaza window.open(blob/about:blank) porque
+// eso falla en la app instalada en el iPhone (modo standalone no tiene pestañas y el
+// link "blob:" que generaba quedaba inservible fuera del propio contexto de la app).
+function mostrarImpresionInline(html){
+  const old=document.getElementById('print-overlay-eco');
+  if(old)old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='print-overlay-eco';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#e3e5e3';
+  const ifr=document.createElement('iframe');
+  ifr.style.cssText='width:100%;height:100%;border:0;background:#e3e5e3';
+  const cerrar=document.createElement('button');
+  cerrar.textContent='✕ Cerrar';
+  cerrar.style.cssText='position:fixed;top:10px;left:10px;z-index:100000;background:#151513;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  cerrar.onclick=()=>overlay.remove();
+  overlay.appendChild(ifr);
+  overlay.appendChild(cerrar);
+  document.body.appendChild(overlay);
+  ifr.srcdoc=html;
+}
 function imprimirCotizacion(id){
   const c=cotizaciones.find(x=>String(x.id)===String(id));
   if(!c)return;
@@ -3005,9 +3025,7 @@ function imprimirDoc(c,titulo){
     +(c.notas?'<div style="margin-top:14px;padding:10px;background:#f9f9f9;border-left:3px solid #d6b85a;font-size:11px">'+c.notas+'</div>':'')
     +'<div style="margin-top:30px;font-size:11px;color:#666">Gracias por preferir EcoHome.</div>'
     +'</div></body></html>';
-  const w=window.open('','_blank');
-  if(!w){alert('Permite las ventanas emergentes');return;}
-  w.document.write(body);w.document.close();
+  mostrarImpresionInline(body);
 }
 
 // =========== CLIENTES ===========
@@ -4346,10 +4364,7 @@ function docLiquidaciones(lista,mesStr){
     +paginas
     +'<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},400)});</scr'+'ipt>'
     +'</body></html>';
-  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  const w=window.open(url,'_blank');
-  if(!w)alert('Activa las ventanas emergentes para poder imprimir el comprobante.');
-  setTimeout(()=>URL.revokeObjectURL(url),8000);
+  mostrarImpresionInline(html);
 }
 
 function pagoSetEmpleado(v){pagoEmpleadoSel=v;renderPersonal();}
@@ -7304,10 +7319,7 @@ function imprimirListaPrecios(){
       ?'<div class="footer">Costos y stock al '+fechaCorta(today())+'. Documento interno: no compartir con clientes ni vendedoras.</div>'
       :'<div class="footer">Precios y stock al '+fechaCorta(today())+'. El stock cambia con cada venta: confirma en el ERP antes de comprometer una entrega.</div>')
     +'</div></body></html>';
-  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  const w=window.open(url,'_blank');
-  if(!w)alert('Activa las ventanas emergentes para poder ver la lista.');
-  setTimeout(()=>URL.revokeObjectURL(url),8000);
+  mostrarImpresionInline(html);
 }
 
 function fillFiltrosInv(){
@@ -8059,11 +8071,7 @@ function imprimirVenta(id){
     window._lastPedidoNombre='Comprobante_EcoHome_'+fechaFmt.replace(/\//g,'-')+'.html';
     const autoS='<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt>';
     const finalM=autoPrintM?htmlM.replace('</body>',autoS+'</body>'):htmlM;
-    const blobM=new Blob([finalM],{type:'text/html;charset=utf-8'});
-    const urlM=URL.createObjectURL(blobM);
-    const wM=window.open(urlM,'_blank');
-    if(!wM)alert('Activa las ventanas emergentes en Chrome para imprimir.');
-    setTimeout(()=>URL.revokeObjectURL(urlM),5000);
+    mostrarImpresionInline(finalM);
     return;
   }
 
@@ -8232,20 +8240,12 @@ function imprimirVenta(id){
   window._lastPedidoNombre='Pedido_EcoHome_'+nombre+'_'+fechaFmt.replace(/\//g,'-')+'.html';
 
   if(autoPrint){
-    // Al guardar venta: abrir en pestaña nueva para imprimir
+    // Al guardar venta: mostrar en overlay dentro de la app e imprimir automáticamente
     const htmlAutoprint=htmlCompleto.replace('</body>','<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});</scr'+'ipt></body>');
-    const blob=new Blob([htmlAutoprint],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const w=window.open(url,'_blank');
-    if(!w)alert('Activa las ventanas emergentes en Chrome para imprimir automáticamente.');
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    mostrarImpresionInline(htmlAutoprint);
   }else{
-    // Botón imprimir: abrir en pestaña nueva sin autoprint
-    const blob=new Blob([htmlCompleto],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const w=window.open(url,'_blank');
-    if(!w)alert('Activa las ventanas emergentes en Chrome para imprimir.');
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    // Botón imprimir: mostrar en overlay dentro de la app
+    mostrarImpresionInline(htmlCompleto);
   }
 }
 
