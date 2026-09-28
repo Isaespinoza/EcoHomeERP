@@ -4759,23 +4759,23 @@ async function cerrarCaja(){
 function totalSueldosMes(mesStr){
   return empleados.filter(e=>e.activo!==false).reduce((a,e)=>a+liquidacionEmpleado(e,mesStr).total,0);
 }
-function gananciaMes(anio,mes){
+const ventaVigente=v=>v.fecha&&(v.estado||'pendiente')!=='cancelado';
+// Las mismas cuentas que la vista del mes de Finanzas, en un objeto: el histórico y
+// gananciaMes salen de acá para que los números cuadren entre sí.
+function detalleGananciaMes(anio,mes){
   const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
-  const ventasMes=ventas.filter(v=>v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado');
+  const ventasMes=ventas.filter(v=>ventaVigente(v)&&v.fecha.startsWith(mesStr));
   const totalVentas=ventasMes.reduce((a,v)=>a+v.total,0);
-  let costoVendido=0;
-  ventasMes.forEach(v=>v.items.forEach(it=>{
-    const p=it.prodId?inventario.find(x=>String(x.id)===String(it.prodId)):null;
-    if(p&&p.costo>0)costoVendido+=p.costo*it.qty;
-    if(it.respaldoId){
-      const r=inventario.find(x=>String(x.id)===String(it.respaldoId));
-      if(r&&r.costo>0)costoVendido+=r.costo*it.qty;
-    }
-  }));
-  const totalGastosFijos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
+  const costo=ventasMes.reduce((a,v)=>a+costoDeVenta(v),0);
+  const gastos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
   const sueldos=totalSueldosMes(mesStr);
-  const totalPerdidas=perdidasDelMes(mesStr).reduce((a,x)=>a+(x.total||0),0);
-  return{ventas:totalVentas,ganancia:totalVentas-costoVendido-totalGastosFijos-sueldos-totalPerdidas};
+  const perd=perdidasDelMes(mesStr).reduce((a,x)=>a+(x.total||0),0);
+  return{mesStr,anio,mes,ventas:totalVentas,costo,margen:totalVentas-costo,gastos,sueldos,perdidas:perd,
+    ganancia:totalVentas-costo-gastos-sueldos-perd};
+}
+function gananciaMes(anio,mes){
+  const d=detalleGananciaMes(anio,mes);
+  return{ventas:d.ventas,ganancia:d.ganancia};
 }
 // =========== IVA CON ARRASTRE DE REMANENTE ===========
 // Antes cada mes se calculaba aislado: si el crédito superaba al débito, ese excedente
@@ -4830,9 +4830,16 @@ function ivaDelMes(mesStr){
   return r;
 }
 
+function tabsVistaFinanzas(vista){
+  return `<div style="display:flex;gap:6px;margin-bottom:12px">
+    <button class="btn ${vista==='mes'?'':'btn-sec'}" style="flex:1" onclick="window._finVista='mes';renderFinanzas()">📅 Mes</button>
+    <button class="btn ${vista==='historico'?'':'btn-sec'}" style="flex:1" onclick="window._finVista='historico';renderFinanzas()">📈 Histórico</button>
+  </div>`;
+}
 function renderFinanzas(){
   const cont=document.getElementById('fin-content');
   if(!cont)return;
+  if(window._finVista==='historico'){cont.innerHTML=renderFinanzasHistorico();return;}
   // Selectores de mes/año
   const cur=new Date();
   const mesSel=window._finMes!==undefined?window._finMes:cur.getMonth();
@@ -4872,6 +4879,7 @@ function renderFinanzas(){
   const diasOrdenados=Object.keys(ventasPorDia).sort((a,b)=>b.localeCompare(a));
 
   let html=`<div class="section-title">💰 Finanzas</div>
+    ${tabsVistaFinanzas('mes')}
     <div class="fil">
       <select onchange="window._finMes=parseInt(this.value);renderFinanzas()">
         ${MESES.map((m,i)=>`<option value="${i}" ${i===mesSel?'selected':''}>${m}</option>`).join('')}
@@ -5030,6 +5038,178 @@ function renderFinanzas(){
     </div>`;
 
   cont.innerHTML=html;
+}
+
+// =========== FINANZAS: HISTÓRICO ===========
+function diasEntre(desde,hasta){
+  return Math.round((new Date(hasta+'T12:00')-new Date(desde+'T12:00'))/86400000)+1;
+}
+function sumarDias(fecha,n){
+  const d=new Date(fecha+'T12:00');d.setDate(d.getDate()+n);return isoLocal(d);
+}
+function primeraVenta(){
+  return ventas.filter(ventaVigente).reduce((min,v)=>!min||v.fecha<min?v.fecha:min,null);
+}
+// Lo que dejó el negocio entre dos fechas (incluidas), SIN restar pérdidas: margen de las
+// ventas de esos días menos gastos fijos y sueldos en proporción a los días del mes que cubre
+// el rango. Así un robo a mitad de mes o el mes en curso no cargan el mes completo de gastos.
+function resultadoRango(desde,hasta){
+  let total=0,mes=desde.slice(0,7);
+  const ultimo=hasta.slice(0,7);
+  let guard=0;
+  while(mes<=ultimo&&guard++<600){
+    const [a,m]=mes.split('-').map(Number);
+    const diasMes=new Date(a,m,0).getDate();
+    const ini=mes===desde.slice(0,7)?+desde.slice(8):1;
+    const fin=mes===ultimo?+hasta.slice(8):diasMes;
+    const margen=ventas.filter(v=>ventaVigente(v)&&v.fecha.startsWith(mes)&&v.fecha>=desde&&v.fecha<=hasta)
+      .reduce((x,v)=>x+v.total-costoDeVenta(v),0);
+    const fijos=gastosFijos.reduce((x,g)=>x+(g.monto||0),0)+totalSueldosMes(mes);
+    total+=margen-fijos*Math.max(0,fin-ini+1)/diasMes;
+    mes=sumaMesSiguiente(mes);
+  }
+  return total;
+}
+function fechaLarga(f){
+  const [a,m,d]=f.split('-').map(Number);
+  return `${d} de ${MESES[m-1].toLowerCase()} de ${a}`;
+}
+function renderFinanzasHistorico(){
+  const hoy=today();
+  const mesHoy=hoy.slice(0,7);
+  const inicio=primeraVenta();
+  let html=`<div class="section-title">💰 Finanzas</div>${tabsVistaFinanzas('historico')}`;
+  if(!inicio)return html+'<div class="empty">Todavía no hay ventas para armar el histórico.</div>';
+
+  // Todos los meses desde la primera venta hasta hoy, también los que no tuvieron ventas.
+  const meses=[];
+  for(let m=inicio.slice(0,7);m<=mesHoy&&meses.length<600;m=sumaMesSiguiente(m)){
+    const [a,mm]=m.split('-').map(Number);
+    meses.push(detalleGananciaMes(a,mm-1));
+  }
+  let acum=0;
+  meses.forEach(d=>{acum+=d.ganancia;d.acumulado=acum;});
+  const cerrados=meses.filter(d=>d.mesStr<mesHoy);
+  const tot=k=>meses.reduce((a,d)=>a+d[k],0);
+  const ultimos3=cerrados.slice(-3);
+  const prom3=ultimos3.length?ultimos3.reduce((a,d)=>a+d.ganancia,0)/ultimos3.length:null;
+  const mejor=cerrados.length?cerrados.reduce((a,d)=>d.ganancia>a.ganancia?d:a):null;
+  const peor=cerrados.length?cerrados.reduce((a,d)=>d.ganancia<a.ganancia?d:a):null;
+  const nomMes=d=>MESES[d.mes].slice(0,3)+' '+String(d.anio).slice(2);
+  const color=v=>v>=0?'#8bf0b0':'#f28a8a';
+  const sinCosto=ventas.filter(ventaVigente).reduce((a,v)=>a+itemsSinCosto(v),0);
+
+  html+=`<div class="stat-grid">
+    <div class="stat"><div class="stat-lbl">Ventas desde ${nomMes(meses[0])}</div><div class="stat-val" style="font-size:15px">${fmt(tot('ventas'))}</div></div>
+    <div class="stat" style="border:2px solid ${color(acum)}"><div class="stat-lbl">Ganancia acumulada</div><div class="stat-val" style="font-size:17px;color:${color(acum)}">${fmt(acum)}</div></div>
+    ${prom3!==null?`<div class="stat"><div class="stat-lbl">Promedio mensual (últimos ${ultimos3.length} cerrados)</div><div class="stat-val" style="font-size:15px;color:${color(prom3)}">${fmt(prom3)}</div></div>`:''}
+    ${tot('perdidas')>0?`<div class="stat"><div class="stat-lbl">Pérdidas totales</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(tot('perdidas'))}</div></div>`:''}
+    ${mejor?`<div class="stat"><div class="stat-lbl">Mejor mes</div><div class="stat-val" style="font-size:14px">${nomMes(mejor)} · ${fmt(mejor.ganancia)}</div></div>`:''}
+    ${peor&&peor!==mejor?`<div class="stat"><div class="stat-lbl">Peor mes</div><div class="stat-val" style="font-size:14px;color:${color(peor.ganancia)}">${nomMes(peor)} · ${fmt(peor.ganancia)}</div></div>`:''}
+  </div>`;
+
+  html+=renderRecuperacionPerdida(hoy,inicio);
+  html+=renderPuntoEquilibrio(hoy,inicio);
+
+  if(meses.length>1){
+    html+=`<div class="card"><h4 style="margin-bottom:4px">Ganancia acumulada</h4>
+      ${svgTrend(meses.map(d=>({label:nomMes(d),val:d.acumulado})),{color:color(acum)})}
+      ${svgTrendLeyenda(meses.map(d=>({label:nomMes(d)})))}</div>`;
+  }
+
+  html+=`<div class="card"><h4 style="margin-bottom:10px">Mes a mes</h4>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Mes</th><th style="text-align:right">Ventas</th><th style="text-align:right">Margen</th><th style="text-align:right">Gastos + sueldos</th><th style="text-align:right">Pérdidas</th><th style="text-align:right">Ganancia</th><th style="text-align:right">Acumulado</th></tr></thead>
+      <tbody>${meses.slice().reverse().map(d=>`<tr>
+        <td style="white-space:nowrap">${nomMes(d)}${d.mesStr===mesHoy?' <span class="muted" style="font-size:10px">(en curso)</span>':''}</td>
+        <td style="text-align:right">${fmt(d.ventas)}</td>
+        <td style="text-align:right">${fmt(d.margen)}${d.ventas>0?`<div class="muted" style="font-size:10px">${Math.round(d.margen/d.ventas*100)}%</div>`:''}</td>
+        <td style="text-align:right;color:#f28a8a">−${fmt(d.gastos+d.sueldos)}</td>
+        <td style="text-align:right;color:#f28a8a">${d.perdidas?'−'+fmt(d.perdidas):'—'}</td>
+        <td style="text-align:right"><strong style="color:${color(d.ganancia)}">${fmt(d.ganancia)}</strong></td>
+        <td style="text-align:right;color:${color(d.acumulado)}">${fmt(d.acumulado)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div class="help" style="margin-top:10px">
+      Ganancia = ventas − costo de lo vendido − gastos fijos − sueldos − pérdidas, igual que en la vista del mes.
+      El mes en curso resta el mes completo de gastos y sueldos, así que se ve más bajo hasta que termina.
+      Ojo: los gastos fijos son los que tienes cargados <strong>hoy</strong> y el costo de cada producto es el <strong>actual</strong>; si antes eran distintos, los meses viejos no quedan exactos.
+    </div>
+    ${sinCosto?`<div class="help">Hay ${sinCosto} ítem(s) vendido(s) sin costo cargado en todo el histórico: la ganancia se ve más alta de lo real. Cárgalos desde Inventario → Cargar costos.</div>`:''}
+  </div>`;
+  return html;
+}
+// Cuánto falta para recuperar una pérdida (el robo): lo que dejó el negocio desde ese día
+// contra lo que se perdió desde ese día, y a qué ritmo se está recuperando.
+function renderRecuperacionPerdida(hoy,inicio){
+  if(!perdidas.length)return '';
+  const porFecha={};
+  perdidas.forEach(x=>{if(x.fecha)porFecha[x.fecha]=(porFecha[x.fecha]||0)+(x.total||0);});
+  const fechas=Object.keys(porFecha).sort();
+  if(!fechas.length)return '';
+  // Por defecto, la pérdida más grande (el robo).
+  let desde=window._finRecupDesde;
+  if(!porFecha[desde])desde=fechas.reduce((a,f)=>porFecha[f]>porFecha[a]?f:a);
+  const perdido=fechas.filter(f=>f>=desde).reduce((a,f)=>a+porFecha[f],0);
+  const recuperado=resultadoRango(desde,hoy);
+  const falta=perdido-recuperado;
+  const pct=perdido>0?Math.max(0,Math.min(100,recuperado/perdido*100)):100;
+  // Ritmo: lo que deja el negocio por día en los últimos 90 días (o desde la primera venta).
+  const ini90=sumarDias(hoy,-89)<inicio?inicio:sumarDias(hoy,-89);
+  const dias90=diasEntre(ini90,hoy);
+  const ritmo=resultadoRango(ini90,hoy)/dias90;
+  let pronostico;
+  if(falta<=0)pronostico=`<strong style="color:#8bf0b0">✅ Ya se recuperó.</strong> Desde ese día el negocio dejó ${fmt(recuperado)}, ${fmt(-falta)} más de lo que se perdió.`;
+  else if(ritmo<=0)pronostico=`<strong style="color:#f28a8a">A este ritmo no se recupera:</strong> en los últimos ${dias90} días el negocio no dejó ganancia (gastos y sueldos se comen el margen de las ventas).`;
+  else{
+    const d=Math.ceil(falta/ritmo);
+    pronostico=`Faltan <strong>${fmt(falta)}</strong>. Al ritmo de los últimos ${dias90} días (${fmt(ritmo*30)} al mes) se recupera en unos <strong>${d<60?d+' días':Math.round(d/30)+' meses'}</strong>, cerca del <strong>${fechaLarga(sumarDias(hoy,d))}</strong>.`;
+  }
+  return `<div class="card" style="border-top:3px solid #f28a8a">
+    <h4 style="margin-bottom:6px">🚨 Recuperación de la pérdida</h4>
+    ${fechas.length>1?`<div class="fil"><select onchange="window._finRecupDesde=this.value;renderFinanzas()">
+      ${fechas.map(f=>`<option value="${f}" ${f===desde?'selected':''}>Desde el ${f.split('-').reverse().join('/')} (−${fmt(porFecha[f])})</option>`).join('')}
+    </select></div>`:''}
+    <div class="item-row"><span>Perdido desde el ${desde.split('-').reverse().join('/')}</span><strong style="color:#f28a8a">−${fmt(perdido)}</strong></div>
+    <div class="item-row"><span>Lo que dejó el negocio desde ese día</span><strong style="color:${recuperado>=0?'#8bf0b0':'#f28a8a'}">${fmt(recuperado)}</strong></div>
+    <div style="height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 6px">
+      <div style="height:100%;width:${pct}%;background:${falta<=0?'#8bf0b0':'#f4d778'}"></div>
+    </div>
+    <div class="muted" style="font-size:11px;text-align:right;margin-bottom:8px">${Math.round(pct)}% recuperado</div>
+    <div style="font-size:12.5px">${pronostico}</div>
+    <div class="muted" style="font-size:11px;margin-top:8px">"Lo que dejó el negocio" es el margen de las ventas menos gastos fijos y sueldos, contados por día (no el mes completo).</div>
+  </div>`;
+}
+// Cuánto hay que vender al mes para no perder, con el margen real de los últimos 90 días.
+function renderPuntoEquilibrio(hoy,inicio){
+  const mesHoy=hoy.slice(0,7);
+  const ini90=sumarDias(hoy,-89)<inicio?inicio:sumarDias(hoy,-89);
+  const vs=ventas.filter(v=>ventaVigente(v)&&v.fecha>=ini90&&v.fecha<=hoy);
+  const vtas=vs.reduce((a,v)=>a+v.total,0);
+  if(vtas<=0)return '';
+  const margenPct=(vtas-vs.reduce((a,v)=>a+costoDeVenta(v),0))/vtas;
+  const fijos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0)+totalSueldosMes(mesHoy);
+  const [a,m]=mesHoy.split('-').map(Number);
+  const diasMes=new Date(a,m,0).getDate(),diaHoy=+hoy.slice(8);
+  const vendidoMes=ventas.filter(v=>ventaVigente(v)&&v.fecha.startsWith(mesHoy)).reduce((x,v)=>x+v.total,0);
+  const proyeccion=vendidoMes/diaHoy*diasMes;
+  if(margenPct<=0)return `<div class="card"><h4>⚖️ Punto de equilibrio</h4><div class="help">En los últimos 90 días las ventas no cubren ni el costo de los productos: revisa precios y costos cargados.</div></div>`;
+  const equilibrio=fijos/margenPct;
+  const pct=Math.min(100,vendidoMes/equilibrio*100);
+  const ok=proyeccion>=equilibrio;
+  return `<div class="card" style="border-top:3px solid var(--blue)">
+    <h4 style="margin-bottom:6px">⚖️ Punto de equilibrio de ${MESES[m-1].toLowerCase()}</h4>
+    <div class="item-row"><span>Gastos fijos + sueldos del mes</span><strong>${fmt(fijos)}</strong></div>
+    <div class="item-row"><span>Margen de las ventas (últimos 90 días)</span><strong>${Math.round(margenPct*100)}%</strong></div>
+    <div class="item-row"><span><strong>Hay que vender al mes para no perder</strong></span><strong style="color:var(--blue)">${fmt(equilibrio)}</strong></div>
+    <div class="item-row"><span>Vendido este mes (día ${diaHoy} de ${diasMes})</span><strong>${fmt(vendidoMes)}</strong></div>
+    <div style="height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 6px">
+      <div style="height:100%;width:${pct}%;background:${ok?'#8bf0b0':'#f4d778'}"></div>
+    </div>
+    <div style="font-size:12.5px">Al ritmo de este mes cerrarías en <strong>${fmt(proyeccion)}</strong>: ${ok
+      ?`<span style="color:#8bf0b0">sobre el equilibrio, con unos ${fmt((proyeccion-equilibrio)*margenPct)} de ganancia.</span>`
+      :`<span style="color:#f28a8a">te faltarían ${fmt(equilibrio-proyeccion)} en ventas para no perder (${fmt(Math.max(0,(equilibrio-vendidoMes)/Math.max(1,diasMes-diaHoy)))} por día lo que queda del mes).</span>`}</div>
+  </div>`;
 }
 
 // --- Gastos fijos ---
