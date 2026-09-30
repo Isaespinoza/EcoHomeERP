@@ -1252,7 +1252,22 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 <div class="modal-bg" id="modal-importar">
   <div class="modal" style="max-width:600px">
     <h3>📊 Importar productos desde Excel</h3>
-    <div class="help">Sube un archivo Excel o CSV con las columnas: <strong>Producto, Marca, Categoría, Mayorista, Minorista, Stock</strong>. Opcional: <strong>Costo</strong> (tu precio de compra, para calcular ganancias) y una casilla <strong>Total compra</strong> con lo que pagaste en total, que se registra en Finanzas → Compras. Descarga la plantilla si no la tienes.</div>
+    <div class="help">
+      <strong>Cómo armar el Excel</strong>
+      <ol style="margin:6px 0 8px 18px;padding:0;line-height:1.5">
+        <li>Una fila de títulos con las columnas <strong>Producto, Marca, Categoría, Mayorista, Minorista, Stock</strong>. Opcional: <strong>Costo</strong> (precio de compra por unidad) y <strong>Stock mínimo</strong>.</li>
+        <li>Debajo, un producto por fila.</li>
+        <li>Para registrar lo que pagaste: en cualquier celda escribe <strong>Total compra</strong> y a su derecha (o justo debajo) el monto total. Se guarda en <strong>Finanzas → Compras</strong>.</li>
+        <li>Sube el archivo, revisa la vista previa (ahí puedes corregir el total, la fecha y el IVA) y confirma.</li>
+      </ol>
+      <div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11px;white-space:nowrap">
+        <tr><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Producto</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Marca</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Categoría</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Mayorista</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Minorista</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Stock</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Costo</td></tr>
+        <tr><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">Silla Nórdica</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">—</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">Sillas</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">10.000</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">13.000</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">20</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">8.000</td></tr>
+        <tr><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px">…</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px"></td></tr>
+        <tr><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">Total compra</td><td style="border:1px solid rgba(128,128,128,.35);padding:3px 6px;font-weight:700">160.000</td></tr>
+      </table></div>
+      <div style="margin-top:6px">Descarga la plantilla: ya viene con este formato.</div>
+    </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
       <button class="btn btn-sec btn-sm" onclick="descargarPlantilla()">📥 Descargar plantilla</button>
       <button class="btn btn-sec btn-sm" onclick="abrirListaCostos()">🖨️ Imprimir lista de costos</button>
@@ -9374,6 +9389,8 @@ async function descargarPlantilla(){
       {Producto:'Ejemplo: Silla Nórdica',Marca:'EcoHome',Categoría:'Sillas',Mayorista:10000,Minorista:13000,Stock:20,'Stock mínimo':3,Costo:8000},
     ];
     const ws=XLSX.utils.json_to_sheet(datos);
+    // Casilla que el importador lee como lo pagado en total (va a Finanzas → Compras)
+    XLSX.utils.sheet_add_aoa(ws,[[],['Total compra',datos.reduce((t,d)=>t+d.Costo*d.Stock,0)]],{origin:-1});
     ws['!cols']=[{wch:35},{wch:14},{wch:14},{wch:12},{wch:12},{wch:8},{wch:12}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Productos');
