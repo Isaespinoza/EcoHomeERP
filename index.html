@@ -1252,7 +1252,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 <div class="modal-bg" id="modal-importar">
   <div class="modal" style="max-width:600px">
     <h3>📊 Importar productos desde Excel</h3>
-    <div class="help">Sube un archivo Excel o CSV con las columnas: <strong>Producto, Marca, Categoría, Mayorista, Minorista, Stock</strong>. Opcional: <strong>Costo</strong> (tu precio de compra, para calcular ganancias). Descarga la plantilla si no la tienes.</div>
+    <div class="help">Sube un archivo Excel o CSV con las columnas: <strong>Producto, Marca, Categoría, Mayorista, Minorista, Stock</strong>. Opcional: <strong>Costo</strong> (tu precio de compra, para calcular ganancias) y una casilla <strong>Total compra</strong> con lo que pagaste en total, que se registra en Finanzas → Compras. Descarga la plantilla si no la tienes.</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
       <button class="btn btn-sec btn-sm" onclick="descargarPlantilla()">📥 Descargar plantilla</button>
       <button class="btn btn-sec btn-sm" onclick="abrirListaCostos()">🖨️ Imprimir lista de costos</button>
@@ -9144,11 +9144,14 @@ function handleImportSelect(input){
 }
 async function leerArchivoImport(file){
   document.getElementById('imp-file-name').textContent='📎 '+file.name;
+  window._impArchivo=file.name;
+  window._impTotal=null;
   document.getElementById('imp-resultado').innerHTML='<div class="muted" style="text-align:center;padding:12px">⏳ Leyendo...</div>';
   try{
     const ext=file.name.split('.').pop().toLowerCase();
     if(ext==='csv'){
       const texto=await file.text();
+      window._impTotal=buscarTotalCompra(texto.split(/\r?\n/).map(parseCSVLine),0);
       mostrarPreviewImport(parseCSVImport(texto));
     }else{
       const data=await file.arrayBuffer();
@@ -9190,6 +9193,7 @@ function cargarHojaImport(nombre){
     document.getElementById('imp-resultado').innerHTML='<div style="color:#f28a8a">No se encontró una columna llamada "Producto" en la hoja. Revisa que exista esa columna.</div>';
     return;
   }
+  window._impTotal=buscarTotalCompra(arr,headerIdx);
   const headers=arr[headerIdx].map(x=>String(x).trim());
   const filas=[];
   for(let i=headerIdx+1;i<arr.length;i++){
@@ -9199,6 +9203,32 @@ function cargarHojaImport(nombre){
     if(!vacia)filas.push(obj);
   }
   mostrarPreviewImport(filas);
+}
+// Casilla con lo que costó la compra completa (ej. "Total compra: 1.250.000"), en cualquier
+// parte de la hoja: el valor es la primera celda con número a la derecha, o la de abajo.
+// Las etiquetas que nombran la compra ganan sobre un "Total" suelto, que puede ser la suma de otra columna.
+const ETIQ_TOTAL_COMPRA=['total compra','total de compra','total de la compra','total factura','costo total','costo compra','costo de la compra','costo total compra','costo total de la compra','gasto','gasto total','total gasto','total gastado','gastado','lo que gaste','monto total','monto compra','monto de la compra','valor total','valor compra','total pagado','pagado','total a pagar','total'];
+function normEtiqTotal(x){return String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\(.*?\)|[:$=]/g,' ').replace(/\s+/g,' ').trim();}
+function esEtiqTotalCompra(x){return ETIQ_TOTAL_COMPRA.includes(normEtiqTotal(x));}
+function numTotalCompra(v){
+  if(typeof v==='number')return v>0?Math.round(v):0;
+  return parseInt(String(v).replace(/\D/g,''))||0;
+}
+function buscarTotalCompra(arr,headerIdx){
+  let mejor=null;
+  arr.forEach((fila,i)=>{
+    if(i===headerIdx||!Array.isArray(fila))return;
+    fila.forEach((celda,j)=>{
+      if(typeof celda!=='string'||!esEtiqTotalCompra(celda))return;
+      let monto=0;
+      for(let k=j+1;k<fila.length&&!monto;k++)monto=numTotalCompra(fila[k]);
+      if(!monto&&arr[i+1])monto=numTotalCompra(arr[i+1][j]);
+      if(!monto)return;
+      const prio=normEtiqTotal(celda)==='total'?1:2;
+      if(!mejor||prio>=mejor.prio)mejor={etiqueta:String(celda).trim(),monto,prio};
+    });
+  });
+  return mejor;
 }
 function parseCSVImport(texto){
   const lineas=texto.split(/\r?\n/).filter(l=>l.trim());
@@ -9255,7 +9285,7 @@ function mostrarPreviewImport(filas){
     stock:parseInt(String(normalizarCampo(f,['Stock','stock'])).replace(/\D/g,''))||0,
     minStock:parseInt(String(normalizarCampo(f,['Stock mínimo','minStock','Stock minimo'])).replace(/\D/g,''))||2,
     costo:parseInt(String(normalizarCampo(f,['Costo','COSTO','costo','Precio compra','Precio Compra','Valor compra','Precio costo'])).replace(/\D/g,''))||0
-  })).filter(p=>p.nombre);
+  })).filter(p=>p.nombre&&!esEtiqTotalCompra(p.nombre));
 
   if(!productos.length){document.getElementById('imp-resultado').innerHTML='<div style="color:#f28a8a">No se encontraron productos válidos. Revisa que la columna "Producto" tenga datos.</div>';return;}
 
@@ -9274,11 +9304,39 @@ function mostrarPreviewImport(filas){
     </div>`;
   });
   html+='</div>';
+  const tot=window._impTotal;
+  const segunCostos=productos.reduce((a,p)=>a+p.costo*p.stock,0);
+  const escT=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  html+=`<div style="border:1px solid var(--blue);background:rgba(122,162,255,.08);border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:var(--text2)">
+    <strong style="color:var(--blue)">🧾 Registrar lo que gastaste en Finanzas → Compras</strong>
+    <div style="margin:4px 0 8px">${tot?`Leí "<strong>${escT(tot.etiqueta)}</strong>" en el Excel.`:'No encontré una casilla con el total de la compra (ej. "Total compra"). Si quieres, escríbelo aquí.'}${segunCostos>0?` Costo × stock de las filas: <strong>${fmt(segunCostos)}</strong>.`:''}</div>
+    <div class="row">
+      <div class="field"><label>Total de la compra ($)</label><input type="number" id="imp-compra-monto" value="${tot?tot.monto:''}" placeholder="Vacío = no registrar"></div>
+      <div class="field"><label>Fecha</label><input type="date" id="imp-compra-fecha" value="${today()}"></div>
+    </div>
+    <div class="field"><label>Proveedor (opcional)</label><input type="text" id="imp-compra-prov"></div>
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:12px;cursor:pointer">
+      <input type="checkbox" id="imp-compra-iva" checked style="width:auto"><span>Incluye IVA (factura)</span>
+    </label>
+  </div>`;
   html+=`<button class="btn" style="width:100%;background:#15803d" onclick='confirmarImport(${JSON.stringify(productos)})'>✅ Importar ${productos.length} productos</button>`;
   document.getElementById('imp-resultado').innerHTML=html;
 }
 async function confirmarImport(productos){
   const sumar=document.getElementById('imp-sumar').checked;
+  const montoCompra=parseInt(document.getElementById('imp-compra-monto')?.value)||0;
+  const compra=montoCompra>0?{
+    id:uid(),
+    fecha:document.getElementById('imp-compra-fecha').value||today(),
+    proveedor:document.getElementById('imp-compra-prov').value.trim(),
+    descripcion:`Importación Excel: ${productos.length} producto${productos.length!==1?'s':''}${window._impArchivo?' ('+window._impArchivo+')':''}`,
+    monto:montoCompra,
+    conIVA:document.getElementById('imp-compra-iva').checked,
+    categoria:'Producto',
+    foto:null
+  }:null;
+  if(compra&&compras.some(c=>c.monto===compra.monto&&c.fecha===compra.fecha)
+    &&!(await confirmDialog(`Ya hay una compra de ${fmt(compra.monto)} con fecha ${compra.fecha.split('-').reverse().join('/')}. ¿Registrarla otra vez?`)))return;
   document.getElementById('imp-resultado').innerHTML='<div class="muted" style="text-align:center;padding:20px">⏳ Importando...</div>';
   let n=0;
   for(const p of productos){
@@ -9299,8 +9357,13 @@ async function confirmarImport(productos){
     }
     n++;
   }
+  if(compra){
+    compras.push(compra);
+    await saveCompraDB(compra);
+    renderFinanzas();
+  }
   closeModal('modal-importar');
-  alert(`✅ ${n} productos importados correctamente`);
+  alert(`✅ ${n} productos importados correctamente${compra?`\n🧾 Compra de ${fmt(compra.monto)} registrada en Finanzas`:''}`);
   renderInv();
 }
 async function descargarPlantilla(){
