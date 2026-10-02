@@ -3001,7 +3001,14 @@ function mostrarImpresionInline(html){
   const cerrar=document.createElement('button');
   cerrar.textContent='✕ Cerrar';
   cerrar.style.cssText='position:fixed;top:10px;left:10px;z-index:100000;background:#151513;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)';
-  cerrar.onclick=()=>overlay.remove();
+  // El viewport de la app bloquea el pellizco-zoom (user-scalable=no) para que no se
+  // active por error al usar los botones. Pero eso mismo impide alejar la vista del
+  // comprobante en el overlay para sacarle foto completa. Lo relajamos mientras está
+  // abierto y restauramos el valor original al cerrar.
+  const vp=document.querySelector('meta[name="viewport"]');
+  const vpOriginal=vp?vp.getAttribute('content'):null;
+  if(vp)vp.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+  cerrar.onclick=()=>{overlay.remove();if(vp&&vpOriginal)vp.setAttribute('content',vpOriginal);};
   overlay.appendChild(ifr);
   overlay.appendChild(cerrar);
   document.body.appendChild(overlay);
@@ -8444,9 +8451,18 @@ function imprimirVenta(id){
   }
 }
 
-function descargarPedidoHTML(){
+async function descargarPedidoHTML(){
   if(!window._lastPedidoHtml){alert('Primero abre el pedido desde la lista de ventas.');return;}
   const blob=new Blob([window._lastPedidoHtml],{type:'text/html;charset=utf-8'});
+  const file=new File([blob],window._lastPedidoNombre,{type:'text/html'});
+  // En la app instalada en iPhone (modo standalone), <a download> con un blob no
+  // dispara ninguna descarga (WebKit no la soporta fuera de Safari con pestañas).
+  // Usamos Web Share API cuando está disponible: además resuelve el objetivo real
+  // de este botón, que es enviar el comprobante (p.ej. por WhatsApp).
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:window._lastPedidoNombre});return;}
+    catch(e){if(e&&e.name==='AbortError')return;}
+  }
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
