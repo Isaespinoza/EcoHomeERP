@@ -980,10 +980,8 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
     <div class="row">
       <div class="field"><label>Marca</label><input type="text" id="p-marca" list="marca-list"></div>
       <div class="field"><label>Categoría</label><select id="p-cat">
-        <option>Sillas</option><option>Mesas</option><option>Sillones</option>
-        <option>Sofás</option><option>Cómodas</option><option>Estanterías</option>
-        <option>Escritorios</option><option>Camas</option><option>Veladores</option>
-        <option>Decoración</option><option>Otro</option>
+        <option>Colchón</option><option>Base</option><option>Respaldo</option>
+        <option>Ropa de cama</option><option>Decoración</option><option>Otro</option>
       </select></div>
     </div>
     <datalist id="marca-list"></datalist>
@@ -7623,7 +7621,7 @@ async function openProd(){
   document.getElementById('prod-title').textContent='Agregar producto';
   document.getElementById('p-nombre').value='';
   document.getElementById('p-marca').value='';
-  document.getElementById('p-cat').value='Sillas';
+  document.getElementById('p-cat').value='Colchón';
   document.getElementById('p-may').value='';
   document.getElementById('p-min').value='';
   document.getElementById('p-ref').value='';
@@ -9295,15 +9293,13 @@ function mostrarPreviewImport(filas){
   if(!filas.length){document.getElementById('imp-resultado').innerHTML='<div class="muted">El archivo está vacío.</div>';return;}
   const normCat=(c)=>{
     const x=c.toLowerCase().trim();
-    if(x.startsWith('sillon')||x.startsWith('sillón'))return 'Sillones';
-    if(x.startsWith('silla'))return 'Sillas';
-    if(x.startsWith('mesa'))return 'Mesas';
-    if(x.startsWith('sofa')||x.startsWith('sofá'))return 'Sofás';
-    if(x.startsWith('comoda')||x.startsWith('cómoda'))return 'Cómodas';
-    if(x.startsWith('estante'))return 'Estanterías';
-    if(x.startsWith('escritorio'))return 'Escritorios';
-    if(x.startsWith('cama'))return 'Camas';
-    if(x.startsWith('velador'))return 'Veladores';
+    // 'Colchón' y 'Respaldo' deben quedar con este texto exacto: el armado de venta
+    // (colchón + base/respaldo) y el cálculo de IVA filtran el inventario por esta
+    // categoría literal.
+    if(x.startsWith('colch'))return 'Colchón';
+    if(x.startsWith('base'))return 'Base';
+    if(x.startsWith('respaldo'))return 'Respaldo';
+    if(x.startsWith('ropa'))return 'Ropa de cama';
     if(x.startsWith('decoraci'))return 'Decoración';
     return c||'Otro';
   };
