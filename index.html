@@ -3086,8 +3086,9 @@ function mostrarImpresionInline(html){
     }catch(e){}
   };
   overlay.appendChild(ifr);
-  overlay.appendChild(cerrar);
-  overlay.appendChild(imp);
+  barra.appendChild(cerrar);
+  barra.appendChild(imp);
+  overlay.appendChild(barra);
   document.body.appendChild(overlay);
   ifr.srcdoc=html;
 }
