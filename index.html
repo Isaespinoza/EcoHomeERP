@@ -3045,11 +3045,16 @@ function mostrarImpresionInline(html){
     try{
       const d=ifr.contentDocument;
       const st=d.createElement('style');
-      st.textContent='@media print{body{zoom:1!important}}';
+      st.textContent='@media print{.page{zoom:1!important}}';
       d.head.appendChild(st);
-      const ancho=d.documentElement.scrollWidth;
+      // Se escala cada hoja (.page) a una fracción de su ancho real (A4=794px, A5=560px),
+      // pisando el zoom:1.15 de pantalla; el resto del documento queda a tamaño normal.
       const disp=ifr.clientWidth;
-      if(ancho>disp&&disp>0)d.body.style.zoom=(disp/ancho).toFixed(4);
+      d.querySelectorAll('.page').forEach(p=>{
+        p.style.zoom='1';
+        const real=p.offsetWidth;
+        if(real>disp&&disp>0)p.style.zoom=((disp-8)/real).toFixed(4);
+      });
     }catch(e){}
   };
   overlay.appendChild(ifr);
