@@ -3032,8 +3032,29 @@ function mostrarImpresionInline(html){
   const vpOriginal=vp?vp.getAttribute('content'):null;
   if(vp)vp.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
   cerrar.onclick=()=>{overlay.remove();if(vp&&vpOriginal)vp.setAttribute('content',vpOriginal);};
+  // Botón de imprimir del lado de la app (el del documento vive dentro del iframe y en
+  // iOS standalone a veces no dispara el diálogo de impresión).
+  const imp=document.createElement('button');
+  imp.textContent='🖨️ Imprimir';
+  imp.style.cssText=cerrar.style.cssText.replace('left:10px','left:110px');
+  imp.onclick=()=>{try{ifr.contentWindow.focus();ifr.contentWindow.print();}catch(e){window.print();}};
+  // El comprobante está maquetado en A4 (~794px) y en el celular el iframe mide ~390px:
+  // se veía recortado y "con mucho zoom". Al cargar, lo achicamos para que entre a lo
+  // ancho (solo en pantalla; al imprimir se vuelve a tamaño real).
+  ifr.onload=()=>{
+    try{
+      const d=ifr.contentDocument;
+      const st=d.createElement('style');
+      st.textContent='@media print{body{zoom:1!important}}';
+      d.head.appendChild(st);
+      const ancho=d.documentElement.scrollWidth;
+      const disp=ifr.clientWidth;
+      if(ancho>disp&&disp>0)d.body.style.zoom=(disp/ancho).toFixed(4);
+    }catch(e){}
+  };
   overlay.appendChild(ifr);
   overlay.appendChild(cerrar);
+  overlay.appendChild(imp);
   document.body.appendChild(overlay);
   ifr.srcdoc=html;
 }
