@@ -3048,7 +3048,8 @@ function mostrarImpresionInline(html){
       }
       const d=ifr.contentDocument;
       const base=(d.title||'Comprobante').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g,'').trim().replace(/ +/g,'_');
-      const hojas=[...d.querySelectorAll('.page')];
+      // En el pedido la 1ª hoja es la copia del cliente y la 2ª la del negocio: solo se envía la del cliente.
+      const hojas=[...d.querySelectorAll('.page')].slice(0,1);
       if(!hojas.length)hojas.push(d.body);
       const files=[];
       for(let i=0;i<hojas.length;i++){
