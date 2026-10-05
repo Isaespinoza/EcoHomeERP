@@ -3032,7 +3032,7 @@ function mostrarImpresionInline(html){
   // (WhatsApp, etc.). En escritorio se mantiene el botón de imprimir del documento.
   const movil=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const imp=document.createElement('button');
-  imp.textContent='📲 Enviar por WhatsApp';
+  imp.textContent='📤 Compartir / Imprimir';
   imp.style.cssText='background:#25804a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px';
   imp.onclick=async()=>{
     const txt=imp.textContent;
