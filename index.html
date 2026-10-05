@@ -3032,12 +3032,44 @@ function mostrarImpresionInline(html){
   const vpOriginal=vp?vp.getAttribute('content'):null;
   if(vp)vp.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
   cerrar.onclick=()=>{overlay.remove();if(vp&&vpOriginal)vp.setAttribute('content',vpOriginal);};
-  // Botón de imprimir del lado de la app (el del documento vive dentro del iframe y en
-  // iOS standalone a veces no dispara el diálogo de impresión).
+  // En el iPhone instalado, window.print() dentro del overlay no hace nada. En vez de
+  // imprimir, se genera una imagen de cada hoja y se abre la hoja nativa de compartir
+  // (WhatsApp, etc.). En escritorio se mantiene el botón de imprimir del documento.
+  const movil=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const imp=document.createElement('button');
-  imp.textContent='🖨️ Imprimir';
-  imp.style.cssText=cerrar.style.cssText.replace('left:10px','left:110px');
-  imp.onclick=()=>{try{ifr.contentWindow.focus();ifr.contentWindow.print();}catch(e){window.print();}};
+  imp.textContent='📲 Enviar por WhatsApp';
+  imp.style.cssText=cerrar.style.cssText.replace('left:10px','left:110px').replace('#151513','#25804a');
+  imp.onclick=async()=>{
+    const txt=imp.textContent;
+    imp.disabled=true;imp.textContent='Generando…';
+    try{
+      if(!window.html2canvas){
+        await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>ko(new Error('No se pudo cargar html2canvas (¿sin internet?)'));document.head.appendChild(sc);});
+      }
+      const d=ifr.contentDocument;
+      const base=(d.title||'Comprobante').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g,'').trim().replace(/ +/g,'_');
+      const hojas=[...d.querySelectorAll('.page')];
+      if(!hojas.length)hojas.push(d.body);
+      const files=[];
+      for(let i=0;i<hojas.length;i++){
+        const p=hojas[i];
+        const z=p.style.zoom,sh=p.style.boxShadow;
+        p.style.zoom='1';p.style.boxShadow='none';
+        const cv=await window.html2canvas(p,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+        p.style.zoom=z;p.style.boxShadow=sh;
+        const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+        files.push(new File([blob],base+(hojas.length>1?'_hoja'+(i+1):'')+'.png',{type:'image/png'}));
+      }
+      if(navigator.canShare&&navigator.canShare({files})){
+        await navigator.share({files,title:base});
+      }else{
+        alert('Este dispositivo no permite compartir imágenes desde la app.');
+      }
+    }catch(e){
+      if(!e||e.name!=='AbortError')alert('No se pudo generar el comprobante: '+(e&&e.message||e));
+    }
+    imp.disabled=false;imp.textContent=txt;
+  };
   // El comprobante está maquetado en A4 (~794px) y en el celular el iframe mide ~390px:
   // se veía recortado y "con mucho zoom". Al cargar, lo achicamos para que entre a lo
   // ancho (solo en pantalla; al imprimir se vuelve a tamaño real).
@@ -3045,7 +3077,7 @@ function mostrarImpresionInline(html){
     try{
       const d=ifr.contentDocument;
       const st=d.createElement('style');
-      st.textContent='@media print{.page{zoom:1!important}}';
+      st.textContent='@media print{.page{zoom:1!important}}'+(movil?'.btnp,.btnprint{display:none!important}':'');
       d.head.appendChild(st);
       // Se escala cada hoja (.page) a una fracción de su ancho real (A4=794px, A5=560px),
       // pisando el zoom:1.15 de pantalla; el resto del documento queda a tamaño normal.
