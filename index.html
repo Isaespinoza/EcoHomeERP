@@ -3023,22 +3023,15 @@ function mostrarImpresionInline(html){
   ifr.style.cssText='width:100%;height:100%;border:0;background:#e3e5e3';
   const cerrar=document.createElement('button');
   cerrar.textContent='✕ Cerrar';
-  cerrar.style.cssText='position:fixed;top:10px;left:10px;z-index:100000;background:#151513;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)';
-  // El viewport de la app bloquea el pellizco-zoom (user-scalable=no) para que no se
-  // active por error al usar los botones. Pero eso mismo impide alejar la vista del
-  // comprobante en el overlay para sacarle foto completa. Lo relajamos mientras está
-  // abierto y restauramos el valor original al cerrar.
-  const vp=document.querySelector('meta[name="viewport"]');
-  const vpOriginal=vp?vp.getAttribute('content'):null;
-  if(vp)vp.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-  cerrar.onclick=()=>{overlay.remove();if(vp&&vpOriginal)vp.setAttribute('content',vpOriginal);};
+  cerrar.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:12px;z-index:100000;background:#151513;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  cerrar.onclick=()=>overlay.remove();
   // En el iPhone instalado, window.print() dentro del overlay no hace nada. En vez de
   // imprimir, se genera una imagen de cada hoja y se abre la hoja nativa de compartir
   // (WhatsApp, etc.). En escritorio se mantiene el botón de imprimir del documento.
   const movil=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const imp=document.createElement('button');
   imp.textContent='📲 Enviar por WhatsApp';
-  imp.style.cssText=cerrar.style.cssText.replace('left:10px','left:110px').replace('#151513','#25804a');
+  imp.style.cssText=cerrar.style.cssText.replace('left:12px','left:120px').replace('#151513','#25804a');
   imp.onclick=async()=>{
     const txt=imp.textContent;
     imp.disabled=true;imp.textContent='Generando…';
