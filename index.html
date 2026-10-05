@@ -3020,10 +3020,12 @@ function mostrarImpresionInline(html){
   overlay.id='print-overlay-eco';
   overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#e3e5e3';
   const ifr=document.createElement('iframe');
-  ifr.style.cssText='width:100%;height:100%;border:0;background:#e3e5e3';
+  ifr.style.cssText='position:absolute;left:0;right:0;bottom:0;top:56px;width:100%;height:calc(100% - 56px);border:0;background:#e3e5e3';
+  const barra=document.createElement('div');
+  barra.style.cssText='position:absolute;top:0;left:0;right:0;height:56px;z-index:100000;display:flex;gap:10px;align-items:center;padding:0 12px;background:#151513;box-shadow:0 2px 8px rgba(0,0,0,.3)';
   const cerrar=document.createElement('button');
   cerrar.textContent='✕ Cerrar';
-  cerrar.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:12px;z-index:100000;background:#151513;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  cerrar.style.cssText='background:#3a3d3a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px';
   cerrar.onclick=()=>overlay.remove();
   // En el iPhone instalado, window.print() dentro del overlay no hace nada. En vez de
   // imprimir, se genera una imagen de cada hoja y se abre la hoja nativa de compartir
@@ -3031,7 +3033,7 @@ function mostrarImpresionInline(html){
   const movil=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const imp=document.createElement('button');
   imp.textContent='📲 Enviar por WhatsApp';
-  imp.style.cssText=cerrar.style.cssText;imp.style.left='120px';imp.style.background='#25804a';
+  imp.style.cssText='background:#25804a;color:#fff;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px';
   imp.onclick=async()=>{
     const txt=imp.textContent;
     imp.disabled=true;imp.textContent='Generando…';
