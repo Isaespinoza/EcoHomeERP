@@ -3031,7 +3031,7 @@ function mostrarImpresionInline(html){
   const movil=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const imp=document.createElement('button');
   imp.textContent='📲 Enviar por WhatsApp';
-  imp.style.cssText=cerrar.style.cssText.replace('left:12px','left:120px').replace('#151513','#25804a');
+  imp.style.cssText=cerrar.style.cssText;imp.style.left='120px';imp.style.background='#25804a';
   imp.onclick=async()=>{
     const txt=imp.textContent;
     imp.disabled=true;imp.textContent='Generando…';
