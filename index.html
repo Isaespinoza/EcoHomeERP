@@ -2107,7 +2107,9 @@ function reanudarVentaPausada(i){
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;};
   s('nv-cliente',p.cliente);s('nv-tel',p.tel);s('nv-rut',p.rut);s('nv-empresa',p.empresa);
   s('nv-tipo',p.tipo);s('nv-vendedor',p.vendedor);s('nv-pago',p.pago);s('nv-estado',p.estado);
-  s('nv-fecha',p.fecha);s('nv-fecha-desp',p.fechaDesp);s('nv-desp',p.desp);
+  // La venta se cierra hoy: no arrastrar la fecha del día en que se pausó (si no, queda
+  // archivada en un día anterior y no aparece entre las de hoy). Un despacho ya pasado, también a hoy.
+  s('nv-fecha',today());s('nv-fecha-desp',p.fechaDesp&&p.fechaDesp>today()?p.fechaDesp:today());s('nv-desp',p.desp);
   s('nv-calle',p.calle);s('nv-numero',p.numero);s('nv-comuna',p.comuna);s('nv-hora',p.hora);
   s('nv-cancelado',p.cancelado);s('nv-notas',p.notas);
   s('nv-desc-tipo',p.descTipo);s('nv-desc-valor',p.descValor);s('nv-cupon',p.cupon);
