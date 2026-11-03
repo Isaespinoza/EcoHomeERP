@@ -4928,6 +4928,7 @@ function primerMesConMovimiento(){
   const considerar=f=>{if(f&&(!min||f<min))min=f;};
   ventas.forEach(v=>{if((v.estado||'pendiente')!=='cancelado')considerar(v.fecha);});
   compras.forEach(g=>considerar(g.fecha));
+  gastosUnicos.forEach(g=>considerar(g.fecha));
   return min?min.slice(0,7):null;
 }
 function sumaMesSiguiente(mesStr){
@@ -4938,7 +4939,7 @@ function sumaMesSiguiente(mesStr){
 function ivaBrutoDelMes(mesStr){
   const vtas=ventas.filter(v=>v.fecha&&v.fecha.startsWith(mesStr)&&(v.estado||'pendiente')!=='cancelado');
   const debito=vtas.reduce((a,v)=>a+netoDesdeBruto(v.total)*TASA_IVA,0);
-  const credito=compras.filter(g=>g.fecha&&g.fecha.startsWith(mesStr)&&g.conIVA)
+  const credito=compras.concat(gastosUnicos).filter(g=>g.fecha&&g.fecha.startsWith(mesStr)&&g.conIVA)
     .reduce((a,g)=>a+netoDesdeBruto(g.monto)*TASA_IVA,0);
   return{debito,credito};
 }
@@ -5083,7 +5084,7 @@ function renderFinanzas(){
       </div>
       ${unicosMes.length?unicosMes.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(g=>`
         <div class="item-row">
-          <span>${g.nombre}<div class="muted" style="font-size:11px">${g.fecha.split('-').reverse().join('/')} · ${g.categoria||'Otro'}</div></span>
+          <span>${g.nombre}<div class="muted" style="font-size:11px">${g.fecha.split('-').reverse().join('/')} · ${g.categoria||'Otro'} · ${g.conIVA?'Con IVA':'Sin IVA'}</div></span>
           <span style="display:flex;align-items:center;gap:8px">
             <strong>${fmt(g.monto)}</strong>
             <button onclick="abrirGastoUnico('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text2)">Editar</button>
@@ -5413,13 +5414,15 @@ async function abrirGastoUnico(id){
     {name:'monto',label:'Monto ($)',type:'number',default:g?g.monto:'',required:true},
     {name:'fecha',label:'Fecha',type:'date',default:g?g.fecha:today(),required:true},
     {name:'categoria',label:'Categoría',type:'select',options:CATS_GASTO_UNICO,default:g?g.categoria:CATS_GASTO_UNICO[0]},
+    {name:'iva',label:'¿Con factura (IVA)?',type:'select',options:['Con IVA (factura)','Sin IVA'],default:g&&!g.conIVA?'Sin IVA':'Con IVA (factura)'},
+    {type:'info',label:'Con factura, el IVA del monto cuenta como crédito fiscal y baja el IVA a pagar del mes. Boleta o pago a una persona: Sin IVA.'},
   ]);
   if(!vals)return;
   const nombre=String(vals.nombre).trim();
   if(!nombre)return;
   const monto=parseInt(vals.monto)||0;
   if(monto<=0){alert('Monto inválido');return;}
-  const nuevo={id:g?g.id:uid(),tipo:'unico',nombre,monto,fecha:vals.fecha||today(),categoria:vals.categoria};
+  const nuevo={id:g?g.id:uid(),tipo:'unico',nombre,monto,fecha:vals.fecha||today(),categoria:vals.categoria,conIVA:vals.iva==='Con IVA (factura)'};
   if(g){const i=gastosUnicos.findIndex(x=>String(x.id)===String(id));gastosUnicos[i]=nuevo;}
   else gastosUnicos.push(nuevo);
   await saveGastoDB(nuevo);
