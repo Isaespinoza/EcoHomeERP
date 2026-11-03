@@ -1447,6 +1447,11 @@ let cotizaciones=[];
 let campanas=[];
 let promociones=[];
 let gastosFijos=[];
+let gastosUnicos=[]; // misma colección 'gastos', con tipo:'unico' y fecha
+function setGastos(docs){
+  gastosFijos=docs.filter(g=>g.tipo!=='unico');
+  gastosUnicos=docs.filter(g=>g.tipo==='unico');
+}
 let compras=[];
 let perdidas=[];
 let cajas=[];
@@ -4868,6 +4873,26 @@ async function cerrarCaja(){
 function totalSueldosMes(mesStr){
   return empleados.filter(e=>e.activo!==false).reduce((a,e)=>a+liquidacionEmpleado(e,mesStr).total,0);
 }
+// Gastos puntuales (microondas, pago por un día de trabajo...) que caen entre dos fechas.
+function unicosEnRango(desde,hasta){
+  return gastosUnicos.filter(g=>g.fecha&&g.fecha>=desde&&g.fecha<=hasta).reduce((a,g)=>a+(g.monto||0),0);
+}
+// Gasto en anuncios (campañas de Marketing) repartido por día entre las fechas de cada campaña,
+// para que una campaña que cruza dos meses reparta su gasto entre ambos.
+function marketingEnRango(desde,hasta){
+  return campanas.reduce((a,c)=>{
+    if(!c.gasto)return a;
+    const ini=c.desde||c.hasta||desde,fin=c.hasta||c.desde||hasta;
+    const i=ini>desde?ini:desde,f=fin<hasta?fin:hasta;
+    if(f<i)return a;
+    const total=Math.max(1,diasEntre(ini,fin));
+    return a+c.gasto*diasEntre(i,f)/total;
+  },0);
+}
+function rangoDelMes(mesStr){
+  const [a,m]=mesStr.split('-').map(Number);
+  return[mesStr+'-01',mesStr+'-'+String(new Date(a,m,0).getDate()).padStart(2,'0')];
+}
 const ventaVigente=v=>v.fecha&&(v.estado||'pendiente')!=='cancelado';
 // Las mismas cuentas que la vista del mes de Finanzas, en un objeto: el histórico y
 // gananciaMes salen de acá para que los números cuadren entre sí.
@@ -4879,8 +4904,11 @@ function detalleGananciaMes(anio,mes){
   const gastos=gastosFijos.reduce((a,g)=>a+(g.monto||0),0);
   const sueldos=totalSueldosMes(mesStr);
   const perd=perdidasDelMes(mesStr).reduce((a,x)=>a+(x.total||0),0);
-  return{mesStr,anio,mes,ventas:totalVentas,costo,margen:totalVentas-costo,gastos,sueldos,perdidas:perd,
-    ganancia:totalVentas-costo-gastos-sueldos-perd};
+  const [d0,d1]=rangoDelMes(mesStr);
+  const unicos=unicosEnRango(d0,d1);
+  const marketing=Math.round(marketingEnRango(d0,d1));
+  return{mesStr,anio,mes,ventas:totalVentas,costo,margen:totalVentas-costo,gastos,sueldos,perdidas:perd,unicos,marketing,
+    ganancia:totalVentas-costo-gastos-sueldos-perd-unicos-marketing};
 }
 function gananciaMes(anio,mes){
   const d=detalleGananciaMes(anio,mes);
@@ -4975,7 +5003,11 @@ function renderFinanzas(){
   const sueldosSec=renderSueldosSection(mesStr,MESES[mesSel]);
   const perdidasMes=perdidasDelMes(mesStr);
   const totalPerdidas=perdidasMes.reduce((a,x)=>a+(x.total||0),0);
-  const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos-totalPerdidas;
+  const [rd0,rd1]=rangoDelMes(mesStr);
+  const unicosMes=gastosUnicos.filter(g=>g.fecha&&g.fecha>=rd0&&g.fecha<=rd1);
+  const totalUnicos=unicosMes.reduce((a,g)=>a+(g.monto||0),0);
+  const totalMarketing=Math.round(marketingEnRango(rd0,rd1));
+  const ganancia=totalVentas-costoVendido-totalGastosFijos-sueldosSec.totalSueldos-totalPerdidas-totalUnicos-totalMarketing;
 
   // IVA del mes, arrastrando el remanente de crédito de los meses anteriores
   const iva=ivaDelMes(mesStr);
@@ -5002,6 +5034,8 @@ function renderFinanzas(){
       <div class="stat"><div class="stat-lbl">Ventas del mes</div><div class="stat-val" style="font-size:15px">${fmt(totalVentas)}</div></div>
       <div class="stat"><div class="stat-lbl">Costo de lo vendido</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(costoVendido)}</div></div>
       <div class="stat"><div class="stat-lbl">Gastos fijos</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalGastosFijos)}</div></div>
+      ${totalUnicos>0?`<div class="stat"><div class="stat-lbl">Gastos únicos</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalUnicos)}</div></div>`:''}
+      ${totalMarketing>0?`<div class="stat"><div class="stat-lbl">Publicidad (Marketing)</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalMarketing)}</div></div>`:''}
       ${sueldosSec.totalSueldos>0?`<div class="stat"><div class="stat-lbl">Sueldos del mes</div><div class="stat-val" style="font-size:15px;color:#a78bfa">−${fmt(sueldosSec.totalSueldos)}</div></div>`:''}
       ${totalPerdidas>0?`<div class="stat"><div class="stat-lbl">Pérdidas (robo/daño)</div><div class="stat-val" style="font-size:15px;color:#f28a8a">−${fmt(totalPerdidas)}</div></div>`:''}
       <div class="stat" style="border:2px solid ${ganancia>=0?'#8bf0b0':'#f28a8a'}"><div class="stat-lbl">Ganancia del mes</div><div class="stat-val" style="font-size:17px;color:${ganancia>=0?'#8bf0b0':'#f28a8a'}">${fmt(ganancia)}</div></div>
@@ -5039,6 +5073,28 @@ function renderFinanzas(){
           <strong>Total mensual</strong><strong style="color:#f28a8a">${fmt(totalGastosFijos)}</strong>
         </div>`
       :'<div class="muted" style="font-size:12px;padding:8px 0">Sin gastos fijos registrados. Agrega arriendo, luz, agua, internet... (los sueldos van en su propia sección abajo)</div>'}
+    </div>
+
+    <!-- GASTOS ÚNICOS -->
+    <div class="card" style="border-top:3px solid #f28a8a;margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h4>Gastos únicos de ${MESES[mesSel]}</h4>
+        <button class="btn btn-sm" onclick="abrirGastoUnico()">+ Agregar</button>
+      </div>
+      ${unicosMes.length?unicosMes.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(g=>`
+        <div class="item-row">
+          <span>${g.nombre}<div class="muted" style="font-size:11px">${g.fecha.split('-').reverse().join('/')} · ${g.categoria||'Otro'}</div></span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <strong>${fmt(g.monto)}</strong>
+            <button onclick="abrirGastoUnico('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text2)">Editar</button>
+            <button onclick="eliminarGastoUnico('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#f28a8a">Eliminar</button>
+          </span>
+        </div>`).join('')+`
+        <div class="item-row" style="border-top:2px solid var(--border);margin-top:4px">
+          <strong>Total gastos únicos</strong><strong style="color:#f28a8a">${fmt(totalUnicos)}</strong>
+        </div>`
+      :'<div class="muted" style="font-size:12px;padding:8px 0">Sin gastos únicos este mes. Agrega aquí lo que se paga una sola vez: un equipo (microondas), el pago por un día de trabajo, una reparación... Se restan de la ganancia solo de este mes.</div>'}
+      ${totalMarketing>0?`<div class="muted" style="font-size:11px;margin-top:8px">La publicidad (${fmt(totalMarketing)}) se toma sola de las campañas de Marketing: no la agregues aquí.</div>`:''}
     </div>
 
     ${sueldosSec.html}
@@ -5175,6 +5231,8 @@ function resultadoRango(desde,hasta){
       .reduce((x,v)=>x+v.total-costoDeVenta(v),0);
     const fijos=gastosFijos.reduce((x,g)=>x+(g.monto||0),0)+totalSueldosMes(mes);
     total+=margen-fijos*Math.max(0,fin-ini+1)/diasMes;
+    const mi=mes+'-'+String(ini).padStart(2,'0'),mf=mes+'-'+String(fin).padStart(2,'0');
+    total-=unicosEnRango(mi,mf)+marketingEnRango(mi,mf);
     mes=sumaMesSiguiente(mes);
   }
   return total;
@@ -5228,19 +5286,19 @@ function renderFinanzasHistorico(){
 
   html+=`<div class="card"><h4 style="margin-bottom:10px">Mes a mes</h4>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Mes</th><th style="text-align:right">Ventas</th><th style="text-align:right">Margen</th><th style="text-align:right">Gastos + sueldos</th><th style="text-align:right">Pérdidas</th><th style="text-align:right">Ganancia</th><th style="text-align:right">Acumulado</th></tr></thead>
+      <thead><tr><th>Mes</th><th style="text-align:right">Ventas</th><th style="text-align:right">Margen</th><th style="text-align:right">Gastos + sueldos + publicidad</th><th style="text-align:right">Pérdidas</th><th style="text-align:right">Ganancia</th><th style="text-align:right">Acumulado</th></tr></thead>
       <tbody>${meses.slice().reverse().map(d=>`<tr>
         <td style="white-space:nowrap">${nomMes(d)}${d.mesStr===mesHoy?' <span class="muted" style="font-size:10px">(en curso)</span>':''}</td>
         <td style="text-align:right">${fmt(d.ventas)}</td>
         <td style="text-align:right">${fmt(d.margen)}${d.ventas>0?`<div class="muted" style="font-size:10px">${Math.round(d.margen/d.ventas*100)}%</div>`:''}</td>
-        <td style="text-align:right;color:#f28a8a">−${fmt(d.gastos+d.sueldos)}</td>
+        <td style="text-align:right;color:#f28a8a">−${fmt(d.gastos+d.sueldos+d.unicos+d.marketing)}</td>
         <td style="text-align:right;color:#f28a8a">${d.perdidas?'−'+fmt(d.perdidas):'—'}</td>
         <td style="text-align:right"><strong style="color:${color(d.ganancia)}">${fmt(d.ganancia)}</strong></td>
         <td style="text-align:right;color:${color(d.acumulado)}">${fmt(d.acumulado)}</td>
       </tr>`).join('')}</tbody>
     </table></div>
     <div class="help" style="margin-top:10px">
-      Ganancia = ventas − costo de lo vendido − gastos fijos − sueldos − pérdidas, igual que en la vista del mes.
+      Ganancia = ventas − costo de lo vendido − gastos fijos − gastos únicos − publicidad − sueldos − pérdidas, igual que en la vista del mes.
       El mes en curso resta el mes completo de gastos y sueldos, así que se ve más bajo hasta que termina.
       Ojo: los gastos fijos son los que tienes cargados <strong>hoy</strong> y el costo de cada producto es el <strong>actual</strong>; si antes eran distintos, los meses viejos no quedan exactos.
     </div>
@@ -5342,6 +5400,34 @@ async function abrirGastoFijo(id){
 async function eliminarGastoFijo(id){
   if(!(await confirmDialog('¿Eliminar este gasto fijo?',{danger:true})))return;
   gastosFijos=gastosFijos.filter(g=>String(g.id)!==String(id));
+  await delGastoDB(id);
+  renderFinanzas();
+}
+
+// --- Gastos únicos (puntuales: equipos, pago por un día, reparaciones) ---
+const CATS_GASTO_UNICO=['Equipamiento','Pago por día','Mantención / reparación','Otro'];
+async function abrirGastoUnico(id){
+  const g=id?gastosUnicos.find(x=>String(x.id)===String(id)):null;
+  const vals=await formDialog(g?'Editar gasto único':'Nuevo gasto único',[
+    {name:'nombre',label:'Qué fue (ej: Microondas, Pago a Juan por el sábado)',default:g?g.nombre:'',required:true},
+    {name:'monto',label:'Monto ($)',type:'number',default:g?g.monto:'',required:true},
+    {name:'fecha',label:'Fecha',type:'date',default:g?g.fecha:today(),required:true},
+    {name:'categoria',label:'Categoría',type:'select',options:CATS_GASTO_UNICO,default:g?g.categoria:CATS_GASTO_UNICO[0]},
+  ]);
+  if(!vals)return;
+  const nombre=String(vals.nombre).trim();
+  if(!nombre)return;
+  const monto=parseInt(vals.monto)||0;
+  if(monto<=0){alert('Monto inválido');return;}
+  const nuevo={id:g?g.id:uid(),tipo:'unico',nombre,monto,fecha:vals.fecha||today(),categoria:vals.categoria};
+  if(g){const i=gastosUnicos.findIndex(x=>String(x.id)===String(id));gastosUnicos[i]=nuevo;}
+  else gastosUnicos.push(nuevo);
+  await saveGastoDB(nuevo);
+  renderFinanzas();
+}
+async function eliminarGastoUnico(id){
+  if(!(await confirmDialog('¿Eliminar este gasto?',{danger:true})))return;
+  gastosUnicos=gastosUnicos.filter(g=>String(g.id)!==String(id));
   await delGastoDB(id);
   renderFinanzas();
 }
@@ -6499,9 +6585,9 @@ async function initFirebase(){
         if(t&&t.classList.contains('active'))renderMarketing();
       });
       // Cargar gastos fijos y compras
-      gastosFijos=gasSnap.docs.map(d=>d.data());
+      setGastos(gasSnap.docs.map(d=>d.data()));
       onSnapshot(collection(db,'gastos'),snap=>{
-        gastosFijos=snap.docs.map(d=>d.data());
+        setGastos(snap.docs.map(d=>d.data()));
         if(document.getElementById('tab-finanzas').classList.contains('active'))renderFinanzas();
       });
       compras=comSnap.docs.map(d=>d.data());
@@ -9585,7 +9671,7 @@ Object.assign(window,{
   pausarVentaNV,reanudarVentaPausada,eliminarVentaPausada,updPagoNV,recalcMixtoNV,calcDescuentoNV,
   renderPromociones,autocompletePromoProd,autocompletePromoProdDeb,selPromoProd,guardarPromo,eliminarPromo,renderClientes,
   toggleAdmin,requiereAdmin,
-  renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirCompra,guardarCompra,eliminarCompra,
+  renderFinanzas,abrirGastoFijo,eliminarGastoFijo,abrirGastoUnico,eliminarGastoUnico,abrirCompra,guardarCompra,eliminarCompra,
   renderCaja,abrirCaja,cerrarCaja,agregarMovimientoCaja,
   abrirEmpleado,eliminarEmpleado,definirFechaIngreso,registrarEventoRRHH,eliminarEventoRRHH,
   marcarPagado,marcarPagadoEquipo,
