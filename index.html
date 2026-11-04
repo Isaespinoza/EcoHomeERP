@@ -9481,6 +9481,32 @@ function normalizarCampo(fila,nombres){
   }
   return '';
 }
+// Palabras de un nombre de producto sin tildes, signos ni plural simple ("cuerpos"="cuerpo").
+function tokensNombre(n){
+  return norm(n).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean)
+    .map(t=>t.length>3&&t.endsWith('s')?t.slice(0,-1):t);
+}
+// Busca en el inventario el producto que corresponde a un nombre del Excel.
+// 1) mismo conjunto de palabras en cualquier orden ("Juan Pu 3 cuerpos" = "Juan Pu 3 cuerpos")
+// 2) aproximado: todas las palabras del nombre más corto están en el más largo
+//    ("Juan Pu 3 cuerpos" ⊂ "Sofa 3 cuerpos Juan Pu"), con los mismos números y un
+//    único candidato; si hay duda no se junta y queda como producto nuevo.
+function buscarProductoImport(nombre){
+  const t=tokensNombre(nombre);
+  if(!t.length)return{prod:null,aprox:false};
+  const clave=a=>[...new Set(a)].sort().join(' ');
+  const k=clave(t);
+  const igual=inventario.find(x=>clave(tokensNombre(x.nombre))===k);
+  if(igual)return{prod:igual,aprox:false};
+  const nums=a=>clave(a.filter(w=>/\d/.test(w)));
+  const cands=inventario.filter(x=>{
+    const u=tokensNombre(x.nombre);
+    if(!u.length||nums(u)!==nums(t))return false;
+    const [corto,largo]=u.length<=t.length?[u,t]:[t,u];
+    return corto.length>=2&&corto.every(w=>largo.includes(w));
+  });
+  return cands.length===1?{prod:cands[0],aprox:true}:{prod:null,aprox:false};
+}
 function mostrarPreviewImport(filas){
   if(!filas.length){document.getElementById('imp-resultado').innerHTML='<div class="muted">El archivo está vacío.</div>';return;}
   const normCat=(c)=>{
@@ -9510,15 +9536,18 @@ function mostrarPreviewImport(filas){
 
   let nuevos=0,actualiza=0;
   productos.forEach(p=>{
-    if(inventario.find(x=>x.nombre.toLowerCase()===p.nombre.toLowerCase()))actualiza++;else nuevos++;
+    const m=buscarProductoImport(p.nombre);
+    p.matchId=m.prod?String(m.prod.id):'';
+    p.aprox=m.aprox;
+    if(m.prod)actualiza++;else nuevos++;
   });
 
   let html=`<div style="margin-bottom:10px;font-size:12px;color:#8bf0b0;background:rgba(139,240,176,.14);padding:8px 10px;border-radius:6px">${productos.length} productos · ${nuevos} nuevos · ${actualiza} ya existen</div>`;
   html+='<div style="max-height:200px;overflow-y:auto;margin-bottom:10px">';
   productos.forEach(p=>{
-    const existe=inventario.find(x=>x.nombre.toLowerCase()===p.nombre.toLowerCase());
+    const existe=p.matchId?inventario.find(x=>String(x.id)===p.matchId):null;
     html+=`<div style="font-size:11px;padding:6px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
-      <span>${existe?'🔄':'🆕'} ${p.nombre} <span class="pill">${p.marca||'—'}</span></span>
+      <span>${existe?'🔄':'🆕'} ${p.nombre} <span class="pill">${p.marca||'—'}</span>${p.aprox?`<div style="color:#f4d778;margin-top:2px">≈ se junta con «${existe.nombre}»</div>`:''}</span>
       <span class="muted">${p.stock} u · ${fmt(p.min)}${p.costo>0?' · costo '+fmt(p.costo):''}</span>
     </div>`;
   });
@@ -9559,7 +9588,7 @@ async function confirmarImport(productos){
   document.getElementById('imp-resultado').innerHTML='<div class="muted" style="text-align:center;padding:20px">⏳ Importando...</div>';
   let n=0;
   for(const p of productos){
-    const existe=inventario.find(x=>x.nombre.toLowerCase()===p.nombre.toLowerCase());
+    const existe=(p.matchId&&inventario.find(x=>String(x.id)===p.matchId))||buscarProductoImport(p.nombre).prod;
     if(existe){
       if(sumar)existe.stock=(parseInt(existe.stock)||0)+p.stock;
       else existe.stock=p.stock;
