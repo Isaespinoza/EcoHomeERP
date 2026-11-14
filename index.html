@@ -2460,6 +2460,10 @@ function recalcTotalNV(){
   if(barT)barT.textContent=fmt(total);
 }
 async function saveVentaNV(){
+  try{await saveVentaNVInner();}
+  catch(e){console.error(e);alert('⚠️ No se pudo guardar: '+(e&&e.message||e));}
+}
+async function saveVentaNVInner(){
   const modo=modoNV(),editId=idEdicionNV();
   const editando=modo==='edicion',cotizando=modo==='cotizacion';
   const orig=editando?ventas.find(x=>String(x.id)===String(editId)):null;
@@ -2543,6 +2547,9 @@ async function saveVentaNV(){
     return;
   }
 
+  // Firestore rechaza valores undefined: se eliminan antes de guardar
+  Object.keys(v).forEach(k=>{if(v[k]===undefined)delete v[k];});
+  v.items=JSON.parse(JSON.stringify(v.items));
   // Todas las escrituras (stock + productos nuevos + venta) en UN solo batch atómico = 1 viaje de red
   const batch=writeBatch(db);
   if(editando){
