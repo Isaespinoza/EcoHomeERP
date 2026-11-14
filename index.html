@@ -2502,7 +2502,7 @@ async function saveVentaNV(){
   const gTxt=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   const v={
     id:editando?orig.id:uid(),
-    horaCreacion:editando?orig.horaCreacion:horaActual(),
+    horaCreacion:(editando&&orig.horaCreacion)||horaActual(),
     fecha:document.getElementById('nv-fecha').value||today(),
     fechaDesp:document.getElementById('nv-fecha-desp').value||today(),
     estado:document.getElementById('nv-estado').value||'pendiente',
@@ -3010,7 +3010,7 @@ async function convertirEnVenta(id){
   if(!c)return;
   if(!(await confirmDialog('¿Convertir esta cotización en venta? Se descontará el stock.')))return;
   const v={
-    id:uid(),fecha:today(),fechaDesp:today(),estado:'pendiente',
+    id:uid(),horaCreacion:horaActual(),fecha:today(),fechaDesp:today(),estado:'pendiente',
     tipo:c.tipo,cliente:c.cliente,rut:'',empresa:'',tel:c.tel,vendedor:c.vendedor,
     pago:'Efectivo',desp:0,despCalle:'',despNumero:'',despComuna:'',despHora:'Sin preferencia',
     cancelado:0,notas:c.notas,items:c.items.map(it=>({...it})),
